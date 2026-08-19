@@ -34,11 +34,16 @@ function MethodsSkeleton() {
     );
 }
 
+const MOBILE_MONEY_GATEWAYS: PaymentGateway[] = ["MTN_MOMO", "ORANGE_MONEY"];
+
 export default function SettingsPaymentsPage() {
     const queryClient = useQueryClient();
     const [gateway, setGateway] = useState<PaymentGateway>("MTN_MOMO");
     const [label, setLabel] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    const isMobileMoney = MOBILE_MONEY_GATEWAYS.includes(gateway);
 
     const {
         data: methods,
@@ -52,9 +57,18 @@ export default function SettingsPaymentsPage() {
     });
 
     const addMutation = useMutation({
-        mutationFn: () => paymentsApi.addPaymentMethod({ gateway, display_label: label }),
+        mutationFn: () =>
+            paymentsApi.addPaymentMethod({
+                gateway,
+                display_label: label,
+                // provider_token holds the phone number CamPay pushes the
+                // MoMo/Orange prompt to whenever this saved method is
+                // chosen at checkout — meaningless for STRIPE, so omitted.
+                ...(isMobileMoney ? { provider_token: phoneNumber } : {}),
+            }),
         onSuccess: () => {
             setLabel("");
+            setPhoneNumber("");
             setErrorMessage(null);
             queryClient.invalidateQueries({ queryKey: queryKeys.payments.methods });
         },
@@ -113,8 +127,22 @@ export default function SettingsPaymentsPage() {
                                 required
                             />
                         </Field>
+                        {isMobileMoney && (
+                            <Field label="Phone number">
+                                <Input
+                                    type="tel"
+                                    value={phoneNumber}
+                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                    placeholder="e.g. 6XX XXX XXX"
+                                    required
+                                />
+                            </Field>
+                        )}
                     </div>
-                    <Button type="submit" disabled={addMutation.isPending || !label.trim()}>
+                    <Button
+                        type="submit"
+                        disabled={addMutation.isPending || !label.trim() || (isMobileMoney && !phoneNumber.trim())}
+                    >
                         {addMutation.isPending ? "Adding..." : "Add payment method"}
                     </Button>
                     {errorMessage && <p className="mt-3 text-xs text-status-cancelled-text">{errorMessage}</p>}

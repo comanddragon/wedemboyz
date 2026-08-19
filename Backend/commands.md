@@ -37,3 +37,9 @@ curl -X POST https://fabulous-power-charcoal.ngrok-free.dev/api/v1/payments/ \
 
 curl https://fabulous-power-charcoal.ngrok-free.dev/api/v1/payments/5410/ \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg3MTA2NTU2LCJpYXQiOjE3ODcxMDI5NTYsImp0aSI6IjE1ZWU3NmI4ZDk1MjQxNTVhMjE1NmI5M2RjYmQ2NjJjIiwidXNlcl9pZCI6IjEiLCJwaG9uZV9udW1iZXIiOiIyMzc2NTQ1OTk2MDMifQ.ZCa1NJj21TM9m_dfVTxQjDlPY96Ladm5gpIZ3V5FrEI"
+
+
+clone this repo into your sandbox
+https://github.com/comanddragon/wedemboyz
+how we ship changes is you send the new and edited files in a zip folder respecting their directories. and a commit message. apply the same commit in your sandboxed version.
+as we work i'll notify you if i've made external changes then you'll just git pull.

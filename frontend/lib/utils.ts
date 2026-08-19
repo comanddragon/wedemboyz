@@ -24,3 +24,12 @@ export function customerNumber(customer: OrderCustomerSummary | null | undefined
   const number = customer.phone_number.trim().replace(/^\+?237\s*/, "");
   return number || null;
 }
+
+/** Masks all but the last 4 digits of a phone number for display, e.g.
+ * "237654599603" -> "•••• 9603". Used when offering a phone number as a
+ * checkout shortcut without printing the whole thing on screen. */
+export function maskPhoneNumber(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length <= 4) return phone;
+  return `•••• ${digits.slice(-4)}`;
+}

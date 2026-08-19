@@ -122,12 +122,19 @@ def verify_webhook_signature(payload: dict, signature: str) -> bool:
 
 
 def parse_webhook_status(payload: dict) -> str:
-    """Maps CamPay's status string to our PaymentStatus."""
+    """Maps CamPay's status string to our PaymentStatus. CamPay reports an
+    unconfirmed prompt that timed out on the customer's phone as EXPIRED
+    (distinct from FAILED, which covers rejections/insufficient funds/etc)
+    — both terminate the collection attempt the same way from our side, so
+    both map to PaymentStatus.FAILED. Without this, an EXPIRED webhook fell
+    through to "" (falsy), which process_webhook treats as "no status
+    change" — the Payment silently stayed PENDING forever."""
     from core.constants import PaymentStatus
 
     return {
         "SUCCESSFUL": PaymentStatus.SUCCEEDED,
         "FAILED": PaymentStatus.FAILED,
+        "EXPIRED": PaymentStatus.FAILED,
         "PENDING": PaymentStatus.PENDING,
     }.get(payload.get("status", ""), "")
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
-import { CircleCheck, CircleOff } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { CircleCheck, CircleOff, CreditCard, Star } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import { Button, Card } from "@/components/ui";
 import { useBooking } from "@/hooks/useBooking";
 import { ordersApi, paymentsApi, scheduleApi } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { queryKeys } from "@/lib/query-keys";
 import type { PaymentGateway } from "@/types";
 
 const GATEWAYS: { value: PaymentGateway; label: string; ready: boolean }[] = [
@@ -20,11 +21,52 @@ const GATEWAYS: { value: PaymentGateway; label: string; ready: boolean }[] = [
   { value: "STRIPE", label: "Card (Stripe) — not wired up yet", ready: false },
 ];
 
+function gatewayLabel(gateway: PaymentGateway): string {
+  return GATEWAYS.find((g) => g.value === gateway)?.label ?? gateway;
+}
+
+function SavedMethodsSkeleton() {
+  return (
+    <div className="mb-4 space-y-2">
+      {[0, 1].map((i) => (
+        <div key={i} className="flex items-center gap-3 rounded-md border border-crease px-3 py-2">
+          <span className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-steam" />
+          <span className="block h-3 w-1/3 animate-pulse rounded bg-steam" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function BookConfirmPage() {
   const router = useRouter();
   const booking = useBooking();
   const [gateway, setGateway] = useState<PaymentGateway>("CASH");
+  // undefined = no explicit choice made yet (fall back to the default saved
+  // method, if any); null = customer explicitly chose a plain gateway below.
+  const [selectedMethodId, setSelectedMethodId] = useState<number | null | undefined>(undefined);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const { data: savedMethods, isLoading: isLoadingMethods } = useQuery({
+    queryKey: queryKeys.payments.methods,
+    queryFn: () => paymentsApi.listPaymentMethods(),
+  });
+
+  // Pre-select the customer's default saved method, if any, so returning
+  // customers don't have to re-pick a gateway every time they check out.
+  const defaultMethod = savedMethods?.find((m) => m.is_default);
+  const effectiveMethodId = selectedMethodId === undefined ? (defaultMethod?.id ?? null) : selectedMethodId;
+  const effectiveMethod = savedMethods?.find((m) => m.id === effectiveMethodId);
+  const effectiveGateway = effectiveMethod ? effectiveMethod.gateway : gateway;
+
+  function selectSavedMethod(methodId: number) {
+    setSelectedMethodId(methodId);
+  }
+
+  function selectGateway(value: PaymentGateway) {
+    setSelectedMethodId(null);
+    setGateway(value);
+  }
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -52,7 +94,11 @@ export default function BookConfirmPage() {
         });
       }
 
-      await paymentsApi.initiatePayment({ order: order.id, gateway });
+      await paymentsApi.initiatePayment({
+        order: order.id,
+        gateway: effectiveGateway,
+        method: effectiveMethodId ?? undefined,
+      });
 
       return order;
     },
@@ -76,22 +122,64 @@ export default function BookConfirmPage() {
           Total due: <span className="text-base font-semibold text-navy">{booking.total} XAF</span>
         </p>
 
+        {isLoadingMethods && <SavedMethodsSkeleton />}
+
+        {!isLoadingMethods && savedMethods && savedMethods.length > 0 && (
+          <fieldset className="mb-4 space-y-2">
+            <legend className="mb-2 text-sm font-medium text-ink">Your saved payment methods</legend>
+            {savedMethods.map((method) => (
+              <label
+                key={method.id}
+                className={`flex cursor-pointer items-center gap-3 rounded-md border border-crease px-3 py-2 text-sm ${
+                  effectiveMethodId === method.id ? "border-navy bg-steam" : ""
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="payment-method"
+                  value={method.id}
+                  checked={effectiveMethodId === method.id}
+                  onChange={() => selectSavedMethod(method.id)}
+                />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy">
+                  <CreditCard className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium text-ink">{method.display_label}</span>
+                  <span className="block text-xs text-ink-muted">{gatewayLabel(method.gateway)}</span>
+                </span>
+                {method.is_default && (
+                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-gold-50 px-2.5 py-1 text-xs font-medium text-gold">
+                    <Star className="h-3 w-3 fill-current" aria-hidden="true" />
+                    Default
+                  </span>
+                )}
+              </label>
+            ))}
+            <Link href="/settings/payments" className="inline-block text-xs font-medium text-navy hover:underline">
+              Manage payment methods
+            </Link>
+          </fieldset>
+        )}
+
         <fieldset className="space-y-2">
-          <legend className="mb-2 text-sm font-medium text-ink">Payment method</legend>
+          <legend className="mb-2 text-sm font-medium text-ink">
+            {savedMethods && savedMethods.length > 0 ? "Or pay another way" : "Payment method"}
+          </legend>
           {GATEWAYS.map((g) => (
             <label
               key={g.value}
               className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${
                 g.ready ? "cursor-pointer border-crease" : "cursor-not-allowed border-crease text-ink-muted"
-              } ${gateway === g.value ? "border-navy bg-steam" : ""}`}
+              } ${effectiveMethodId == null && gateway === g.value ? "border-navy bg-steam" : ""}`}
             >
               <input
                 type="radio"
                 name="gateway"
                 value={g.value}
-                checked={gateway === g.value}
+                checked={effectiveMethodId == null && gateway === g.value}
                 disabled={!g.ready}
-                onChange={() => setGateway(g.value)}
+                onChange={() => selectGateway(g.value)}
               />
               {g.ready ? (
                 <CircleCheck className="h-4 w-4 text-status-ready-text" aria-hidden="true" />
