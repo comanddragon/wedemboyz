@@ -7,7 +7,7 @@ __pycache__/
 node_modules/
 .next/
 frontend/.env
-frontend/.env.local
+frontend/.files/*
 *.zip
 .idea/
 .vscode/
