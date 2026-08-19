@@ -47,6 +47,10 @@ class PaymentMethodListCreateView(generics.ListCreateAPIView):
 
     serializer_class = PaymentMethodSerializer
     permission_classes = [permissions.IsAuthenticated]
+    # A user only ever has a handful of payment methods, and the frontend
+    # (paymentsApi.listPaymentMethods) expects a bare array back — same
+    # reasoning as SubscriptionListCreateView.
+    pagination_class = None
 
     def get_queryset(self):
         return PaymentMethod.objects.filter(user=self.request.user)
