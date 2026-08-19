@@ -71,6 +71,11 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # DEV-ONLY: overwrites an order's total to a small fixed amount for the
+    # duration of a payment-initiation request only, so CamPay's sandbox can
+    # be exercised without moving real-sized money. Inert unless
+    # settings.DEBUG is True — see apps/payments/middleware.py docstring.
+    "apps.payments.middleware.DevTestPaymentAmountMiddleware",
 ]
 
 TEMPLATES = [
