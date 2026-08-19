@@ -7,6 +7,7 @@ import {
     LayoutDashboard,
     MessageCircle,
     Package,
+    Receipt,
     Settings,
     ShoppingBag,
     Sparkles,
@@ -25,6 +26,7 @@ const PRIMARY_LINKS = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/book", label: "Book", icon: ShoppingBag },
     { href: "/orders", label: "Orders", icon: Package },
+    { href: "/payments", label: "Payments", icon: Receipt },
     { href: "/chat", label: "Chat", icon: MessageCircle },
     { href: "/loyalty", label: "Loyalty", icon: Sparkles },
 ];
