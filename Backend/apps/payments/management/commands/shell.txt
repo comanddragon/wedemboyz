@@ -1,0 +1,6 @@
+import jwt
+
+signature = "eyJhbGciOiJIUzI1NiIsImFwcCI6IldlZGVtYm95eiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODcxMDQ4MjYsIm5iZiI6MTc4NzEwNDgyNiwiZXhwIjoxNzg3MTA4NDI2LCJzb3VyY2UiOiJDYW1QYXkifQ.n5VAJjXjPnPjOUiUFn-cRQfQ_Ca9gdqw2a4yQnCSl8w"
+webhook_key = "OSA3bM6PAiB9z-HlUSrPiveu0R1ajevi0NIpc1oeHxHRcePE8m03ZKSmg9oTroKPjpjjT_7L9ITe4Hz33sICnw"
+claims = jwt.decode(signature, webhook_key, algorithms=["HS256"])
+print(claims)

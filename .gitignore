@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+*.sqlite3
+/Backend/staticfiles/
+node_modules/
+.next/
+frontend/.env
+frontend/.env.local
+*.zip
+.idea/
+.vscode/
+.DS_Store
+/Files/*

@@ -1,0 +1,469 @@
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/700.css";
+@import "tailwindcss";
+
+@theme {
+    --color-navy: #192645;
+    --color-navy-50: #EEF0F4;
+    --color-navy-600: #22335C;
+
+    --color-gold: #C8922F;
+    --color-gold-50: #FBF3E6;
+    --color-gold-600: #8A5A0F;
+
+    --color-paper: #FAFAF7;
+    --color-crease: #DDE1E5;
+    --color-steam: #E4E8EC;
+
+    --color-ink: #262B33;
+    --color-ink-muted: #6B7684;
+
+    --color-status-pending-bg: #E4E8EC;
+    --color-status-pending-text: #4B5563;
+
+    --color-status-progress-bg: #FBF3E6;
+    --color-status-progress-text: #8A5A0F;
+
+    --color-status-ready-bg: #EAF3EC;
+    --color-status-ready-text: #256B41;
+
+    --color-status-cancelled-bg: #FBEAEA;
+    --color-status-cancelled-text: #9B3A3A;
+
+    /*
+      Fold Line — expanded palette (see CLAUDE.md "Visual Language").
+      Navy/gold stay the structural anchors; these four are the
+      "fresh laundry and sunshine" supporting cast, one per service
+      type, used for wayfinding across pricing/booking/service icons.
+    */
+    --color-coral: #E15A3B;
+    --color-coral-50: #FDECE7;
+    --color-coral-600: #A83A1E;
+
+    --color-turquoise: #1D8F8C;
+    --color-turquoise-50: #E5F4F3;
+    --color-turquoise-600: #146F6D;
+
+    --color-sun: #E8A324;
+    --color-sun-50: #FCF1DA;
+    --color-sun-600: #8A5A0F;
+
+    --color-clothesline: #4C9A63;
+    --color-clothesline-50: #E9F5EC;
+    --color-clothesline-600: #35784A;
+
+    /* Fonts */
+    --font-sans:
+            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            "Helvetica Neue", Arial, sans-serif;
+
+    --font-display:
+            "Space Grotesk", -apple-system, "Segoe UI", sans-serif;
+
+    /* Radius */
+    --radius-card: 10px;
+}
+
+/* Mobile density — Tailwind's spacing and type scale are rem-based, so
+   nudging the root font-size down on phone-width screens shrinks padding,
+   gaps, and text together, proportionally, everywhere. Deliberately not
+   touching the viewport meta tag's initial-scale/user-scalable (Next.js's
+   default there is already correct) — that would disable pinch-to-zoom,
+   which is an accessibility regression, not a density fix. */
+@media (max-width: 640px) {
+    html {
+        font-size: 14px;
+    }
+}
+
+/* ============================================================
+   "Atelier" landing page — a deliberate departure from the site's
+   playful Fold Line system, scoped entirely via the .atelier class so
+   nothing here leaks into /admin, /dashboard, or the rest of the public
+   site. Moved here from components/marketing-v3/atelier.css during a
+   consolidation pass (single global stylesheet, no page-level CSS
+   imports) — selectors and output are unchanged.
+
+   Direction: mature, editorial, quietly confident — a garment atelier's
+   ledger, not a startup's brochure. Space Grotesk (the site's existing
+   display face) is kept exactly as-is; everything else — palette, spacing,
+   motion, structure — is built fresh for this brief.
+   ============================================================ */
+
+.atelier {
+    /* Paper ground. --at-ink now names the paper background (kept for
+       minimal diffs across components); --at-ivory carries the primary
+       (dark) text color; --at-panel is a faint warm-grey for alternating
+       section bands. */
+    --at-ink: #faf8f3;
+    --at-ink-soft: #f2efe6;
+    --at-panel: #f3f0e8;
+    --at-ivory: #1c1a16;
+    --at-ivory-dim: #4a463d;
+    --at-slate: #6b665c;
+    --at-brass: #a97c2f;
+    --at-brass-bright: #8a611f;
+    --at-line: rgba(28, 26, 22, 0.1);
+    --at-line-strong: rgba(28, 26, 22, 0.2);
+
+    background: var(--at-ink);
+    color: var(--at-ivory);
+    font-family: var(--font-sans);
+}
+
+.atelier ::selection {
+    background: var(--at-brass);
+    color: #faf8f3;
+}
+
+.atelier .at-display {
+    font-family: var(--font-display);
+}
+
+.atelier .at-serif-num {
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Hairline rule used as the page's recurring signature device — a single
+   thread that draws itself in on scroll, standing in for the "crease" motif
+   without borrowing its playful execution. */
+.atelier .at-thread {
+    position: relative;
+    overflow: hidden;
+}
+.atelier .at-thread::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+            90deg,
+            transparent,
+            var(--at-brass) 45%,
+            var(--at-brass) 55%,
+            transparent
+    );
+    transform: translateX(-101%);
+}
+.atelier .at-thread.is-drawn::after {
+    transform: translateX(0%);
+    transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes at-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(22px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes at-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes at-draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes at-drift {
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+    50% {
+        transform: translate(0, -14px);
+    }
+}
+
+@keyframes at-marquee {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+@keyframes at-shimmer {
+    from {
+        background-position: 200% 0;
+    }
+    to {
+        background-position: -200% 0;
+    }
+}
+
+.atelier .at-animate-in {
+    opacity: 0;
+    animation: at-fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.atelier .at-marquee-track {
+    animation: at-marquee 32s linear infinite;
+}
+
+.atelier .at-drift {
+    animation: at-drift 7s ease-in-out infinite;
+}
+
+.atelier .at-shimmer-text {
+    background: linear-gradient(
+            100deg,
+            var(--color-navy) 0%,
+            var(--at-brass-bright) 30%,
+            var(--at-ivory) 55%,
+            var(--at-brass-bright) 80%,
+            var(--color-navy) 100%
+    );
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: at-shimmer 9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .atelier .at-animate-in {
+        opacity: 1;
+        animation: none;
+    }
+    .atelier .at-thread::after {
+        transition: none;
+    }
+    .atelier .at-marquee-track,
+    .atelier .at-drift,
+    .atelier .at-shimmer-text {
+        animation: none;
+    }
+    .atelier .at-shimmer-text {
+        color: var(--at-brass-bright);
+        background: none;
+        -webkit-background-clip: unset;
+        background-clip: unset;
+    }
+}
+
+.atelier .at-btn-primary {
+    background: var(--color-navy);
+    color: var(--color-gold-50);
+}
+.atelier .at-btn-primary:hover {
+    background: var(--color-navy-600);
+    color: var(--color-gold);
+}
+
+.atelier .at-focus:focus-visible {
+    outline: 2px solid var(--at-brass-bright);
+    outline-offset: 3px;
+}
+
+/* ============================================================
+   Pricing page motion & background-effects layer. Scoped under
+   .pricing-page so nothing here leaks into the rest of the site — moved
+   here from components/marketing/pricing.css during a consolidation pass
+   (single global stylesheet, no page-level CSS imports). While moving it,
+   the .pf-* helper classes were also nested under .pricing-page (they
+   were bare global selectors before, which only worked by luck because
+   nothing else on the site happens to use those names) — every one of
+   them is only ever rendered inside PricingSections.tsx / PricingReveal.tsx,
+   both of which only render inside the .pricing-page wrapper, so this is a
+   scoping tightening, not a behavior change. Pairs with PricingSections.tsx
+   — see CLAUDE.md "Motion & Interactivity" for the brief this answers to
+   (springy, tactile, never mechanical; every animated piece has a
+   reduced-motion fallback).
+   ============================================================ */
+
+.pricing-page {
+    position: relative;
+    isolation: isolate;
+}
+
+/* ---------- Drifting colour blobs (hero + membership backdrops) ---------- */
+
+.pricing-page .pf-blob-field {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.pricing-page .pf-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.35;
+    will-change: transform;
+}
+
+@keyframes pf-drift-a {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(30px, -40px) scale(1.08); }
+}
+@keyframes pf-drift-b {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-40px, 30px) scale(0.95); }
+}
+@keyframes pf-drift-c {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(20px, 25px) scale(1.05); }
+}
+
+.pricing-page .pf-blob-a { animation: pf-drift-a 16s ease-in-out infinite; }
+.pricing-page .pf-blob-b { animation: pf-drift-b 20s ease-in-out infinite; }
+.pricing-page .pf-blob-c { animation: pf-drift-c 18s ease-in-out infinite; }
+
+/* ---------- Rising bubbles (subtle, hero only) ---------- */
+
+@keyframes pf-bubble-rise {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 0.5; }
+    90% { opacity: 0.35; }
+    100% { transform: translateY(-220px) translateX(12px); opacity: 0; }
+}
+
+.pricing-page .pf-bubble {
+    position: absolute;
+    bottom: 0;
+    border-radius: 50%;
+    border: 1.5px solid color-mix(in srgb, var(--color-gold) 45%, transparent);
+    background: color-mix(in srgb, var(--color-gold) 8%, transparent);
+    animation: pf-bubble-rise 9s ease-in infinite;
+}
+
+/* ---------- Per-kilo service cards: colour-coded top bar + lift ---------- */
+
+.pricing-page .pf-service-card {
+    position: relative;
+    overflow: hidden;
+    transition:
+        transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.35s ease;
+}
+.pricing-page .pf-service-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: var(--pf-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pricing-page .pf-service-card:hover::before,
+.pricing-page .pf-service-card:focus-within::before {
+    transform: scaleX(1);
+}
+.pricing-page .pf-service-card:hover,
+.pricing-page .pf-service-card:focus-within {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 48px -20px var(--pf-accent-shadow);
+    border-color: color-mix(in srgb, var(--pf-accent) 45%, var(--color-crease));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pricing-page .pf-service-card,
+    .pricing-page .pf-service-card::before {
+        transition: none;
+    }
+    .pricing-page .pf-service-card:hover {
+        transform: none;
+    }
+}
+
+/* ---------- Crease divider that presses into place on scroll ---------- */
+
+.pricing-page .pf-crease {
+    position: relative;
+    height: 3px;
+}
+.pricing-page .pf-crease::before,
+.pricing-page .pf-crease::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    height: 1px;
+    width: 0%;
+    background: var(--color-crease);
+    transform: translateX(-50%);
+    transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pricing-page .pf-crease::after {
+    top: 2px;
+}
+.pricing-page .pf-crease.is-pressed::before,
+.pricing-page .pf-crease.is-pressed::after {
+    width: 100%;
+}
+
+/* ---------- Shimmer sweep for the "Most loved" badge ---------- */
+
+@keyframes pf-shimmer {
+    0% { background-position: -150% 0; }
+    100% { background-position: 250% 0; }
+}
+
+.pricing-page .pf-shimmer {
+    background-image: linear-gradient(
+        100deg,
+        transparent 35%,
+        rgba(255, 255, 255, 0.55) 50%,
+        transparent 65%
+    );
+    background-size: 250% 100%;
+    animation: pf-shimmer 3.2s ease-in-out infinite;
+}
+
+/* ---------- Soft glow pulse behind the featured membership card ---------- */
+
+@keyframes pf-glow-pulse {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.04); }
+}
+
+.pricing-page .pf-glow {
+    animation: pf-glow-pulse 5s ease-in-out infinite;
+}
+
+/* ---------- Price pop when the billing toggle changes ---------- */
+
+@keyframes pf-price-pop {
+    0% { opacity: 0; transform: translateY(6px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.pricing-page .pf-price-pop {
+    animation: pf-price-pop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------- Reduced motion: keep state changes, drop the movement ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .pricing-page .pf-blob-a,
+    .pricing-page .pf-blob-b,
+    .pricing-page .pf-blob-c,
+    .pricing-page .pf-bubble,
+    .pricing-page .pf-shimmer,
+    .pricing-page .pf-glow,
+    .pricing-page .pf-price-pop {
+        animation: none !important;
+    }
+    .pricing-page .pf-crease::before,
+    .pricing-page .pf-crease::after {
+        transition: none;
+        width: 100%;
+    }
+}
