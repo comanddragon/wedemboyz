@@ -8,6 +8,7 @@ node_modules/
 .next/
 frontend/.env
 frontend/.files/*
+frontend/public/
 *.zip
 .idea/
 .vscode/

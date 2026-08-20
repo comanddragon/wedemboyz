@@ -1,4 +1,3 @@
-faker
 -r requirements/production.txt
 -r requirements/development.txt
 -r requirements/base.txt

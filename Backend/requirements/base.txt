@@ -18,3 +18,4 @@ python-decouple>=3.8
 dj-database-url>=2.1
 africastalking>=1.2
 requests>=2.31
+faker
