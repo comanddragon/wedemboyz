@@ -43,3 +43,5 @@ clone this repo into your sandbox
 https://github.com/comanddragon/wedemboyz
 how we ship changes is you send the new and edited files in a zip folder respecting their directories. and a commit message. apply the same commit in your sandboxed version.
 as we work i'll notify you if i've made external changes then you'll just git pull.
+
+if you need help ask questions to make sure you grasp what is required of you

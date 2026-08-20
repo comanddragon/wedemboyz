@@ -34,16 +34,13 @@ function MethodsSkeleton() {
     );
 }
 
-const MOBILE_MONEY_GATEWAYS: PaymentGateway[] = ["MTN_MOMO", "ORANGE_MONEY"];
-
 export default function SettingsPaymentsPage() {
     const queryClient = useQueryClient();
     const [gateway, setGateway] = useState<PaymentGateway>("MTN_MOMO");
-    const [label, setLabel] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const isMobileMoney = MOBILE_MONEY_GATEWAYS.includes(gateway);
+    const requiresPhoneNumber = gateway === "MTN_MOMO" || gateway === "ORANGE_MONEY";
 
     const {
         data: methods,
@@ -60,14 +57,9 @@ export default function SettingsPaymentsPage() {
         mutationFn: () =>
             paymentsApi.addPaymentMethod({
                 gateway,
-                display_label: label,
-                // provider_token holds the phone number CamPay pushes the
-                // MoMo/Orange prompt to whenever this saved method is
-                // chosen at checkout — meaningless for STRIPE, so omitted.
-                ...(isMobileMoney ? { provider_token: phoneNumber } : {}),
+                phone_number: requiresPhoneNumber ? phoneNumber : undefined,
             }),
         onSuccess: () => {
-            setLabel("");
             setPhoneNumber("");
             setErrorMessage(null);
             queryClient.invalidateQueries({ queryKey: queryKeys.payments.methods });
@@ -111,7 +103,14 @@ export default function SettingsPaymentsPage() {
                 >
                     <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
                         <Field label="Gateway">
-                            <Select value={gateway} onChange={(e) => setGateway(e.target.value as PaymentGateway)}>
+                            <Select
+                                value={gateway}
+                                onChange={(e) => {
+                                    const value = e.target.value as PaymentGateway;
+                                    setGateway(value);
+                                    if (value !== "MTN_MOMO" && value !== "ORANGE_MONEY") setPhoneNumber("");
+                                }}
+                            >
                                 {GATEWAYS.map((g) => (
                                     <option key={g.value} value={g.value}>
                                         {g.label}
@@ -119,21 +118,13 @@ export default function SettingsPaymentsPage() {
                                 ))}
                             </Select>
                         </Field>
-                        <Field label="Label">
-                            <Input
-                                value={label}
-                                onChange={(e) => setLabel(e.target.value)}
-                                placeholder="e.g. MTN •••• 4521"
-                                required
-                            />
-                        </Field>
-                        {isMobileMoney && (
+                        {requiresPhoneNumber && (
                             <Field label="Phone number">
                                 <Input
                                     type="tel"
                                     value={phoneNumber}
                                     onChange={(e) => setPhoneNumber(e.target.value)}
-                                    placeholder="e.g. 6XX XXX XXX"
+                                    placeholder="e.g. 677300001"
                                     required
                                 />
                             </Field>
@@ -141,7 +132,7 @@ export default function SettingsPaymentsPage() {
                     </div>
                     <Button
                         type="submit"
-                        disabled={addMutation.isPending || !label.trim() || (isMobileMoney && !phoneNumber.trim())}
+                        disabled={addMutation.isPending || (requiresPhoneNumber && !phoneNumber.trim())}
                     >
                         {addMutation.isPending ? "Adding..." : "Add payment method"}
                     </Button>

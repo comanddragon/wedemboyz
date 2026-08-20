@@ -157,6 +157,7 @@ class SubscriptionCheckoutView(APIView):
                 phone_number=phone_number,
                 description=f"WEDEMBOYZ Lavomatique — {subscription.get_plan_display()}",
                 external_reference=f"subscription-{subscription.pk}",
+                user=subscription.user,
             )
         except campay_gateway.CamPayAPIError as exc:
             raise ValidationError({"gateway": str(exc)})

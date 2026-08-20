@@ -22,11 +22,17 @@ stripe_gateway/paypal_gateway):
 
 Env vars: CAMPAY_APP_USERNAME, CAMPAY_APP_PASSWORD, CAMPAY_ENVIRONMENT
 ("DEV" or "PROD"), CAMPAY_WEBHOOK_KEY (optional).
+
+initiate_collection() calls CamPay's REST /api/collect/ endpoint directly
+(rather than the bundled `campay` SDK's Client.initCollect(), which
+hardcodes its request body to amount/currency/from/description/
+external_reference and silently ignores anything else) so it can also pass
+the paying user's identity through as optional CamPay metadata
+(external_user/extra_email/extra_first_name/extra_last_name).
 """
 
 from campay.sdk import Client as CamPayClient
 from django.conf import settings
-
 
 class CamPayConfigurationError(Exception):
     """Raised when CAMPAY_APP_USERNAME/CAMPAY_APP_PASSWORD aren't set — a
@@ -65,22 +71,61 @@ def normalize_phone_number(phone_number: str) -> str:
     return digits
 
 
-def initiate_collection(*, amount, phone_number: str, description: str, external_reference: str) -> dict:
+def initiate_collection(
+    *, amount, phone_number: str, description: str, external_reference: str, user=None
+) -> dict:
     """Pushes a MoMo/OM collection prompt to the customer's phone and
     returns immediately. Returns {"reference": ..., "ussd_code": ...,
-    "operator": "mtn"|"orange"}. Raises CamPayAPIError on failure."""
-    client = _client()
-    result = client.initCollect(
-        {
-            "amount": str(amount),
-            "currency": "XAF",
-            "from": normalize_phone_number(phone_number),
-            "description": description,
-            "external_reference": str(external_reference),
-        }
-    )
+    "operator": "mtn"|"orange"}. Raises CamPayAPIError on failure.
 
-    if not result or result.get("status") == "FAILED" or "reference" not in result:
+    If `user` is given, also forwards their identity to CamPay as optional
+    metadata on the transaction (external_user/extra_email/
+    extra_first_name/extra_last_name — visible on the CamPay dashboard
+    transaction detail, doesn't affect the charge itself). The bundled
+    `campay` SDK's Client.initCollect() hardcodes its request body to only
+    amount/currency/from/description/external_reference and silently drops
+    anything else, so this calls CamPay's REST /api/collect/ endpoint
+    directly instead, reusing the SDK only for host resolution/config and
+    Client.get_token()."""
+    client = _client()
+    token = client.get_token().get("token")
+    if not token:
+        raise CamPayAPIError(
+            "Token error. Please check your App Username and App password. Also check your environment"
+        )
+
+    payload = {
+        "amount": str(amount),
+        "currency": "XAF",
+        "from": normalize_phone_number(phone_number),
+        "description": description,
+        "external_reference": str(external_reference),
+    }
+    if user is not None:
+        if getattr(user, "pk", None):
+            payload["external_user"] = str(user.pk)
+        if getattr(user, "email", None):
+            payload["email"] = user.email
+        if getattr(user, "first_name", None):
+            payload["first_name"] = user.first_name
+        if getattr(user, "last_name", None):
+            payload["last_name"] = user.last_name
+
+    import requests
+
+    try:
+        response = requests.post(
+            f"{client.host}/api/collect/",
+            json=payload,
+            headers={"Authorization": f"Token {token}", "Content-Type": "application/json"},
+            verify=False,
+            timeout=15,
+        )
+        result = response.json()
+    except (requests.RequestException, ValueError) as exc:
+        raise CamPayAPIError(f"CamPay collection request failed: {exc}") from exc
+
+    if response.status_code != 200 or not result or "reference" not in result:
         message = (result or {}).get("message", "CamPay collection request failed.")
         raise CamPayAPIError(message)
 
@@ -122,19 +167,12 @@ def verify_webhook_signature(payload: dict, signature: str) -> bool:
 
 
 def parse_webhook_status(payload: dict) -> str:
-    """Maps CamPay's status string to our PaymentStatus. CamPay reports an
-    unconfirmed prompt that timed out on the customer's phone as EXPIRED
-    (distinct from FAILED, which covers rejections/insufficient funds/etc)
-    — both terminate the collection attempt the same way from our side, so
-    both map to PaymentStatus.FAILED. Without this, an EXPIRED webhook fell
-    through to "" (falsy), which process_webhook treats as "no status
-    change" — the Payment silently stayed PENDING forever."""
+    """Maps CamPay's status string to our PaymentStatus."""
     from core.constants import PaymentStatus
 
     return {
         "SUCCESSFUL": PaymentStatus.SUCCEEDED,
         "FAILED": PaymentStatus.FAILED,
-        "EXPIRED": PaymentStatus.FAILED,
         "PENDING": PaymentStatus.PENDING,
     }.get(payload.get("status", ""), "")
 

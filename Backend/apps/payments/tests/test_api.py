@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from rest_framework.test import APIClient
 
-from apps.payments.models import Subscription
+from apps.payments.models import PaymentMethod, Subscription
 
 pytestmark = pytest.mark.django_db
 
@@ -107,3 +107,138 @@ class TestSubscriptionCheckoutGatewayValidation:
         )
         resp = client.post(f"/api/v1/subscriptions/{sub.pk}/checkout/", {"gateway": "STRIPE"}, format="json")
         assert resp.status_code == 400
+
+
+class TestPaymentMethodPhoneNumber:
+    """A saved MTN/Orange payment method must carry its own phone_number
+    so CamPay is dialed on it — not silently falling back to the account's
+    registered number (the bug this covers)."""
+
+    def _order(self, user, total=25):
+        from apps.orders.models import Order
+
+        return Order.objects.create(
+            user=user,
+            pickup_address="123 Main St",
+            delivery_address="123 Main St",
+            total_amount=total,
+        )
+
+    def test_add_method_requires_phone_number_for_momo(self, auth_client):
+        client, _ = auth_client
+        resp = client.post(
+            "/api/v1/payments/methods/",
+            {"gateway": "MTN_MOMO"},
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert "phone_number" in resp.data["error"]["detail"]
+
+    def test_add_method_phone_number_not_echoed_back(self, auth_client):
+        client, _ = auth_client
+        resp = client.post(
+            "/api/v1/payments/methods/",
+            {"gateway": "MTN_MOMO", "phone_number": "237677300001"},
+            format="json",
+        )
+        assert resp.status_code == 201, resp.data
+        assert "phone_number" not in resp.data
+
+    def test_add_method_label_is_computed_from_gateway_and_number(self, auth_client):
+        client, _ = auth_client
+        resp = client.post(
+            "/api/v1/payments/methods/",
+            {"gateway": "ORANGE_MONEY", "phone_number": "237699005249"},
+            format="json",
+        )
+        assert resp.status_code == 201, resp.data
+        assert resp.data["display_label"] == "Orange •••• 5249"
+
+    def test_add_method_ignores_a_client_supplied_label(self, auth_client):
+        client, _ = auth_client
+        resp = client.post(
+            "/api/v1/payments/methods/",
+            {"gateway": "MTN_MOMO", "phone_number": "237655900002", "display_label": "Whatever I want"},
+            format="json",
+        )
+        assert resp.status_code == 201, resp.data
+        assert resp.data["display_label"] == "MTN •••• 0002"
+
+    def test_add_method_label_for_non_phone_gateway(self, auth_client):
+        client, _ = auth_client
+        resp = client.post("/api/v1/payments/methods/", {"gateway": "CASH"}, format="json")
+        assert resp.status_code == 201, resp.data
+        assert resp.data["display_label"] == "Cash on Delivery/Pickup"
+
+    @patch("services.billing.campay_gateway.initiate_collection")
+    def test_selecting_saved_method_uses_its_own_number_not_account_number(self, mock_initiate, auth_client):
+        mock_initiate.return_value = {"reference": "cp_ref_123", "ussd_code": "*126#"}
+        client, user = auth_client  # account phone_number == "237677200001"
+        method = PaymentMethod.objects.create(
+            user=user,
+            gateway="MTN_MOMO",
+            display_label="MTN •••• 4521",
+            phone_number="237655900002",
+        )
+        order = self._order(user)
+
+        resp = client.post(
+            "/api/v1/payments/",
+            {"order": order.pk, "gateway": "MTN_MOMO", "method": method.pk},
+            format="json",
+        )
+        assert resp.status_code == 201, resp.data
+        assert mock_initiate.call_args.kwargs["phone_number"] == "237655900002"
+
+    @patch("services.billing.campay_gateway.initiate_collection")
+    def test_explicit_phone_number_overrides_saved_method_number(self, mock_initiate, auth_client):
+        mock_initiate.return_value = {"reference": "cp_ref_456", "ussd_code": "*126#"}
+        client, user = auth_client
+        method = PaymentMethod.objects.create(
+            user=user,
+            gateway="MTN_MOMO",
+            display_label="MTN •••• 4521",
+            phone_number="237655900002",
+        )
+        order = self._order(user)
+
+        resp = client.post(
+            "/api/v1/payments/",
+            {
+                "order": order.pk,
+                "gateway": "MTN_MOMO",
+                "method": method.pk,
+                "phone_number": "237699111222",
+            },
+            format="json",
+        )
+        assert resp.status_code == 201, resp.data
+        assert mock_initiate.call_args.kwargs["phone_number"] == "237699111222"
+
+    @patch("services.billing.campay_gateway.initiate_collection")
+    def test_no_method_or_phone_falls_back_to_account_number(self, mock_initiate, auth_client):
+        mock_initiate.return_value = {"reference": "cp_ref_789", "ussd_code": "*126#"}
+        client, user = auth_client  # account phone_number == "237677200001"
+        order = self._order(user)
+
+        resp = client.post(
+            "/api/v1/payments/",
+            {"order": order.pk, "gateway": "MTN_MOMO"},
+            format="json",
+        )
+        assert resp.status_code == 201, resp.data
+        assert mock_initiate.call_args.kwargs["phone_number"] == "237677200001"
+
+    @patch("services.billing.campay_gateway.initiate_collection")
+    def test_paying_user_forwarded_to_campay(self, mock_initiate, auth_client):
+        mock_initiate.return_value = {"reference": "cp_ref_999", "ussd_code": "*126#"}
+        client, user = auth_client
+        order = self._order(user)
+
+        resp = client.post(
+            "/api/v1/payments/",
+            {"order": order.pk, "gateway": "MTN_MOMO"},
+            format="json",
+        )
+        assert resp.status_code == 201, resp.data
+        assert mock_initiate.call_args.kwargs["user"] == user

@@ -4,9 +4,25 @@ import pytest
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from apps.payments.models import Payment, Subscription
+from apps.payments.models import Payment, Subscription, generate_display_label
 
 pytestmark = pytest.mark.django_db
+
+
+class TestGenerateDisplayLabel:
+    def test_mtn_momo_masks_to_last_four_digits(self):
+        assert generate_display_label("MTN_MOMO", "237655900002") == "MTN •••• 0002"
+
+    def test_orange_money_masks_to_last_four_digits(self):
+        assert generate_display_label("ORANGE_MONEY", "237699005249") == "Orange •••• 5249"
+
+    def test_mtn_momo_without_a_number_falls_back_to_gateway_name(self):
+        # Legacy rows created before phone_number existed.
+        assert generate_display_label("MTN_MOMO", "") == "MTN Mobile Money"
+
+    def test_non_phone_gateway_uses_its_display_name(self):
+        assert generate_display_label("CASH", "") == "Cash on Delivery/Pickup"
+        assert generate_display_label("STRIPE", "") == "Card (Stripe)"
 
 
 def _subscription(user, **kwargs):

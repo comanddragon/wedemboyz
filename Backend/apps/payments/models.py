@@ -10,9 +10,22 @@ class PaymentMethod(TimeStampedModel):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="payment_methods"
     )
     gateway = models.CharField(max_length=20, choices=PaymentGateway.choices)
-    # Never store raw card/MoMo numbers — only what's needed to display/identify it.
+    # Never store raw card numbers — but for MTN_MOMO/ORANGE_MONEY the
+    # "instrument" IS the phone number, and CamPay needs the real digits to
+    # push a collection request to it. Blank for gateways that don't need
+    # one (CASH, STRIPE, PAYPAL, CREDIT), or for legacy rows created before
+    # this field existed — those fall back to the user's account
+    # phone_number at payment time (see PaymentInitiateSerializer.create).
+    phone_number = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Required for MTN_MOMO/ORANGE_MONEY — the number CamPay will push the collection request to.",
+    )
+    # Computed server-side (see generate_display_label below) from
+    # gateway + phone_number whenever either changes — never accepted as
+    # client input, so it can't drift from what's actually stored/dialed.
     display_label = models.CharField(
-        max_length=50, help_text="e.g. 'MTN •••• 4521' or 'Visa •••• 1234'"
+        max_length=50, editable=False, help_text="Computed, e.g. 'MTN •••• 4521' or 'Orange •••• 5249'."
     )
     provider_token = models.CharField(
         max_length=255,
@@ -26,6 +39,19 @@ class PaymentMethod(TimeStampedModel):
 
     def __str__(self):
         return f"{self.display_label} ({self.user})"
+
+
+def generate_display_label(gateway: str, phone_number: str) -> str:
+    """The label shown for a saved payment method — computed server-side
+    (never user-supplied) so it can never drift from the number CamPay
+    will actually dial. 'MTN •••• 5249' / 'Orange •••• 5249' for mobile
+    money (last 4 digits of the stored phone_number); the gateway's own
+    display name for anything else (Cash, Card, etc — no number to mask)."""
+    if gateway in (PaymentGateway.MTN_MOMO, PaymentGateway.ORANGE_MONEY) and phone_number:
+        network = "MTN" if gateway == PaymentGateway.MTN_MOMO else "Orange"
+        last_four = phone_number[-4:]
+        return f"{network} •••• {last_four}"
+    return PaymentGateway(gateway).label
 
 
 class Payment(TimeStampedModel):

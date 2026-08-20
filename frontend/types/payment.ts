@@ -10,10 +10,16 @@ export interface PaymentMethod {
   created_at: string;
 }
 
-/** Payload for POST /payments/methods/ — provider_token is write-only. */
+/** Payload for POST /payments/methods/ — display_label is computed
+ * server-side from gateway + phone_number (see
+ * apps.payments.models.generate_display_label) and is never accepted as
+ * input; phone_number and provider_token are write-only (never returned).
+ * phone_number is required when gateway is MTN_MOMO/ORANGE_MONEY — it's
+ * the number CamPay will push the collection request to whenever this
+ * saved method is used. */
 export interface AddPaymentMethodInput {
   gateway: PaymentGateway;
-  display_label: string;
+  phone_number?: string;
   provider_token?: string;
 }
 

@@ -2,38 +2,43 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from apps.orders.models import Order
-from apps.payments.models import Payment, PaymentMethod
+from apps.payments.models import Payment, PaymentMethod, generate_display_label
 from core.constants import PaymentGateway, PaymentStatus
 User = get_user_model()
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentMethod
-        fields = ["id", "gateway", "display_label", "provider_token", "is_default", "created_at"]
-        extra_kwargs = {"provider_token": {"write_only": True}}
-        read_only_fields = ["id", "created_at"]
+        fields = ["id", "gateway", "display_label", "phone_number", "provider_token", "is_default", "created_at"]
+        # phone_number never needs to round-trip back to the client — the
+        # frontend only needs id/gateway/display_label to render the
+        # picker; the actual number is resolved server-side at payment
+        # time (see PaymentInitiateSerializer.create). display_label is
+        # computed (see generate_display_label) from gateway + phone_number
+        # so it can never say something other than what's actually stored.
+        extra_kwargs = {"provider_token": {"write_only": True}, "phone_number": {"write_only": True}}
+        read_only_fields = ["id", "display_label", "created_at"]
 
     def validate(self, attrs):
-        # For MTN_MOMO/ORANGE_MONEY there's no gateway-side "customer id" —
-        # provider_token instead holds the phone number CamPay should push
-        # the collection prompt to whenever this saved method is chosen at
-        # checkout (see PaymentInitiateSerializer.create()). Without a
-        # number stored here, selecting this method would silently fall
-        # back to the account's phone number regardless of what the
-        # customer picked, exactly like the old default-only bug.
         gateway = attrs.get("gateway", getattr(self.instance, "gateway", None))
-        provider_token = attrs.get("provider_token", getattr(self.instance, "provider_token", ""))
-
-        if gateway in (PaymentGateway.MTN_MOMO, PaymentGateway.ORANGE_MONEY):
-            if not provider_token:
-                raise serializers.ValidationError(
-                    {"provider_token": "A phone number is required for MTN Mobile Money / Orange Money."}
-                )
-            from services.billing.campay_gateway import normalize_phone_number
-
-            attrs["provider_token"] = normalize_phone_number(provider_token)
-
+        phone_number = attrs.get("phone_number", getattr(self.instance, "phone_number", ""))
+        if gateway in (PaymentGateway.MTN_MOMO, PaymentGateway.ORANGE_MONEY) and not phone_number:
+            raise serializers.ValidationError(
+                {"phone_number": "A phone number is required for MTN Mobile Money / Orange Money methods."}
+            )
         return attrs
+
+    def create(self, validated_data):
+        validated_data["display_label"] = generate_display_label(
+            validated_data["gateway"], validated_data.get("phone_number", "")
+        )
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        gateway = validated_data.get("gateway", instance.gateway)
+        phone_number = validated_data.get("phone_number", instance.phone_number)
+        validated_data["display_label"] = generate_display_label(gateway, phone_number)
+        return super().update(instance, validated_data)
 
 class OrderCustomerSerializer(serializers.ModelSerializer):
     """Nested summary of who placed the order — mirrors
@@ -134,12 +139,14 @@ class PaymentInitiateSerializer(serializers.ModelSerializer):
         if gateway in (PaymentGateway.MTN_MOMO, PaymentGateway.ORANGE_MONEY):
             from services.billing import campay_gateway
 
-            # Priority: an explicit phone_number on this request (customer
-            # typed a fresh number at checkout) > the saved method's stored
-            # number (customer picked one of their saved MoMo/Orange
-            # methods) > the account's own phone number as a last resort.
-            method_phone_number = method.provider_token if method is not None else ""
-            phone_number = phone_number or method_phone_number or getattr(order.user, "phone_number", "")
+            # Priority: an explicit number typed on the payment screen for
+            # this one payment > the number stored on the selected saved
+            # method > the account's registered number as a last resort.
+            phone_number = (
+                phone_number
+                or (method.phone_number if method else "")
+                or getattr(order.user, "phone_number", "")
+            )
             if not phone_number:
                 raise serializers.ValidationError(
                     {"phone_number": "A phone number is required to request MTN/Orange Money payment."}
@@ -150,6 +157,7 @@ class PaymentInitiateSerializer(serializers.ModelSerializer):
                     phone_number=phone_number,
                     description=f"WEDEMBOYZ Lavomatique — Order #{order.pk}",
                     external_reference=f"order-{order.pk}",
+                    user=order.user,
                 )
             except campay_gateway.CamPayAPIError as exc:
                 raise serializers.ValidationError({"gateway": str(exc)})
@@ -158,7 +166,7 @@ class PaymentInitiateSerializer(serializers.ModelSerializer):
 
         payment = Payment.objects.create(
             order=order,
-            method=validated_data.get("method"),
+            method=method,
             gateway=gateway,
             gateway_reference=gateway_reference,
             amount=order.total_amount,

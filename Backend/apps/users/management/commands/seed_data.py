@@ -45,7 +45,7 @@ from apps.inventory.models import InventoryCategory, InventoryItem, InventoryTra
 from apps.notifications.models import Notification, NotificationPreference
 from apps.orders.models.order import Order, OrderItem, OrderStatusHistory
 from apps.orders.models.schedule import PickupDeliverySchedule
-from apps.payments.models import Invoice, Payment, PaymentMethod, Refund, Subscription
+from apps.payments.models import Invoice, Payment, PaymentMethod, Refund, Subscription, generate_display_label
 from apps.staff.models import StaffActivityLog, StaffInvite, StaffProfile, StaffRole
 from apps.users.models import LoyaltyAccount, UserProfile
 
@@ -663,18 +663,14 @@ class Command(BaseCommand):
             user_methods = []
             for i in range(n):
                 gateway = random.choice(list(PaymentGateway))
-                if gateway == PaymentGateway.MTN_MOMO:
-                    label = f"MTN MoMo •••• {random.randint(1000, 9999)}"
-                elif gateway == PaymentGateway.ORANGE_MONEY:
-                    label = f"Orange Money •••• {random.randint(1000, 9999)}"
-                elif gateway == PaymentGateway.STRIPE:
-                    label = f"Visa •••• {random.randint(1000, 9999)}"
-                elif gateway == PaymentGateway.CASH:
-                    label = "Cash on delivery"
-                else:
-                    label = "Store credit"
+                phone_number = ""
+                if gateway in (PaymentGateway.MTN_MOMO, PaymentGateway.ORANGE_MONEY):
+                    phone_number = f"237{random.choice(['65', '67', '69'])}{random.randint(1000000, 9999999)}"
                 pm = PaymentMethod(
-                    user=user, gateway=gateway, display_label=label,
+                    user=user,
+                    gateway=gateway,
+                    phone_number=phone_number,
+                    display_label=generate_display_label(gateway, phone_number),
                     provider_token=f"tok_{random.randint(10**8, 10**9)}" if gateway == PaymentGateway.STRIPE else "",
                     is_default=(i == 0),
                 )
