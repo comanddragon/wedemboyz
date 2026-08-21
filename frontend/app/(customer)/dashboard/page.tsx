@@ -98,8 +98,13 @@ export default function DashboardPage() {
     // orders' schedules are fetched individually to find the soonest upcoming
     // pickup or delivery. Fine at the realistic handful of concurrently-active
     // orders a customer has; revisit if that stops being true.
+    //
+    // A PENDING order doesn't get a schedule until staff assign one, so we
+    // only query orders that actually have one — otherwise every unscheduled
+    // order fires a request that's guaranteed to 404.
+    const scheduledActiveOrders = activeOrders.filter((order) => order.has_schedule);
     const scheduleQueries = useQueries({
-        queries: activeOrders.map((order) => ({
+        queries: scheduledActiveOrders.map((order) => ({
             queryKey: queryKeys.schedule.detail(order.id),
             queryFn: () => scheduleApi.getSchedule(order.id),
             retry: false,
@@ -107,7 +112,9 @@ export default function DashboardPage() {
     });
 
     const nextEvent = scheduleQueries
-        .map((query, index) => (query.data ? nextEventFromSchedule(activeOrders[index].id, query.data) : null))
+        .map((query, index) =>
+            query.data ? nextEventFromSchedule(scheduledActiveOrders[index].id, query.data) : null,
+        )
         .filter((event): event is NextEvent => event !== null)
         .sort((a, b) => a.date.localeCompare(b.date))[0];
 

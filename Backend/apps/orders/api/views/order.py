@@ -24,7 +24,10 @@ class OrderListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = Order.objects.select_related("user").prefetch_related("items")
+        # select_related("schedule") avoids an N+1 query for
+        # OrderListSerializer.has_schedule, which does a plain hasattr()
+        # check per order.
+        qs = Order.objects.select_related("user", "schedule").prefetch_related("items")
         if self.request.user.is_staff:
             return qs
         return qs.filter(user=self.request.user)

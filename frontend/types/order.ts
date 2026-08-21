@@ -48,6 +48,7 @@ export interface OrderListItem {
   total_amount: string;
   currency: Currency;
   item_count: number;
+  has_schedule: boolean;
   created_at: string;
   /** NOT currently sent by the backend — OrderListSerializer only exposes
    * fields on the order itself today, nothing about who placed it. Add a

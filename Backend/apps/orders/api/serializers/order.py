@@ -54,6 +54,7 @@ class OrderListSerializer(serializers.ModelSerializer):
 
     item_count = serializers.IntegerField(source="items.count", read_only=True)
     customer = OrderCustomerSerializer(source="user", read_only=True)
+    has_schedule = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -67,9 +68,13 @@ class OrderListSerializer(serializers.ModelSerializer):
             "currency",
             "item_count",
             "customer",
+            "has_schedule",
             "created_at",
         ]
         read_only_fields = fields
+
+    def get_has_schedule(self, obj):
+        return hasattr(obj, "schedule")
 
 
 class OrderDetailSerializer(serializers.ModelSerializer):
