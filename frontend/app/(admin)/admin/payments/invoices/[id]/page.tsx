@@ -6,11 +6,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { Button, Card, StatusBadge } from "@/components/ui";
-import { paymentsApi } from "@/lib/api";
-import { getApiErrorMessage } from "@/lib/api/errors";
-import { formatCurrency } from "@/lib/constants";
-import { queryKeys } from "@/lib/query-keys";
+import { Button, Card, StatusBadge } from "@/src/components/ui";
+import { paymentsApi } from "@/src/lib/api";
+import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { formatCurrency } from "@/src/lib/constants";
+import { queryKeys } from "@/src/lib/query-keys";
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -25,25 +25,35 @@ export default function AdminInvoiceDetailPage() {
   const params = useParams<{ id: string }>();
   const invoiceId = Number(params.id);
 
-  const { data: invoice, isLoading, error } = useQuery({
+  const {
+    data: invoice,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.payments.invoice(invoiceId),
     queryFn: () => paymentsApi.getInvoice(invoiceId),
   });
 
   if (isLoading) {
-    return <main className="mx-auto max-w-2xl px-6 py-10 text-sm text-ink-muted">Loading...</main>;
+    return (
+      <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9 text-sm text-ink-muted">
+        Loading...
+      </main>
+    );
   }
 
   if (error || !invoice) {
     return (
-      <main className="mx-auto max-w-2xl px-6 py-10">
-        <p className="text-sm text-status-cancelled-text">{getApiErrorMessage(error)}</p>
+      <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+        <p className="text-sm text-status-cancelled-text">
+          {getApiErrorMessage(error)}
+        </p>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-10">
+    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <Link
         href="/admin/payments/invoices"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
@@ -54,22 +64,38 @@ export default function AdminInvoiceDetailPage() {
 
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-xl font-semibold text-navy">{invoice.invoice_number || `Invoice #${invoice.id}`}</h1>
-          <Link href={`/admin/orders/${invoice.order}`} className="mt-0.5 block text-xs text-ink-muted hover:underline">
+          <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
+            {invoice.invoice_number || `Invoice #${invoice.id}`}
+          </h1>
+          <Link
+            href={`/admin/orders/${invoice.order}`}
+            className="mt-0.5 block text-xs text-ink-muted hover:underline"
+          >
             For order #{invoice.order}
           </Link>
         </div>
-        <StatusBadge label={invoice.is_settled ? "Settled" : "Outstanding"} tone={invoice.is_settled ? "ready" : "pending"} />
+        <StatusBadge
+          label={invoice.is_settled ? "Settled" : "Outstanding"}
+          tone={invoice.is_settled ? "ready" : "pending"}
+        />
       </div>
 
       <Card>
         <Row label="Amount due" value={formatCurrency(invoice.amount_due)} />
         <Row label="Amount paid" value={formatCurrency(invoice.amount_paid)} />
-        <Row label="Issued" value={new Date(invoice.issued_at).toLocaleString()} />
+        <Row
+          label="Issued"
+          value={new Date(invoice.issued_at).toLocaleString()}
+        />
       </Card>
 
       {invoice.pdf_file && (
-        <a href={invoice.pdf_file} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block">
+        <a
+          href={invoice.pdf_file}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-block"
+        >
           <Button variant="secondary">
             <FileDown className="h-4 w-4" aria-hidden="true" />
             Download PDF

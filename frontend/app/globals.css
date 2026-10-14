@@ -1,40 +1,76 @@
-@import "@fontsource/space-grotesk/500.css";
-@import "@fontsource/space-grotesk/700.css";
+/* Outfit — geometric display/UI face (headings, numbers, nav, buttons, labels).
+   DM Sans — its calmer text partner for body copy, forms and table data. */
+@import "@fontsource/outfit/300.css";
+@import "@fontsource/outfit/400.css";
+@import "@fontsource/outfit/500.css";
+@import "@fontsource/outfit/600.css";
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/500.css";
+@import "@fontsource/dm-sans/600.css";
+@import "@fontsource/dm-sans/700.css";
 @import "tailwindcss";
 
 @theme {
-    --color-navy: #192645;
-    --color-navy-50: #EEF0F4;
-    --color-navy-600: #22335C;
+    /*
+      Brand identity, taken from the printed flyer. Each colour has one job:
+      - navy   = authority. Structure, text, primary actions, the featured plan.
+      - gold   = reward. Prices, savings, CTAs on navy, focus, medals.
+      - silver = the middle tier and quiet supporting surfaces.
+      - paper / white = the canvas everything sits on.
+      Never write a hex or rgb() value in a component. Add or reuse a token here.
+    */
+    --color-navy: #071130;
+    --color-navy-700: #0D1B45;
+    --color-navy-600: #192849;
+    --color-navy-50: #F0F2F7;
 
-    --color-gold: #C8922F;
-    --color-gold-50: #FBF3E6;
-    --color-gold-600: #8A5A0F;
+    --color-gold: #DFA013;
+    --color-gold-bright: #F0B62F;
+    --color-gold-300: #FFD855;
+    --color-gold-50: #FFF7DF;
+    --color-gold-600: #9F7022;
+    --color-gold-light: var(--color-gold-bright);
+    --color-gold-deep: var(--color-gold-600);
 
-    --color-paper: #FAFAF7;
-    --color-crease: #DDE1E5;
-    --color-steam: #E4E8EC;
+    --color-silver: #A7ABB4;
+    --color-silver-600: #5F6573;
+    --color-silver-50: #F0F1F4;
 
-    --color-ink: #262B33;
-    --color-ink-muted: #6B7684;
+    --color-bronze: #A9673A;
+    --color-bronze-50: #F7E8DC;
 
-    --color-status-pending-bg: #E4E8EC;
-    --color-status-pending-text: #4B5563;
+    /* Neutrals: one ramp, all tinted from the navy. */
+    --color-paper: #F8F8F6;
+    --color-mist: #F4F6FA;
+    --color-steam: #ECEEF2;
+    --color-crease-soft: #E3E6EC;
+    --color-crease: #D9DCE3;
+    --color-crease-strong: #C3C8D3;
 
-    --color-status-progress-bg: #FBF3E6;
-    --color-status-progress-text: #8A5A0F;
+    --color-ink: #071130;
+    --color-ink-soft: #3A4660;
+    --color-ink-muted: #595C6A;
+    --color-ink-faint: #7B8090;
 
-    --color-status-ready-bg: #EAF3EC;
-    --color-status-ready-text: #256B41;
+    --color-suds: var(--color-navy-50);
 
-    --color-status-cancelled-bg: #FBEAEA;
+    /* Status colours are semantic only (order and payment states). */
+    --color-status-pending-bg: #E6ECFA;
+    --color-status-pending-text: #34498A;
+
+    --color-status-progress-bg: #FFEFC2;
+    --color-status-progress-text: #7A4F00;
+
+    --color-status-ready-bg: #DFF3E5;
+    --color-status-ready-text: #1B6A3D;
+
+    --color-status-cancelled-bg: #FCE6E3;
     --color-status-cancelled-text: #9B3A3A;
 
     /*
-      Fold Line — expanded palette (see CLAUDE.md "Visual Language").
-      Navy/gold stay the structural anchors; these four are the
-      "fresh laundry and sunshine" supporting cast, one per service
-      type, used for wayfinding across pricing/booking/service icons.
+      Legacy "Fold Line" supporting colours. They are not in the flyer, so
+      they are no longer used for brand surfaces on the pricing page. Kept
+      for the dashboard and contact screens until those are re-themed.
     */
     --color-coral: #E15A3B;
     --color-coral-50: #FDECE7;
@@ -52,16 +88,134 @@
     --color-clothesline-50: #E9F5EC;
     --color-clothesline-600: #35784A;
 
+    /* Dashboard action blue: reserved for navigation, focus and primary data. */
+    --color-dashboard-blue: #1688F8;
+    --color-dashboard-blue-50: #EAF4FF;
+
+    /* Elevation. Every shadow is navy-tinted and built from tokens. */
+    --shadow-card-sm: 0 1px 2px color-mix(in srgb, var(--color-navy) 4%, transparent);
+    --shadow-card:
+        0 1px 2px color-mix(in srgb, var(--color-navy) 4%, transparent),
+        0 14px 34px -18px color-mix(in srgb, var(--color-navy) 20%, transparent);
+    --shadow-float: 0 6px 20px -10px color-mix(in srgb, var(--color-navy) 25%, transparent);
+    --shadow-pop:
+        0 4px 8px color-mix(in srgb, var(--color-navy) 5%, transparent),
+        0 24px 48px -12px color-mix(in srgb, var(--color-navy) 28%, transparent);
+    --shadow-lift: 0 30px 60px -25px color-mix(in srgb, var(--color-navy-600) 55%, transparent);
+    --shadow-frame: 0 20px 45px -24px color-mix(in srgb, var(--color-navy-600) 35%, transparent);
+    --shadow-btn-navy: 0 6px 16px -6px color-mix(in srgb, var(--color-navy) 50%, transparent);
+    --shadow-btn-navy-hover: 0 10px 20px -8px color-mix(in srgb, var(--color-navy) 55%, transparent);
+    --shadow-btn-gold: 0 6px 16px -6px color-mix(in srgb, var(--color-gold) 70%, transparent);
+    --shadow-nav-active: 0 6px 16px color-mix(in srgb, var(--color-dashboard-blue) 22%, transparent);
+    --shadow-stat: 0 8px 24px color-mix(in srgb, var(--color-navy-600) 8%, transparent);
+
     /* Fonts */
     --font-sans:
-            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
             "Helvetica Neue", Arial, sans-serif;
 
     --font-display:
-            "Space Grotesk", -apple-system, "Segoe UI", sans-serif;
+            "Outfit", "DM Sans", -apple-system, "Segoe UI", sans-serif;
 
     /* Radius */
-    --radius-card: 10px;
+    --radius-card: 16px;
+}
+
+/* ============================================================
+   Type system.
+   Outfit (display): page titles, section headings, KPI numbers, nav,
+   buttons, table headers, labels — anything that *navigates or announces*.
+   DM Sans (text): paragraphs, form values, table cells — anything *read*.
+   Scale (rem): 0.6875 eyebrow · 0.75 caption · 0.8125 label · 0.875 body ·
+   1 lead · 1.125–1.5 section titles · 1.75–2.5 page titles.
+   Weights stay light at large sizes (300–400) and rise as size falls.
+   ============================================================ */
+@layer base {
+    html {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "ss01", "kern";
+    }
+    h1, h2, h3, h4 {
+        font-family: var(--font-display);
+        text-wrap: balance;
+    }
+    h1 { letter-spacing: -0.03em; }
+    h2, h3 { letter-spacing: -0.015em; }
+    p { text-wrap: pretty; }
+    button, summary, th, legend, [role="tab"], [role="menuitem"] {
+        font-family: var(--font-display);
+    }
+    /* Money, counts, dates: aligned digits wherever numbers are compared. */
+    table, .tabular-nums { font-variant-numeric: tabular-nums; }
+    /* Outfit's heaviest cut reads clumsy at UI sizes — cap display bold at 600. */
+    .font-display.font-bold, h1.font-bold, h2.font-bold, h3.font-bold { font-weight: 600; }
+}
+
+.dashboard-canvas {
+    background:
+        radial-gradient(60rem 36rem at 0% 0%, color-mix(in srgb, var(--color-turquoise) 22%, transparent), transparent 60%),
+        radial-gradient(56rem 34rem at 100% 100%, color-mix(in srgb, var(--color-gold) 22%, transparent), transparent 60%),
+        linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--color-navy) 45%, var(--color-white)) 0%,
+            color-mix(in srgb, var(--color-navy) 35%, var(--color-white)) 45%,
+            color-mix(in srgb, var(--color-navy) 30%, var(--color-white)) 100%
+        );
+}
+
+.dashboard-shell {
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(180deg, var(--color-paper) 0%, var(--color-mist) 100%);
+    box-shadow: 0 30px 80px color-mix(in srgb, var(--color-navy) 20%, transparent);
+}
+
+.dashboard-shell::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: -10rem;
+    right: -8rem;
+    width: 42rem;
+    height: 32rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-gold-300) 38%, transparent) 0%, color-mix(in srgb, var(--color-gold-300) 18%, transparent) 40%, transparent 72%);
+    pointer-events: none;
+}
+
+/* Cool counter-glow, bottom-left — the turquoise answers the gold top-right. */
+.dashboard-shell::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    bottom: -12rem;
+    left: -10rem;
+    width: 40rem;
+    height: 30rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-turquoise) 16%, transparent) 0%, color-mix(in srgb, var(--color-turquoise) 6%, transparent) 45%, transparent 72%);
+    pointer-events: none;
+}
+
+/* Navy hero panel: depth from two off-axis glows (gold warm, turquoise cool). */
+.hero-navy {
+    background:
+        radial-gradient(34rem 20rem at 100% 0%, color-mix(in srgb, var(--color-gold) 34%, transparent), transparent 62%),
+        radial-gradient(28rem 18rem at 0% 100%, color-mix(in srgb, var(--color-silver) 22%, transparent), transparent 65%),
+        linear-gradient(135deg, var(--color-navy-700) 0%, var(--color-navy) 70%);
+}
+
+/* Warm gold promo panel. */
+.card-gold {
+    background:
+        radial-gradient(14rem 10rem at 100% 0%, color-mix(in srgb, var(--color-white) 42%, transparent), transparent 65%),
+        linear-gradient(135deg, var(--color-gold-bright) 0%, var(--color-gold) 100%);
+}
+
+@media (max-width: 639px) {
+    .dashboard-shell { box-shadow: none; }
 }
 
 /* Mobile density — Tailwind's spacing and type scale are rem-based, so
@@ -77,6 +231,176 @@
 }
 
 /* ============================================================
+   Form controls — soft, rounded, tactile. One shared look for inputs,
+   selects, textareas, checkboxes and radios so every form on the site
+   (auth, booking, admin, chat) feels like the same product.
+   ============================================================ */
+
+@layer components {
+    .ui-control {
+        width: 100%;
+        border-radius: 0.875rem;
+        border: 1px solid var(--color-crease-soft);
+        background-color: var(--color-mist);
+        padding: 0.65rem 0.95rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        color: var(--color-ink);
+        box-shadow: inset 0 1px 2px color-mix(in srgb, var(--color-navy) 4%, transparent), 0 1px 0 color-mix(in srgb, var(--color-white) 80%, transparent);
+        transition:
+            border-color 0.2s ease,
+            background-color 0.2s ease,
+            box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .ui-control::placeholder {
+        color: var(--color-ink-faint);
+    }
+    .ui-control:hover:not(:disabled):not(:focus) {
+        border-color: var(--color-crease-strong);
+        background-color: var(--color-white);
+    }
+    .ui-control:focus {
+        outline: none;
+        border-color: var(--color-gold);
+        background-color: var(--color-white);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-gold) 18%, transparent), 0 6px 16px -8px color-mix(in srgb, var(--color-navy) 18%, transparent);
+    }
+    .ui-control:disabled {
+        cursor: not-allowed;
+        background-color: var(--color-steam);
+        color: var(--color-ink-muted);
+        box-shadow: none;
+        opacity: 0.8;
+    }
+    .ui-control[aria-invalid="true"],
+    .ui-control.is-invalid {
+        border-color: color-mix(in srgb, var(--color-status-cancelled-text) 55%, transparent);
+        background-color: color-mix(in srgb, var(--color-status-cancelled-bg) 30%, var(--color-white));
+    }
+    .ui-control[aria-invalid="true"]:focus,
+    .ui-control.is-invalid:focus {
+        border-color: var(--color-status-cancelled-text);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-status-cancelled-text) 14%, transparent);
+    }
+
+    /* Pill variant — search boxes, chat composer (matches the reference's filter pills). */
+    .ui-control-pill {
+        border-radius: 999px;
+        padding-left: 1.1rem;
+        padding-right: 1.1rem;
+    }
+
+    textarea.ui-control {
+        border-radius: 1rem;
+        resize: vertical;
+    }
+
+    select.ui-control {
+        appearance: none;
+        cursor: pointer;
+        padding-right: 2.5rem;
+        background-image:
+            linear-gradient(45deg, transparent 50%, var(--color-ink-muted) 50%),
+            linear-gradient(135deg, var(--color-ink-muted) 50%, transparent 50%);
+        background-repeat: no-repeat;
+        background-position:
+            calc(100% - 1.2rem) calc(50% + 1px),
+            calc(100% - 0.85rem) calc(50% + 1px);
+        background-size: 0.4rem 0.4rem, 0.4rem 0.4rem;
+    }
+
+    input[type="search"].ui-control::-webkit-search-cancel-button {
+        cursor: pointer;
+    }
+}
+
+@keyframes ui-menu-in {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.ui-menu-in {
+    animation: ui-menu-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: top center;
+}
+@media (prefers-reduced-motion: reduce) {
+    .ui-menu-in { animation: none; }
+}
+
+/* Native checkboxes & radios (the sr-only switch in notifications is left alone). */
+input[type="checkbox"]:not(.sr-only),
+input[type="radio"]:not(.sr-only) {
+    appearance: none;
+    -webkit-appearance: none;
+    flex-shrink: 0;
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0;
+    border: 1.5px solid var(--color-crease-strong);
+    background-color: var(--color-white);
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--color-navy) 6%, transparent);
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.2s ease,
+        transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+input[type="checkbox"]:not(.sr-only) {
+    border-radius: 0.4rem;
+}
+input[type="radio"]:not(.sr-only) {
+    border-radius: 999px;
+}
+input[type="checkbox"]:not(.sr-only):hover:not(:disabled),
+input[type="radio"]:not(.sr-only):hover:not(:disabled) {
+    border-color: var(--color-navy);
+}
+input[type="checkbox"]:not(.sr-only):active:not(:disabled),
+input[type="radio"]:not(.sr-only):active:not(:disabled) {
+    transform: scale(0.9);
+}
+input[type="checkbox"]:not(.sr-only):checked {
+    border-color: var(--color-navy);
+    background-color: var(--color-navy);
+    display: grid;
+    place-content: center;
+}
+/* The tick is a mask, so its colour comes from a token rather than a data URI. */
+input[type="checkbox"]:not(.sr-only):checked::after {
+    content: "";
+    width: 0.8rem;
+    height: 0.8rem;
+    background-color: var(--color-gold-300);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.5 8.5 3 3 6-7'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.5 8.5 3 3 6-7'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+input[type="radio"]:not(.sr-only):checked {
+    border-color: var(--color-navy);
+    background-color: var(--color-navy);
+    background-image: radial-gradient(circle, var(--color-gold-300) 0 34%, transparent 38%);
+}
+input[type="checkbox"]:not(.sr-only):focus-visible,
+input[type="radio"]:not(.sr-only):focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-gold) 25%, transparent);
+}
+input[type="checkbox"]:not(.sr-only):disabled,
+input[type="radio"]:not(.sr-only):disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-control,
+    input[type="checkbox"]:not(.sr-only),
+    input[type="radio"]:not(.sr-only) {
+        transition: none;
+    }
+}
+
+/* ============================================================
    "Atelier" landing page — a deliberate departure from the site's
    playful Fold Line system, scoped entirely via the .atelier class so
    nothing here leaks into /admin, /dashboard, or the rest of the public
@@ -84,27 +408,25 @@
    consolidation pass (single global stylesheet, no page-level CSS
    imports) — selectors and output are unchanged.
 
-   Direction: mature, editorial, quietly confident — a garment atelier's
-   ledger, not a startup's brochure. Space Grotesk (the site's existing
-   display face) is kept exactly as-is; everything else — palette, spacing,
-   motion, structure — is built fresh for this brief.
+   Direction: mature, editorial, quietly confident — the flyer’s midnight
+   navy field and amber-gold accents, handled like a garment atelier's
+   ledger rather than a startup brochure.
    ============================================================ */
 
 .atelier {
-    /* Paper ground. --at-ink now names the paper background (kept for
-       minimal diffs across components); --at-ivory carries the primary
-       (dark) text color; --at-panel is a faint warm-grey for alternating
-       section bands. */
-    --at-ink: #faf8f3;
-    --at-ink-soft: #f2efe6;
-    --at-panel: #f3f0e8;
-    --at-ivory: #1c1a16;
-    --at-ivory-dim: #4a463d;
-    --at-slate: #6b665c;
-    --at-brass: #a97c2f;
-    --at-brass-bright: #8a611f;
-    --at-line: rgba(28, 26, 22, 0.1);
-    --at-line-strong: rgba(28, 26, 22, 0.2);
+    /* Midnight ground. The legacy variable names remain to avoid churn in
+       the components; ivory is the clean white foreground, while panel is
+       the slightly lifted navy used for alternating section bands. */
+    --at-ink: var(--color-navy);
+    --at-ink-soft: var(--color-navy-700);
+    --at-panel: var(--color-navy-700);
+    --at-ivory: var(--color-white);
+    --at-ivory-dim: var(--color-paper);
+    --at-slate: var(--color-crease);
+    --at-brass: var(--color-gold);
+    --at-brass-bright: var(--color-gold-bright);
+    --at-line: color-mix(in srgb, var(--color-white) 12%, transparent);
+    --at-line-strong: color-mix(in srgb, var(--color-gold) 50%, transparent);
 
     background: var(--at-ink);
     color: var(--at-ivory);
@@ -113,7 +435,7 @@
 
 .atelier ::selection {
     background: var(--at-brass);
-    color: #faf8f3;
+    color: var(--at-ink);
 }
 
 .atelier .at-display {
@@ -220,11 +542,11 @@
 .atelier .at-shimmer-text {
     background: linear-gradient(
             100deg,
-            var(--color-navy) 0%,
+            var(--at-ivory) 0%,
             var(--at-brass-bright) 30%,
             var(--at-ivory) 55%,
             var(--at-brass-bright) 80%,
-            var(--color-navy) 100%
+            var(--at-ivory) 100%
     );
     background-size: 250% 100%;
     -webkit-background-clip: text;
@@ -255,215 +577,15 @@
 }
 
 .atelier .at-btn-primary {
-    background: var(--color-navy);
-    color: var(--color-gold-50);
+    background: var(--color-gold);
+    color: var(--color-navy);
 }
 .atelier .at-btn-primary:hover {
-    background: var(--color-navy-600);
-    color: var(--color-gold);
+    background: var(--color-gold-bright);
+    color: var(--color-navy);
 }
 
 .atelier .at-focus:focus-visible {
     outline: 2px solid var(--at-brass-bright);
     outline-offset: 3px;
-}
-
-/* ============================================================
-   Pricing page motion & background-effects layer. Scoped under
-   .pricing-page so nothing here leaks into the rest of the site — moved
-   here from components/marketing/pricing.css during a consolidation pass
-   (single global stylesheet, no page-level CSS imports). While moving it,
-   the .pf-* helper classes were also nested under .pricing-page (they
-   were bare global selectors before, which only worked by luck because
-   nothing else on the site happens to use those names) — every one of
-   them is only ever rendered inside PricingSections.tsx / PricingReveal.tsx,
-   both of which only render inside the .pricing-page wrapper, so this is a
-   scoping tightening, not a behavior change. Pairs with PricingSections.tsx
-   — see CLAUDE.md "Motion & Interactivity" for the brief this answers to
-   (springy, tactile, never mechanical; every animated piece has a
-   reduced-motion fallback).
-   ============================================================ */
-
-.pricing-page {
-    position: relative;
-    isolation: isolate;
-}
-
-/* ---------- Drifting colour blobs (hero + membership backdrops) ---------- */
-
-.pricing-page .pf-blob-field {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    z-index: -1;
-    pointer-events: none;
-}
-
-.pricing-page .pf-blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(60px);
-    opacity: 0.35;
-    will-change: transform;
-}
-
-@keyframes pf-drift-a {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(30px, -40px) scale(1.08); }
-}
-@keyframes pf-drift-b {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(-40px, 30px) scale(0.95); }
-}
-@keyframes pf-drift-c {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(20px, 25px) scale(1.05); }
-}
-
-.pricing-page .pf-blob-a { animation: pf-drift-a 16s ease-in-out infinite; }
-.pricing-page .pf-blob-b { animation: pf-drift-b 20s ease-in-out infinite; }
-.pricing-page .pf-blob-c { animation: pf-drift-c 18s ease-in-out infinite; }
-
-/* ---------- Rising bubbles (subtle, hero only) ---------- */
-
-@keyframes pf-bubble-rise {
-    0% { transform: translateY(0) translateX(0); opacity: 0; }
-    10% { opacity: 0.5; }
-    90% { opacity: 0.35; }
-    100% { transform: translateY(-220px) translateX(12px); opacity: 0; }
-}
-
-.pricing-page .pf-bubble {
-    position: absolute;
-    bottom: 0;
-    border-radius: 50%;
-    border: 1.5px solid color-mix(in srgb, var(--color-gold) 45%, transparent);
-    background: color-mix(in srgb, var(--color-gold) 8%, transparent);
-    animation: pf-bubble-rise 9s ease-in infinite;
-}
-
-/* ---------- Per-kilo service cards: colour-coded top bar + lift ---------- */
-
-.pricing-page .pf-service-card {
-    position: relative;
-    overflow: hidden;
-    transition:
-        transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-        box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-        border-color 0.35s ease;
-}
-.pricing-page .pf-service-card::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 4px;
-    background: var(--pf-accent);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.pricing-page .pf-service-card:hover::before,
-.pricing-page .pf-service-card:focus-within::before {
-    transform: scaleX(1);
-}
-.pricing-page .pf-service-card:hover,
-.pricing-page .pf-service-card:focus-within {
-    transform: translateY(-6px);
-    box-shadow: 0 24px 48px -20px var(--pf-accent-shadow);
-    border-color: color-mix(in srgb, var(--pf-accent) 45%, var(--color-crease));
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .pricing-page .pf-service-card,
-    .pricing-page .pf-service-card::before {
-        transition: none;
-    }
-    .pricing-page .pf-service-card:hover {
-        transform: none;
-    }
-}
-
-/* ---------- Crease divider that presses into place on scroll ---------- */
-
-.pricing-page .pf-crease {
-    position: relative;
-    height: 3px;
-}
-.pricing-page .pf-crease::before,
-.pricing-page .pf-crease::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 0;
-    height: 1px;
-    width: 0%;
-    background: var(--color-crease);
-    transform: translateX(-50%);
-    transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.pricing-page .pf-crease::after {
-    top: 2px;
-}
-.pricing-page .pf-crease.is-pressed::before,
-.pricing-page .pf-crease.is-pressed::after {
-    width: 100%;
-}
-
-/* ---------- Shimmer sweep for the "Most loved" badge ---------- */
-
-@keyframes pf-shimmer {
-    0% { background-position: -150% 0; }
-    100% { background-position: 250% 0; }
-}
-
-.pricing-page .pf-shimmer {
-    background-image: linear-gradient(
-        100deg,
-        transparent 35%,
-        rgba(255, 255, 255, 0.55) 50%,
-        transparent 65%
-    );
-    background-size: 250% 100%;
-    animation: pf-shimmer 3.2s ease-in-out infinite;
-}
-
-/* ---------- Soft glow pulse behind the featured membership card ---------- */
-
-@keyframes pf-glow-pulse {
-    0%, 100% { opacity: 0.55; transform: scale(1); }
-    50% { opacity: 0.85; transform: scale(1.04); }
-}
-
-.pricing-page .pf-glow {
-    animation: pf-glow-pulse 5s ease-in-out infinite;
-}
-
-/* ---------- Price pop when the billing toggle changes ---------- */
-
-@keyframes pf-price-pop {
-    0% { opacity: 0; transform: translateY(6px) scale(0.96); }
-    100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.pricing-page .pf-price-pop {
-    animation: pf-price-pop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* ---------- Reduced motion: keep state changes, drop the movement ---------- */
-
-@media (prefers-reduced-motion: reduce) {
-    .pricing-page .pf-blob-a,
-    .pricing-page .pf-blob-b,
-    .pricing-page .pf-blob-c,
-    .pricing-page .pf-bubble,
-    .pricing-page .pf-shimmer,
-    .pricing-page .pf-glow,
-    .pricing-page .pf-price-pop {
-        animation: none !important;
-    }
-    .pricing-page .pf-crease::before,
-    .pricing-page .pf-crease::after {
-        transition: none;
-        width: 100%;
-    }
 }

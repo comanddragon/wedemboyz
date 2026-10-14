@@ -1,0 +1,7 @@
+[run]
+# Ensure package scripts use Bun even when a dependency exposes a Node shebang.
+bun = true
+
+[install]
+# Keep dependency versions reproducible across local and CI installs.
+exact = false

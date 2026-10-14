@@ -1,5 +1,9 @@
-import { GuestGuard } from "@/components/auth/GuestGuard";
+import { GuestGuard } from "@/src/components/auth/GuestGuard";
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return <GuestGuard>{children}</GuestGuard>;
 }

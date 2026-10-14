@@ -5,9 +5,9 @@ import { ChevronRight, Plus, Ticket } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { Pagination } from "@/components/admin/Pagination";
-import { SearchInput } from "@/components/admin/SearchInput";
+import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
+import { Pagination } from "@/src/components/admin/Pagination";
+import { SearchInput } from "@/src/components/admin/SearchInput";
 import {
   SortableTh,
   TableContainer,
@@ -18,17 +18,25 @@ import {
   Th,
   THead,
   Tr,
-} from "@/components/admin/Table";
-import { Tabs } from "@/components/admin/Tabs";
-import { useSort } from "@/components/admin/useSort";
-import { PromoCodeForm } from "@/components/discounts/PromoCodeForm";
-import { Button, Select, StatusBadge, type StatusTone } from "@/components/ui";
-import { discountsApi } from "@/lib/api";
-import { getApiErrorMessage } from "@/lib/api/errors";
-import { queryKeys } from "@/lib/query-keys";
-import type { PromoCode } from "@/types";
+} from "@/src/components/admin/Table";
+import { Tabs } from "@/src/components/admin/Tabs";
+import { useSort } from "@/src/components/admin/useSort";
+import { PromoCodeForm } from "@/src/components/discounts/PromoCodeForm";
+import {
+  Button,
+  Select,
+  StatusBadge,
+  type StatusTone,
+} from "@/src/components/ui";
+import { discountsApi } from "@/src/lib/api";
+import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { queryKeys } from "@/src/lib/query-keys";
+import type { PromoCode } from "@/src/types";
 
-const ACTIVE_FILTER_OPTIONS: { value: "ALL" | "ACTIVE" | "PAUSED"; label: string }[] = [
+const ACTIVE_FILTER_OPTIONS: {
+  value: "ALL" | "ACTIVE" | "PAUSED";
+  label: string;
+}[] = [
   { value: "ALL", label: "All statuses" },
   { value: "ACTIVE", label: "Active" },
   { value: "PAUSED", label: "Paused" },
@@ -37,7 +45,10 @@ const ACTIVE_FILTER_OPTIONS: { value: "ALL" | "ACTIVE" | "PAUSED"; label: string
 /** Derives a display status from is_active, the validity window, and usage,
  * since is_active alone doesn't tell the whole story (a code can be flagged
  * active but expired, or active but used up). */
-function promoCodeStatus(promo: PromoCode): { label: string; tone: StatusTone } {
+function promoCodeStatus(promo: PromoCode): {
+  label: string;
+  tone: StatusTone;
+} {
   if (!promo.is_active) return { label: "Paused", tone: "cancelled" };
   if (promo.max_uses != null && promo.times_used >= promo.max_uses) {
     return { label: "Exhausted", tone: "cancelled" };
@@ -49,7 +60,9 @@ function promoCodeStatus(promo: PromoCode): { label: string; tone: StatusTone } 
 }
 
 function formatDiscountValue(promo: PromoCode): string {
-  return promo.discount_type === "PERCENTAGE" ? `${Number(promo.value)}%` : `${Number(promo.value)} XAF`;
+  return promo.discount_type === "PERCENTAGE"
+    ? `${Number(promo.value)}%`
+    : `${Number(promo.value)} XAF`;
 }
 
 type SortKey = "code" | "discount" | "times_used" | "valid_until";
@@ -58,7 +71,9 @@ export default function AdminPromoCodesPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"ALL" | "ACTIVE" | "PAUSED">("ALL");
+  const [activeFilter, setActiveFilter] = useState<"ALL" | "ACTIVE" | "PAUSED">(
+    "ALL",
+  );
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   // Same as campaigns — the backend only paginates this list, so search and
@@ -73,26 +88,30 @@ export default function AdminPromoCodesPage() {
     const term = search.trim().toLowerCase();
     return data.results.filter((p) => {
       const matchesSearch = term === "" || p.code.toLowerCase().includes(term);
-      const matchesActive = activeFilter === "ALL" || p.is_active === (activeFilter === "ACTIVE");
+      const matchesActive =
+        activeFilter === "ALL" || p.is_active === (activeFilter === "ACTIVE");
       return matchesSearch && matchesActive;
     });
   }, [data, search, activeFilter]);
 
-  const { sorted, toggle, directionFor } = useSort<PromoCode, SortKey>(filtered, (row, key) => {
-    switch (key) {
-      case "code":
-        return row.code.toLowerCase();
-      case "discount":
-        return Number(row.value);
-      case "times_used":
-        return row.times_used;
-      case "valid_until":
-        return row.valid_until;
-    }
-  });
+  const { sorted, toggle, directionFor } = useSort<PromoCode, SortKey>(
+    filtered,
+    (row, key) => {
+      switch (key) {
+        case "code":
+          return row.code.toLowerCase();
+        case "discount":
+          return Number(row.value);
+        case "times_used":
+          return row.times_used;
+        case "valid_until":
+          return row.valid_until;
+      }
+    },
+  );
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10 sm:px-10">
+    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
         title="Discounts"
         description="Promo codes customers redeem themselves at checkout."
@@ -127,7 +146,9 @@ export default function AdminPromoCodesPage() {
         />
         <Select
           value={activeFilter}
-          onChange={(e) => setActiveFilter(e.target.value as "ALL" | "ACTIVE" | "PAUSED")}
+          onChange={(e) =>
+            setActiveFilter(e.target.value as "ALL" | "ACTIVE" | "PAUSED")
+          }
           className="sm:w-40"
           aria-label="Filter by status"
         >
@@ -139,16 +160,26 @@ export default function AdminPromoCodesPage() {
         </Select>
         {data && (
           <p className="text-xs text-ink-muted sm:ml-auto">
-            {filtered?.length ?? 0} of {data.results.length} on this page · {data.count} total
+            {filtered?.length ?? 0} of {data.results.length} on this page ·{" "}
+            {data.count} total
           </p>
         )}
       </div>
 
-      {error && <p className="mb-3 text-sm text-status-cancelled-text">{getApiErrorMessage(error)}</p>}
+      {error && (
+        <p className="mb-3 text-sm text-status-cancelled-text">
+          {getApiErrorMessage(error)}
+        </p>
+      )}
 
       <TableContainer>
         <THead>
-          <SortableTh label="Code" active={directionFor("code") !== null} direction={directionFor("code")} onSort={() => toggle("code")} />
+          <SortableTh
+            label="Code"
+            active={directionFor("code") !== null}
+            direction={directionFor("code")}
+            onSort={() => toggle("code")}
+          />
           <SortableTh
             label="Discount"
             active={directionFor("discount") !== null}
@@ -187,16 +218,31 @@ export default function AdminPromoCodesPage() {
             sorted?.map((promo) => {
               const status = promoCodeStatus(promo);
               return (
-                <Tr key={promo.id} onClick={() => router.push(`/admin/discounts/codes/${promo.id}`)}>
+                <Tr
+                  key={promo.id}
+                  onClick={() =>
+                    router.push(`/admin/discounts/codes/${promo.id}`)
+                  }
+                >
                   <Td className="flex items-center gap-2 font-medium">
-                    <Ticket className="h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+                    <Ticket
+                      className="h-3.5 w-3.5 shrink-0 text-ink-muted"
+                      aria-hidden="true"
+                    />
                     {promo.code}
                   </Td>
                   <Td className="tabular-nums">{formatDiscountValue(promo)}</Td>
-                  <Td className="text-ink-muted tabular-nums">{Number(promo.min_order_amount)} XAF</Td>
+                  <Td className="text-ink-muted tabular-nums">
+                    {Number(promo.min_order_amount)} XAF
+                  </Td>
                   <Td align="right" className="tabular-nums">
                     {promo.times_used}
-                    {promo.max_uses != null && <span className="text-ink-muted"> / {promo.max_uses}</span>}
+                    {promo.max_uses != null && (
+                      <span className="text-ink-muted">
+                        {" "}
+                        / {promo.max_uses}
+                      </span>
+                    )}
                   </Td>
                   <Td>
                     <StatusBadge label={status.label} tone={status.tone} />
@@ -205,7 +251,10 @@ export default function AdminPromoCodesPage() {
                     {new Date(promo.valid_until).toLocaleDateString()}
                   </Td>
                   <Td>
-                    <ChevronRight className="h-4 w-4 text-ink-muted" aria-hidden="true" />
+                    <ChevronRight
+                      className="h-4 w-4 text-ink-muted"
+                      aria-hidden="true"
+                    />
                   </Td>
                 </Tr>
               );
@@ -213,7 +262,13 @@ export default function AdminPromoCodesPage() {
         </TBody>
       </TableContainer>
 
-      {data && <Pagination currentPage={data.current_page} numPages={data.num_pages} onPageChange={setPage} />}
+      {data && (
+        <Pagination
+          currentPage={data.current_page}
+          numPages={data.num_pages}
+          onPageChange={setPage}
+        />
+      )}
     </main>
   );
 }

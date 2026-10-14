@@ -6,7 +6,7 @@ import {
   AtelierServices,
   AtelierTrust,
   AtelierValue,
-} from "@/components/marketing-v3";
+} from "@/src/components/marketing-v3";
 
 export default function HomePage() {
   return (

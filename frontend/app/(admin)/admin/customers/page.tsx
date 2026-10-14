@@ -5,20 +5,36 @@ import { ChevronRight, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { Pagination } from "@/components/admin/Pagination";
-import { SearchInput } from "@/components/admin/SearchInput";
-import { SortableTh, TableContainer, TableEmptyRow, TableSkeleton, TBody, Td, Th, THead, Tr } from "@/components/admin/Table";
-import { StatusBadge } from "@/components/ui";
-import { customersApi } from "@/lib/api";
-import { getApiErrorMessage } from "@/lib/api/errors";
-import { formatCurrency } from "@/lib/constants";
-import { queryKeys } from "@/lib/query-keys";
-import type { ListCustomersParams } from "@/types";
+import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
+import { Pagination } from "@/src/components/admin/Pagination";
+import { SearchInput } from "@/src/components/admin/SearchInput";
+import {
+  SortableTh,
+  TableContainer,
+  TableEmptyRow,
+  TableSkeleton,
+  TBody,
+  Td,
+  Th,
+  THead,
+  Tr,
+} from "@/src/components/admin/Table";
+import { StatusBadge } from "@/src/components/ui";
+import { customersApi } from "@/src/lib/api";
+import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { formatCurrency } from "@/src/lib/constants";
+import { queryKeys } from "@/src/lib/query-keys";
+import type { ListCustomersParams } from "@/src/types";
 
 type SortKey = "first_name" | "orders_count" | "lifetime_spend" | "created_at";
 
-const SORT_TO_ORDERING: Record<SortKey, { asc: ListCustomersParams["ordering"]; desc: ListCustomersParams["ordering"] }> = {
+const SORT_TO_ORDERING: Record<
+  SortKey,
+  {
+    asc: ListCustomersParams["ordering"];
+    desc: ListCustomersParams["ordering"];
+  }
+> = {
   first_name: { asc: "first_name", desc: "-first_name" },
   orders_count: { asc: "orders_count", desc: "-orders_count" },
   lifetime_spend: { asc: "lifetime_spend", desc: "-lifetime_spend" },
@@ -63,7 +79,11 @@ export default function AdminCustomersPage() {
   };
 
   const ordering = sortKey ? SORT_TO_ORDERING[sortKey][direction] : undefined;
-  const params: ListCustomersParams = { page, search: search || undefined, ordering };
+  const params: ListCustomersParams = {
+    page,
+    search: search || undefined,
+    ordering,
+  };
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.customers.list(params),
@@ -73,8 +93,11 @@ export default function AdminCustomersPage() {
   const directionFor = (key: SortKey) => (sortKey === key ? direction : null);
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10 sm:px-10">
-      <AdminPageHeader title="Customers" description="A searchable directory of every customer." />
+    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+      <AdminPageHeader
+        title="Customers"
+        description="A searchable directory of every customer."
+      />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
@@ -91,7 +114,11 @@ export default function AdminCustomersPage() {
         )}
       </div>
 
-      {error && <p className="mb-3 text-sm text-status-cancelled-text">{getApiErrorMessage(error)}</p>}
+      {error && (
+        <p className="mb-3 text-sm text-status-cancelled-text">
+          {getApiErrorMessage(error)}
+        </p>
+      )}
 
       <TableContainer>
         <THead>
@@ -138,7 +165,10 @@ export default function AdminCustomersPage() {
 
           {!isLoading &&
             data?.results.map((customer) => (
-              <Tr key={customer.id} onClick={() => router.push(`/admin/customers/${customer.id}`)}>
+              <Tr
+                key={customer.id}
+                onClick={() => router.push(`/admin/customers/${customer.id}`)}
+              >
                 <Td className="font-medium">
                   {`${customer.first_name} ${customer.last_name}`.trim() || "—"}
                   {!customer.is_active && (
@@ -157,7 +187,13 @@ export default function AdminCustomersPage() {
                 </Td>
                 <Td>
                   {customer.loyalty_tier ? (
-                    <StatusBadge label={TIER_LABEL[customer.loyalty_tier] ?? customer.loyalty_tier} tone="ready" />
+                    <StatusBadge
+                      label={
+                        TIER_LABEL[customer.loyalty_tier] ??
+                        customer.loyalty_tier
+                      }
+                      tone="ready"
+                    />
                   ) : (
                     <span className="text-ink-muted">—</span>
                   )}
@@ -175,21 +211,35 @@ export default function AdminCustomersPage() {
                   {new Date(customer.created_at).toLocaleDateString()}
                 </Td>
                 <Td>
-                  <ChevronRight className="h-4 w-4 text-ink-muted" aria-hidden="true" />
+                  <ChevronRight
+                    className="h-4 w-4 text-ink-muted"
+                    aria-hidden="true"
+                  />
                 </Td>
               </Tr>
             ))}
         </TBody>
       </TableContainer>
 
-      {data && data.results.length === 0 && !isLoading && data.count === 0 && !search && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
-          <Users className="h-3.5 w-3.5" aria-hidden="true" />
-          Customers show up here as soon as someone registers or a walk-in sale is recorded for them.
-        </p>
-      )}
+      {data &&
+        data.results.length === 0 &&
+        !isLoading &&
+        data.count === 0 &&
+        !search && (
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
+            <Users className="h-3.5 w-3.5" aria-hidden="true" />
+            Customers show up here as soon as someone registers or a walk-in
+            sale is recorded for them.
+          </p>
+        )}
 
-      {data && <Pagination currentPage={data.current_page} numPages={data.num_pages} onPageChange={setPage} />}
+      {data && (
+        <Pagination
+          currentPage={data.current_page}
+          numPages={data.num_pages}
+          onPageChange={setPage}
+        />
+      )}
     </main>
   );
 }

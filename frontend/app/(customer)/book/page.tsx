@@ -4,15 +4,36 @@ import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-import { WizardSteps } from "@/components/booking/WizardSteps";
-import { Button, Card, CreaseDivider, Field, Input, Select, ServiceIcon, Textarea, serviceLabel } from "@/components/ui";
-import { useBooking } from "@/hooks/useBooking";
-import type { ServiceType } from "@/types";
+import { WizardSteps } from "@/src/components/booking/WizardSteps";
+import {
+  Button,
+  Card,
+  CreaseDivider,
+  Field,
+  Input,
+  Select,
+  ServiceIcon,
+  Textarea,
+  serviceLabel,
+} from "@/src/components/ui";
+import { useBooking } from "@/src/hooks/useBooking";
+import type { ServiceType } from "@/src/types";
 
 const SERVICE_TYPES: ServiceType[] = [
-  "VESTE", "TSHIRT", "CHEMISE", "PANTALON", "PULL", "ROBE", "ENSEMBLE",
-  "DRAPS_COMPLET", "COUETTE_1P", "COUETTE_2P", "COUETTE_3P",
-  "LAVAGE_ESSORAGE", "LAVAGE_SECHAGE", "REPASSAGE_PLASTIF",
+  "VESTE",
+  "TSHIRT",
+  "CHEMISE",
+  "PANTALON",
+  "PULL",
+  "ROBE",
+  "ENSEMBLE",
+  "DRAPS_COMPLET",
+  "COUETTE_1P",
+  "COUETTE_2P",
+  "COUETTE_3P",
+  "LAVAGE_ESSORAGE",
+  "LAVAGE_SECHAGE",
+  "REPASSAGE_PLASTIF",
 ];
 
 export default function BookServicesPage() {
@@ -40,92 +61,119 @@ export default function BookServicesPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-10">
-      <h1 className="font-display mb-1 text-xl font-semibold text-navy">Book a pickup</h1>
-      <p className="mb-6 text-sm text-ink-muted">Step 1 — what needs cleaning?</p>
+    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+      <h1 className="font-display mb-1 text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
+        Book a pickup
+      </h1>
+      <p className="mb-6 text-sm text-ink-muted">
+        Step 1 — what needs cleaning?
+      </p>
       <WizardSteps current={1} />
 
-      <Card>
-        <form onSubmit={handleAddItem}>
-          <Field label="Service">
-            <Select value={serviceType} onChange={(e) => setServiceType(e.target.value as ServiceType)}>
-              {SERVICE_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {serviceLabel(type)}
-                </option>
-              ))}
-            </Select>
-          </Field>
+      <div className="grid items-start gap-6 lg:grid-cols-2 xl:gap-10">
+        <Card>
+          <form onSubmit={handleAddItem}>
+            <Field label="Service">
+              <Select
+                value={serviceType}
+                onChange={(e) => setServiceType(e.target.value as ServiceType)}
+              >
+                {SERVICE_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {serviceLabel(type)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-          <Field label="Item label">
-            <Input
-              type="text"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              placeholder="e.g. Navy suit jacket"
-            />
-          </Field>
-
-          <Field label="Description (optional)">
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Small coffee stain on left sleeve, please pre-treat"
-            />
-          </Field>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Weight (kg)">
+            <Field label="Item label">
               <Input
-                type="number"
-                step="0.1"
-                min="0.1"
-                value={weightKg}
-                onChange={(e) => setWeightKg(e.target.value)}
+                type="text"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="e.g. Navy suit jacket"
               />
             </Field>
-            <Field label="Quantity">
-              <Input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+
+            <Field label="Description (optional)">
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. Small coffee stain on left sleeve, please pre-treat"
+              />
             </Field>
-          </div>
 
-          <Button type="submit" variant="secondary" className="w-full">
-            Add item
-          </Button>
-        </form>
-      </Card>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Weight (kg)">
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  value={weightKg}
+                  onChange={(e) => setWeightKg(e.target.value)}
+                />
+              </Field>
+              <Field label="Quantity">
+                <Input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                />
+              </Field>
+            </div>
 
-      <CreaseDivider />
+            <Button type="submit" variant="secondary" className="w-full">
+              Add item
+            </Button>
+          </form>
+        </Card>
 
-      <h2 className="font-display mb-3 text-sm font-medium text-ink">Items ({items.length})</h2>
-      {items.length === 0 && <p className="text-sm text-ink-muted">No items added yet.</p>}
-      <ul className="space-y-2">
-        {items.map((item) => (
-          <li key={item.clientId}>
-            <Card className="flex items-start gap-3 p-4">
-              <span className="mt-0.5 text-navy">
-                <ServiceIcon type={item.service_type} />
-              </span>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-ink">{item.label || serviceLabel(item.service_type)}</p>
-                <p className="text-xs text-ink-muted">
-                  {serviceLabel(item.service_type)} — {item.weight_kg}kg x{item.quantity ?? 1}
-                </p>
-                {item.description && <p className="mt-1 text-xs text-ink-muted">{item.description}</p>}
-              </div>
-              <button
-                onClick={() => removeItem(item.clientId)}
-                aria-label="Remove item"
-                className="text-ink-muted hover:text-status-cancelled-text"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </Card>
-          </li>
-        ))}
-      </ul>
+        <section>
+          <h2 className="font-display mb-3 text-sm font-medium text-ink">
+            Items ({items.length})
+          </h2>
+          {items.length === 0 && (
+            <p className="text-sm text-ink-muted">No items added yet.</p>
+          )}
+          <ul className="space-y-2">
+            {items.map((item) => (
+              <li key={item.clientId}>
+                <Card className="flex items-start gap-3 p-4">
+                  <span className="mt-0.5 text-navy">
+                    <ServiceIcon type={item.service_type} />
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-ink">
+                      {item.label || serviceLabel(item.service_type)}
+                    </p>
+                    <p className="text-xs text-ink-muted">
+                      {serviceLabel(item.service_type)} — {item.weight_kg}kg x
+                      {item.quantity ?? 1}
+                    </p>
+                    {item.description && (
+                      <p className="mt-1 text-xs text-ink-muted">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => removeItem(item.clientId)}
+                    aria-label="Remove item"
+                    className="text-ink-muted hover:text-status-cancelled-text"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </Card>
+              </li>
+            ))}
+          </ul>
 
-      <p className="mt-4 text-sm text-ink-muted">Estimated subtotal: {subtotal} XAF</p>
+          <p className="mt-4 text-sm text-ink-muted">
+            Estimated subtotal: {subtotal} XAF
+          </p>
+        </section>
+      </div>
 
       <div className="mt-8 flex justify-between">
         <Link href="/dashboard">

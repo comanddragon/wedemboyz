@@ -5,8 +5,8 @@ import { AlertTriangle, ChevronRight, Package, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { SearchInput } from "@/components/admin/SearchInput";
+import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
+import { SearchInput } from "@/src/components/admin/SearchInput";
 import {
   SortableTh,
   TableContainer,
@@ -17,14 +17,14 @@ import {
   Th,
   THead,
   Tr,
-} from "@/components/admin/Table";
-import { useSort } from "@/components/admin/useSort";
-import { InventoryItemForm } from "@/components/inventory/InventoryItemForm";
-import { Button, Card, Select, StatusBadge } from "@/components/ui";
-import { inventoryApi } from "@/lib/api";
-import { getApiErrorMessage } from "@/lib/api/errors";
-import { queryKeys } from "@/lib/query-keys";
-import type { InventoryCategory, InventoryItem } from "@/types";
+} from "@/src/components/admin/Table";
+import { useSort } from "@/src/components/admin/useSort";
+import { InventoryItemForm } from "@/src/components/inventory/InventoryItemForm";
+import { Button, Card, Select, StatusBadge } from "@/src/components/ui";
+import { inventoryApi } from "@/src/lib/api";
+import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { queryKeys } from "@/src/lib/query-keys";
+import type { InventoryCategory, InventoryItem } from "@/src/types";
 
 const CATEGORY_LABELS: Record<InventoryCategory, string> = {
   DETERGENT: "Detergent",
@@ -34,9 +34,14 @@ const CATEGORY_LABELS: Record<InventoryCategory, string> = {
   OTHER: "Other",
 };
 
-const CATEGORY_FILTER_OPTIONS: { value: InventoryCategory | "ALL"; label: string }[] = [
+const CATEGORY_FILTER_OPTIONS: {
+  value: InventoryCategory | "ALL";
+  label: string;
+}[] = [
   { value: "ALL", label: "All categories" },
-  ...(Object.entries(CATEGORY_LABELS) as [InventoryCategory, string][]).map(([value, label]) => ({ value, label })),
+  ...(Object.entries(CATEGORY_LABELS) as [InventoryCategory, string][]).map(
+    ([value, label]) => ({ value, label }),
+  ),
 ];
 
 type SortKey = "name" | "category" | "quantity" | "updated_at";
@@ -44,11 +49,19 @@ type SortKey = "name" | "category" | "quantity" | "updated_at";
 export default function AdminInventoryPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<InventoryCategory | "ALL">("ALL");
+  const [categoryFilter, setCategoryFilter] = useState<
+    InventoryCategory | "ALL"
+  >("ALL");
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const listParams = { category: categoryFilter === "ALL" ? undefined : categoryFilter };
-  const { data: items, isLoading, error } = useQuery({
+  const listParams = {
+    category: categoryFilter === "ALL" ? undefined : categoryFilter,
+  };
+  const {
+    data: items,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.inventory.items.list(listParams),
     queryFn: () => inventoryApi.listInventoryItems(listParams),
   });
@@ -65,21 +78,24 @@ export default function AdminInventoryPage() {
     return items.results.filter((i) => i.name.toLowerCase().includes(term));
   }, [items, search]);
 
-  const { sorted, toggle, directionFor } = useSort<InventoryItem, SortKey>(filtered, (row, key) => {
-    switch (key) {
-      case "name":
-        return row.name.toLowerCase();
-      case "category":
-        return row.category;
-      case "quantity":
-        return Number(row.quantity);
-      case "updated_at":
-        return row.updated_at;
-    }
-  });
+  const { sorted, toggle, directionFor } = useSort<InventoryItem, SortKey>(
+    filtered,
+    (row, key) => {
+      switch (key) {
+        case "name":
+          return row.name.toLowerCase();
+        case "category":
+          return row.category;
+        case "quantity":
+          return Number(row.quantity);
+        case "updated_at":
+          return row.updated_at;
+      }
+    },
+  );
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10 sm:px-10">
+    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
         title="Inventory"
         description="Stock levels for supplies and equipment."
@@ -99,7 +115,8 @@ export default function AdminInventoryPage() {
             </span>
             <div>
               <p className="text-sm font-medium text-status-cancelled-text">
-                {lowStock.results.length} item{lowStock.results.length === 1 ? "" : "s"} low on stock
+                {lowStock.results.length} item
+                {lowStock.results.length === 1 ? "" : "s"} low on stock
               </p>
               <p className="mt-1 text-xs text-status-cancelled-text/80">
                 {lowStock.results.map((i) => i.name).join(", ")}
@@ -125,7 +142,9 @@ export default function AdminInventoryPage() {
         />
         <Select
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value as InventoryCategory | "ALL")}
+          onChange={(e) =>
+            setCategoryFilter(e.target.value as InventoryCategory | "ALL")
+          }
           className="sm:w-48"
           aria-label="Filter by category"
         >
@@ -142,11 +161,20 @@ export default function AdminInventoryPage() {
         )}
       </div>
 
-      {error && <p className="mb-3 text-sm text-status-cancelled-text">{getApiErrorMessage(error)}</p>}
+      {error && (
+        <p className="mb-3 text-sm text-status-cancelled-text">
+          {getApiErrorMessage(error)}
+        </p>
+      )}
 
       <TableContainer>
         <THead>
-          <SortableTh label="Name" active={directionFor("name") !== null} direction={directionFor("name")} onSort={() => toggle("name")} />
+          <SortableTh
+            label="Name"
+            active={directionFor("name") !== null}
+            direction={directionFor("name")}
+            onSort={() => toggle("name")}
+          />
           <SortableTh
             label="Category"
             active={directionFor("category") !== null}
@@ -173,17 +201,27 @@ export default function AdminInventoryPage() {
           {isLoading && <TableSkeleton columns={6} />}
           {!isLoading && sorted && sorted.length === 0 && (
             <TableEmptyRow colSpan={6}>
-              {items && items.results.length === 0 ? "No inventory items yet." : "No items match your search or filter."}
+              {items && items.results.length === 0
+                ? "No inventory items yet."
+                : "No items match your search or filter."}
             </TableEmptyRow>
           )}
           {!isLoading &&
             sorted?.map((item) => (
-              <Tr key={item.id} onClick={() => router.push(`/admin/inventory/${item.id}`)}>
+              <Tr
+                key={item.id}
+                onClick={() => router.push(`/admin/inventory/${item.id}`)}
+              >
                 <Td className="flex items-center gap-2 font-medium">
-                  <Package className="h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+                  <Package
+                    className="h-3.5 w-3.5 shrink-0 text-ink-muted"
+                    aria-hidden="true"
+                  />
                   {item.name}
                 </Td>
-                <Td className="text-ink-muted">{CATEGORY_LABELS[item.category]}</Td>
+                <Td className="text-ink-muted">
+                  {CATEGORY_LABELS[item.category]}
+                </Td>
                 <Td align="right" className="tabular-nums">
                   {item.quantity} {item.unit}
                 </Td>
@@ -194,9 +232,14 @@ export default function AdminInventoryPage() {
                     <StatusBadge label="OK" tone="ready" />
                   )}
                 </Td>
-                <Td className="whitespace-nowrap text-ink-muted">{new Date(item.updated_at).toLocaleDateString()}</Td>
+                <Td className="whitespace-nowrap text-ink-muted">
+                  {new Date(item.updated_at).toLocaleDateString()}
+                </Td>
                 <Td>
-                  <ChevronRight className="h-4 w-4 text-ink-muted" aria-hidden="true" />
+                  <ChevronRight
+                    className="h-4 w-4 text-ink-muted"
+                    aria-hidden="true"
+                  />
                 </Td>
               </Tr>
             ))}

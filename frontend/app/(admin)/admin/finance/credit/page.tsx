@@ -5,19 +5,35 @@ import { ChevronRight, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { Pagination } from "@/components/admin/Pagination";
-import { SearchInput } from "@/components/admin/SearchInput";
-import { SortableTh, TableContainer, TableEmptyRow, TableSkeleton, TBody, Td, Th, THead, Tr } from "@/components/admin/Table";
-import { financeApi } from "@/lib/api";
-import { getApiErrorMessage } from "@/lib/api/errors";
-import { formatCurrency } from "@/lib/constants";
-import { queryKeys } from "@/lib/query-keys";
-import type { ListCreditAccountsParams } from "@/types";
+import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
+import { Pagination } from "@/src/components/admin/Pagination";
+import { SearchInput } from "@/src/components/admin/SearchInput";
+import {
+  SortableTh,
+  TableContainer,
+  TableEmptyRow,
+  TableSkeleton,
+  TBody,
+  Td,
+  Th,
+  THead,
+  Tr,
+} from "@/src/components/admin/Table";
+import { financeApi } from "@/src/lib/api";
+import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { formatCurrency } from "@/src/lib/constants";
+import { queryKeys } from "@/src/lib/query-keys";
+import type { ListCreditAccountsParams } from "@/src/types";
 
 type SortKey = "balance" | "updated_at";
 
-const SORT_TO_ORDERING: Record<SortKey, { asc: ListCreditAccountsParams["ordering"]; desc: ListCreditAccountsParams["ordering"] }> = {
+const SORT_TO_ORDERING: Record<
+  SortKey,
+  {
+    asc: ListCreditAccountsParams["ordering"];
+    desc: ListCreditAccountsParams["ordering"];
+  }
+> = {
   balance: { asc: "balance", desc: "-balance" },
   updated_at: { asc: "updated_at", desc: "-updated_at" },
 };
@@ -69,7 +85,7 @@ export default function AdminCreditAccountsPage() {
   const directionFor = (key: SortKey) => (sortKey === key ? direction : null);
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10 sm:px-10">
+    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
         title="Clients à crédit"
         description="Customers with a running tab — charge, track, and settle balances."
@@ -91,7 +107,6 @@ export default function AdminCreditAccountsPage() {
               setOutstandingOnly(e.target.checked);
               setPage(1);
             }}
-            className="h-4 w-4 rounded border-crease text-navy focus:ring-navy"
           />
           Outstanding only
         </label>
@@ -102,7 +117,11 @@ export default function AdminCreditAccountsPage() {
         )}
       </div>
 
-      {error && <p className="mb-3 text-sm text-status-cancelled-text">{getApiErrorMessage(error)}</p>}
+      {error && (
+        <p className="mb-3 text-sm text-status-cancelled-text">
+          {getApiErrorMessage(error)}
+        </p>
+      )}
 
       <TableContainer>
         <THead>
@@ -140,14 +159,22 @@ export default function AdminCreditAccountsPage() {
 
           {!isLoading &&
             data?.results.map((account) => (
-              <Tr key={account.id} onClick={() => router.push(`/admin/finance/credit/${account.user.id}`)}>
+              <Tr
+                key={account.id}
+                onClick={() =>
+                  router.push(`/admin/finance/credit/${account.user.id}`)
+                }
+              >
                 <Td className="font-medium">
-                  {`${account.user.first_name} ${account.user.last_name}`.trim() || `Customer #${account.user.id}`}
+                  {`${account.user.first_name} ${account.user.last_name}`.trim() ||
+                    `Customer #${account.user.id}`}
                 </Td>
                 <Td className="text-ink-muted">{account.user.phone_number}</Td>
                 <Td align="right" className="tabular-nums">
                   {Number(account.balance) > 0 ? (
-                    <span className="font-medium text-status-cancelled-text">{formatCurrency(account.balance)}</span>
+                    <span className="font-medium text-status-cancelled-text">
+                      {formatCurrency(account.balance)}
+                    </span>
                   ) : (
                     formatCurrency(account.balance)
                   )}
@@ -163,21 +190,36 @@ export default function AdminCreditAccountsPage() {
                       : `${account.days_since_last_activity}d ago`}
                 </Td>
                 <Td>
-                  <ChevronRight className="h-4 w-4 text-ink-muted" aria-hidden="true" />
+                  <ChevronRight
+                    className="h-4 w-4 text-ink-muted"
+                    aria-hidden="true"
+                  />
                 </Td>
               </Tr>
             ))}
         </TBody>
       </TableContainer>
 
-      {data && data.results.length === 0 && !isLoading && data.count === 0 && !search && outstandingOnly && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
-          <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
-          Accounts show up here once a charge is recorded — from a customer&apos;s fiche or a pay-later quick sale.
-        </p>
-      )}
+      {data &&
+        data.results.length === 0 &&
+        !isLoading &&
+        data.count === 0 &&
+        !search &&
+        outstandingOnly && (
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
+            <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
+            Accounts show up here once a charge is recorded — from a
+            customer&apos;s fiche or a pay-later quick sale.
+          </p>
+        )}
 
-      {data && <Pagination currentPage={data.current_page} numPages={data.num_pages} onPageChange={setPage} />}
+      {data && (
+        <Pagination
+          currentPage={data.current_page}
+          numPages={data.num_pages}
+          onPageChange={setPage}
+        />
+      )}
     </main>
   );
 }

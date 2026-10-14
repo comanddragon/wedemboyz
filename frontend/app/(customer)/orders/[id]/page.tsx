@@ -13,11 +13,11 @@ import {
   StatusBadge,
   orderStatusTone,
   serviceLabel,
-} from "@/components/ui";
-import { ordersApi } from "@/lib/api";
-import { getApiErrorMessage } from "@/lib/api/errors";
-import { queryKeys } from "@/lib/query-keys";
-import { EDITABLE_ORDER_STATUSES } from "@/types";
+} from "@/src/components/ui";
+import { ordersApi } from "@/src/lib/api";
+import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { queryKeys } from "@/src/lib/query-keys";
+import { EDITABLE_ORDER_STATUSES } from "@/src/types";
 
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -25,7 +25,11 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: order, isLoading, error } = useQuery({
+  const {
+    data: order,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.orders.detail(orderId),
     queryFn: () => ordersApi.getOrder(orderId),
   });
@@ -33,40 +37,65 @@ export default function OrderDetailPage() {
   const cancelMutation = useMutation({
     mutationFn: () => ordersApi.cancelOrder(orderId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(orderId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.orders.detail(orderId),
+      });
     },
   });
 
-  if (isLoading) return <main className="mx-auto max-w-2xl px-6 py-10 text-sm text-ink-muted">Loading...</main>;
+  if (isLoading)
+    return (
+      <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9 text-sm text-ink-muted">
+        Loading...
+      </main>
+    );
   if (error || !order) {
     return (
-      <main className="mx-auto max-w-2xl px-6 py-10">
-        <p className="text-sm text-status-cancelled-text">{getApiErrorMessage(error)}</p>
+      <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+        <p className="text-sm text-status-cancelled-text">
+          {getApiErrorMessage(error)}
+        </p>
       </main>
     );
   }
 
-  const canCancel = EDITABLE_ORDER_STATUSES.includes(order.status) || order.status === "CONFIRMED";
+  const canCancel =
+    EDITABLE_ORDER_STATUSES.includes(order.status) ||
+    order.status === "CONFIRMED";
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-10">
-      <Link href="/orders" className="mb-4 inline-block text-sm text-ink-muted hover:text-ink">
+    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+      <Link
+        href="/orders"
+        className="mb-4 inline-block text-sm text-ink-muted hover:text-ink"
+      >
         &larr; Back to orders
       </Link>
 
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-xl font-semibold text-navy">Order #{order.id}</h1>
-        <StatusBadge label={order.status} tone={orderStatusTone(order.status)} />
+        <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
+          Order #{order.id}
+        </h1>
+        <StatusBadge
+          label={order.status}
+          tone={orderStatusTone(order.status)}
+        />
       </div>
 
       <Card>
         <p className="text-sm text-ink-muted">Pickup: {order.pickup_address}</p>
-        <p className="text-sm text-ink-muted">Delivery: {order.delivery_address}</p>
-        {order.notes && <p className="text-sm text-ink-muted">Notes: {order.notes}</p>}
+        <p className="text-sm text-ink-muted">
+          Delivery: {order.delivery_address}
+        </p>
+        {order.notes && (
+          <p className="text-sm text-ink-muted">Notes: {order.notes}</p>
+        )}
 
         <CreaseDivider />
 
-        <h2 className="font-display mb-3 text-sm font-medium text-ink">Items</h2>
+        <h2 className="font-display mb-3 text-sm font-medium text-ink">
+          Items
+        </h2>
         <ul className="mb-4 space-y-3">
           {order.items.map((item) => (
             <li key={item.id} className="flex items-start gap-2">
@@ -74,11 +103,18 @@ export default function OrderDetailPage() {
                 <ServiceIcon type={item.service_type} />
               </span>
               <div className="flex-1 text-sm">
-                <p className="font-medium text-ink">{item.label || serviceLabel(item.service_type)}</p>
-                <p className="text-xs text-ink-muted">
-                  {serviceLabel(item.service_type)} — {item.weight_kg}kg x{item.quantity} — {item.subtotal} XAF
+                <p className="font-medium text-ink">
+                  {item.label || serviceLabel(item.service_type)}
                 </p>
-                {item.description && <p className="mt-1 text-xs text-ink-muted">{item.description}</p>}
+                <p className="text-xs text-ink-muted">
+                  {serviceLabel(item.service_type)} — {item.weight_kg}kg x
+                  {item.quantity} — {item.subtotal} XAF
+                </p>
+                {item.description && (
+                  <p className="mt-1 text-xs text-ink-muted">
+                    {item.description}
+                  </p>
+                )}
               </div>
             </li>
           ))}
@@ -107,7 +143,9 @@ export default function OrderDetailPage() {
 
         <CreaseDivider />
 
-        <h2 className="font-display mb-3 text-sm font-medium text-ink">Status history</h2>
+        <h2 className="font-display mb-3 text-sm font-medium text-ink">
+          Status history
+        </h2>
         <ul className="space-y-1 text-sm text-ink-muted">
           {order.status_history.map((entry, i) => (
             <li key={i}>
@@ -120,7 +158,11 @@ export default function OrderDetailPage() {
 
       <div className="mt-6 flex items-center gap-3">
         {canCancel && (
-          <Button variant="danger" onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending}>
+          <Button
+            variant="danger"
+            onClick={() => cancelMutation.mutate()}
+            disabled={cancelMutation.isPending}
+          >
             {cancelMutation.isPending ? "Cancelling..." : "Cancel order"}
           </Button>
         )}
@@ -130,7 +172,9 @@ export default function OrderDetailPage() {
         </Button>
       </div>
       {cancelMutation.error && (
-        <p className="mt-2 text-sm text-status-cancelled-text">{getApiErrorMessage(cancelMutation.error)}</p>
+        <p className="mt-2 text-sm text-status-cancelled-text">
+          {getApiErrorMessage(cancelMutation.error)}
+        </p>
       )}
     </main>
   );

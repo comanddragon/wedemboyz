@@ -5,9 +5,9 @@ import { ChevronRight, Package } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { Pagination } from "@/components/admin/Pagination";
-import { SearchInput } from "@/components/admin/SearchInput";
+import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
+import { Pagination } from "@/src/components/admin/Pagination";
+import { SearchInput } from "@/src/components/admin/SearchInput";
 import {
   SortableTh,
   TableContainer,
@@ -18,15 +18,15 @@ import {
   Th,
   THead,
   Tr,
-} from "@/components/admin/Table";
-import { useSort } from "@/components/admin/useSort";
-import { Select, StatusBadge, orderStatusTone } from "@/components/ui";
-import { ordersApi } from "@/lib/api";
-import { getApiErrorMessage } from "@/lib/api/errors";
-import { formatCurrency } from "@/lib/constants";
-import { queryKeys } from "@/lib/query-keys";
-import { customerFullName, customerNumber} from "@/lib/utils";
-import type { OrderListItem, OrderStatus } from "@/types";
+} from "@/src/components/admin/Table";
+import { useSort } from "@/src/components/admin/useSort";
+import { Select, StatusBadge, orderStatusTone } from "@/src/components/ui";
+import { ordersApi } from "@/src/lib/api";
+import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { formatCurrency } from "@/src/lib/constants";
+import { queryKeys } from "@/src/lib/query-keys";
+import { customerFullName, customerNumber } from "@/src/lib/utils";
+import type { OrderListItem, OrderStatus } from "@/src/types";
 
 const STATUS_OPTIONS: { value: OrderStatus | "ALL"; label: string }[] = [
   { value: "ALL", label: "All statuses" },
@@ -39,7 +39,8 @@ const STATUS_OPTIONS: { value: OrderStatus | "ALL"; label: string }[] = [
   { value: "CANCELLED", label: "Cancelled" },
 ];
 
-type SortKey = "id" | "customer" | "phone_number" | "created_at" | "total_amount" | "status";
+type SortKey =
+  "id" | "customer" | "phone_number" | "created_at" | "total_amount" | "status";
 
 export default function AdminOrdersPage() {
   const router = useRouter();
@@ -56,33 +57,41 @@ export default function AdminOrdersPage() {
     if (!data) return undefined;
     const term = search.trim().toLowerCase();
     return data.results.filter((order) => {
-        const name = customerFullName(order.customer)?.toLowerCase() ?? "";
-        const number = customerNumber(order.customer)?.toLowerCase() ?? "";
-      const matchesSearch = term === "" || String(order.id).includes(term) || name.includes(term) || number.includes(term);
-      const matchesStatus = statusFilter === "ALL" || order.status === statusFilter;
+      const name = customerFullName(order.customer)?.toLowerCase() ?? "";
+      const number = customerNumber(order.customer)?.toLowerCase() ?? "";
+      const matchesSearch =
+        term === "" ||
+        String(order.id).includes(term) ||
+        name.includes(term) ||
+        number.includes(term);
+      const matchesStatus =
+        statusFilter === "ALL" || order.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [data, search, statusFilter]);
 
-  const { sorted, toggle, directionFor } = useSort<OrderListItem, SortKey>(filtered, (row, key) => {
-    switch (key) {
-      case "id":
-        return row.id;
+  const { sorted, toggle, directionFor } = useSort<OrderListItem, SortKey>(
+    filtered,
+    (row, key) => {
+      switch (key) {
+        case "id":
+          return row.id;
         case "customer":
-            return customerFullName(row.customer)?.toLowerCase() ?? "";
+          return customerFullName(row.customer)?.toLowerCase() ?? "";
         case "phone_number":
-            return customerNumber(row.customer) ?? "";
-      case "created_at":
-        return row.created_at;
-      case "total_amount":
-        return Number(row.total_amount);
-      case "status":
-        return row.status;
-    }
-  });
+          return customerNumber(row.customer) ?? "";
+        case "created_at":
+          return row.created_at;
+        case "total_amount":
+          return Number(row.total_amount);
+        case "status":
+          return row.status;
+      }
+    },
+  );
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10 sm:px-10">
+    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
         title="Orders"
         description="Every customer's orders — staff see the same GET /orders/ list customers see, just unfiltered."
@@ -98,7 +107,9 @@ export default function AdminOrdersPage() {
         />
         <Select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as OrderStatus | "ALL")}
+          onChange={(e) =>
+            setStatusFilter(e.target.value as OrderStatus | "ALL")
+          }
           className="sm:w-52"
           aria-label="Filter by status"
         >
@@ -110,27 +121,38 @@ export default function AdminOrdersPage() {
         </Select>
         {data && (
           <p className="text-xs text-ink-muted sm:ml-auto">
-            {filtered?.length ?? 0} of {data.results.length} on this page · {data.count} total
+            {filtered?.length ?? 0} of {data.results.length} on this page ·{" "}
+            {data.count} total
           </p>
         )}
       </div>
 
-      {error && <p className="mb-3 text-sm text-status-cancelled-text">{getApiErrorMessage(error)}</p>}
+      {error && (
+        <p className="mb-3 text-sm text-status-cancelled-text">
+          {getApiErrorMessage(error)}
+        </p>
+      )}
 
       <TableContainer>
         <THead>
-          <SortableTh label="Order" active={directionFor("id") !== null} direction={directionFor("id")} onSort={() => toggle("id")} />
-            <SortableTh
-                label="Customer"
-                active={directionFor("customer") !== null}
-                direction={directionFor("customer")}
-                onSort={() => toggle("customer")}
-            /><SortableTh
+          <SortableTh
+            label="Order"
+            active={directionFor("id") !== null}
+            direction={directionFor("id")}
+            onSort={() => toggle("id")}
+          />
+          <SortableTh
+            label="Customer"
+            active={directionFor("customer") !== null}
+            direction={directionFor("customer")}
+            onSort={() => toggle("customer")}
+          />
+          <SortableTh
             label="Phone Number"
             active={directionFor("phone_number") !== null}
             direction={directionFor("phone_number")}
             onSort={() => toggle("phone_number")}
-        />
+          />
           <Th>Items</Th>
           <SortableTh
             label="Placed"
@@ -158,29 +180,50 @@ export default function AdminOrdersPage() {
 
           {!isLoading && sorted && sorted.length === 0 && (
             <TableEmptyRow colSpan={7}>
-              {data && data.results.length === 0 ? "No orders yet." : "No orders match your search or filter."}
+              {data && data.results.length === 0
+                ? "No orders yet."
+                : "No orders match your search or filter."}
             </TableEmptyRow>
           )}
 
           {!isLoading &&
             sorted?.map((order) => (
-              <Tr key={order.id} onClick={() => router.push(`/admin/orders/${order.id}`)}>
+              <Tr
+                key={order.id}
+                onClick={() => router.push(`/admin/orders/${order.id}`)}
+              >
                 <Td className="font-medium">#{order.id}</Td>
-                <Td>{customerFullName(order.customer) ?? <span className="text-ink-muted">—</span>}</Td>
-                  <Td>{customerNumber(order.customer) ?? <span className="text-ink-muted">—</span>}</Td>
+                <Td>
+                  {customerFullName(order.customer) ?? (
+                    <span className="text-ink-muted">—</span>
+                  )}
+                </Td>
+                <Td>
+                  {customerNumber(order.customer) ?? (
+                    <span className="text-ink-muted">—</span>
+                  )}
+                </Td>
 
                 <Td className="text-ink-muted">
                   {order.item_count} item{order.item_count === 1 ? "" : "s"}
                 </Td>
-                <Td className="whitespace-nowrap text-ink-muted">{new Date(order.created_at).toLocaleString()}</Td>
+                <Td className="whitespace-nowrap text-ink-muted">
+                  {new Date(order.created_at).toLocaleString()}
+                </Td>
                 <Td align="right" className="tabular-nums">
                   {formatCurrency(order.total_amount)}
                 </Td>
                 <Td>
-                  <StatusBadge label={order.status} tone={orderStatusTone(order.status)} />
+                  <StatusBadge
+                    label={order.status}
+                    tone={orderStatusTone(order.status)}
+                  />
                 </Td>
                 <Td>
-                  <ChevronRight className="h-4 w-4 text-ink-muted" aria-hidden="true" />
+                  <ChevronRight
+                    className="h-4 w-4 text-ink-muted"
+                    aria-hidden="true"
+                  />
                 </Td>
               </Tr>
             ))}
@@ -194,7 +237,13 @@ export default function AdminOrdersPage() {
         </p>
       )}
 
-      {data && <Pagination currentPage={data.current_page} numPages={data.num_pages} onPageChange={setPage} />}
+      {data && (
+        <Pagination
+          currentPage={data.current_page}
+          numPages={data.num_pages}
+          onPageChange={setPage}
+        />
+      )}
     </main>
   );
 }

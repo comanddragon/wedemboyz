@@ -3,11 +3,18 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { WizardSteps } from "@/components/booking/WizardSteps";
-import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
-import { useBooking } from "@/hooks/useBooking";
-import type { OrderType } from "@/lib/stores/booking.store";
-import type { TimeSlot } from "@/types";
+import { WizardSteps } from "@/src/components/booking/WizardSteps";
+import {
+  Button,
+  Card,
+  Field,
+  Input,
+  Select,
+  Textarea,
+} from "@/src/components/ui";
+import { useBooking } from "@/src/hooks/useBooking";
+import type { OrderType } from "@/src/lib/stores/booking.store";
+import type { TimeSlot } from "@/src/types";
 
 const ORDER_TYPES: { value: OrderType; label: string }[] = [
   { value: "pickup", label: "Pickup" },
@@ -36,51 +43,75 @@ export default function BookSchedulePage() {
   } = useBooking();
 
   const [date, setDate] = useState(scheduledPickupDate ?? "");
-  const [slot, setSlot] = useState<TimeSlot>((scheduledPickupSlot as TimeSlot) ?? "MORNING");
+  const [slot, setSlot] = useState<TimeSlot>(
+    (scheduledPickupSlot as TimeSlot) ?? "MORNING",
+  );
 
   function handleContinue() {
     setSchedule({ date, slot });
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-10">
-      <h1 className="font-display mb-1 text-xl font-semibold text-navy">Book a pickup</h1>
+    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+      <h1 className="font-display mb-1 text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
+        Book a pickup
+      </h1>
       <p className="mb-6 text-sm text-ink-muted">Step 2 — when and where?</p>
       <WizardSteps current={2} />
 
-      <Card>
-        <Field label="Order type">
-          <Select value={orderType} onChange={(e) => setOrderType(e.target.value as OrderType)}>
-            {ORDER_TYPES.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-
-        <Field label="Pickup address">
-          <Input
-            type="text"
-            value={pickupAddress}
-            onChange={(e) => setAddresses({ pickupAddress: e.target.value })}
-          />
-        </Field>
-
-        <Field label="Delivery address">
-          <Input
-            type="text"
-            value={deliveryAddress}
-            onChange={(e) => setAddresses({ deliveryAddress: e.target.value })}
-          />
-        </Field>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Pickup date">
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      <Card className="grid gap-x-5 md:grid-cols-6 lg:p-7">
+        <div className="md:col-span-2">
+          <Field label="Order type">
+            <Select
+              value={orderType}
+              onChange={(e) => setOrderType(e.target.value as OrderType)}
+            >
+              {ORDER_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </Select>
           </Field>
+        </div>
+
+        <div className="md:col-span-3">
+          <Field label="Pickup address">
+            <Input
+              type="text"
+              value={pickupAddress}
+              onChange={(e) => setAddresses({ pickupAddress: e.target.value })}
+            />
+          </Field>
+        </div>
+
+        <div className="md:col-span-3">
+          <Field label="Delivery address">
+            <Input
+              type="text"
+              value={deliveryAddress}
+              onChange={(e) =>
+                setAddresses({ deliveryAddress: e.target.value })
+              }
+            />
+          </Field>
+        </div>
+
+        <div className="md:col-span-2">
+          <Field label="Pickup date">
+            <Input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </Field>
+        </div>
+        <div className="md:col-span-2">
           <Field label="Time slot">
-            <Select value={slot} onChange={(e) => setSlot(e.target.value as TimeSlot)}>
+            <Select
+              value={slot}
+              onChange={(e) => setSlot(e.target.value as TimeSlot)}
+            >
               {TIME_SLOTS.map((s) => (
                 <option key={s.value} value={s.value}>
                   {s.label}
@@ -90,9 +121,14 @@ export default function BookSchedulePage() {
           </Field>
         </div>
 
-        <Field label="Notes">
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </Field>
+        <div className="md:col-span-6">
+          <Field label="Notes">
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </Field>
+        </div>
       </Card>
 
       <div className="mt-8 flex justify-between">

@@ -5,9 +5,9 @@ import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { Pagination } from "@/components/admin/Pagination";
-import { SearchInput } from "@/components/admin/SearchInput";
+import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
+import { Pagination } from "@/src/components/admin/Pagination";
+import { SearchInput } from "@/src/components/admin/SearchInput";
 import {
   SortableTh,
   TableContainer,
@@ -18,15 +18,15 @@ import {
   Th,
   THead,
   Tr,
-} from "@/components/admin/Table";
-import { Tabs } from "@/components/admin/Tabs";
-import { useSort } from "@/components/admin/useSort";
-import { StatusBadge } from "@/components/ui";
-import { paymentsApi } from "@/lib/api";
-import { getApiErrorMessage } from "@/lib/api/errors";
-import { formatCurrency } from "@/lib/constants";
-import { queryKeys } from "@/lib/query-keys";
-import type { Invoice } from "@/types";
+} from "@/src/components/admin/Table";
+import { Tabs } from "@/src/components/admin/Tabs";
+import { useSort } from "@/src/components/admin/useSort";
+import { StatusBadge } from "@/src/components/ui";
+import { paymentsApi } from "@/src/lib/api";
+import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { formatCurrency } from "@/src/lib/constants";
+import { queryKeys } from "@/src/lib/query-keys";
+import type { Invoice } from "@/src/types";
 
 type SortKey = "id" | "order" | "amount_due" | "is_settled" | "issued_at";
 
@@ -52,24 +52,30 @@ export default function AdminInvoicesPage() {
     );
   }, [data, search]);
 
-  const { sorted, toggle, directionFor } = useSort<Invoice, SortKey>(filtered, (row, key) => {
-    switch (key) {
-      case "id":
-        return row.id;
-      case "order":
-        return row.order;
-      case "amount_due":
-        return Number(row.amount_due);
-      case "is_settled":
-        return row.is_settled ? 1 : 0;
-      case "issued_at":
-        return row.issued_at;
-    }
-  });
+  const { sorted, toggle, directionFor } = useSort<Invoice, SortKey>(
+    filtered,
+    (row, key) => {
+      switch (key) {
+        case "id":
+          return row.id;
+        case "order":
+          return row.order;
+        case "amount_due":
+          return Number(row.amount_due);
+        case "is_settled":
+          return row.is_settled ? 1 : 0;
+        case "issued_at":
+          return row.issued_at;
+      }
+    },
+  );
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10 sm:px-10">
-      <AdminPageHeader title="Payments" description="Every payment attempt across all customers." />
+    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+      <AdminPageHeader
+        title="Payments"
+        description="Every payment attempt across all customers."
+      />
 
       <Tabs
         items={[
@@ -89,17 +95,32 @@ export default function AdminInvoicesPage() {
         />
         {data && (
           <p className="text-xs text-ink-muted sm:ml-auto">
-            {filtered?.length ?? 0} of {data.results.length} on this page · {data.count} total
+            {filtered?.length ?? 0} of {data.results.length} on this page ·{" "}
+            {data.count} total
           </p>
         )}
       </div>
 
-      {error && <p className="mb-3 text-sm text-status-cancelled-text">{getApiErrorMessage(error)}</p>}
+      {error && (
+        <p className="mb-3 text-sm text-status-cancelled-text">
+          {getApiErrorMessage(error)}
+        </p>
+      )}
 
       <TableContainer>
         <THead>
-          <SortableTh label="Invoice" active={directionFor("id") !== null} direction={directionFor("id")} onSort={() => toggle("id")} />
-          <SortableTh label="Order" active={directionFor("order") !== null} direction={directionFor("order")} onSort={() => toggle("order")} />
+          <SortableTh
+            label="Invoice"
+            active={directionFor("id") !== null}
+            direction={directionFor("id")}
+            onSort={() => toggle("id")}
+          />
+          <SortableTh
+            label="Order"
+            active={directionFor("order") !== null}
+            direction={directionFor("order")}
+            onSort={() => toggle("order")}
+          />
           <SortableTh
             label="Amount due"
             align="right"
@@ -127,14 +148,23 @@ export default function AdminInvoicesPage() {
 
           {!isLoading && sorted && sorted.length === 0 && (
             <TableEmptyRow colSpan={7}>
-              {data && data.results.length === 0 ? "No invoices yet." : "No invoices match your search."}
+              {data && data.results.length === 0
+                ? "No invoices yet."
+                : "No invoices match your search."}
             </TableEmptyRow>
           )}
 
           {!isLoading &&
             sorted?.map((invoice) => (
-              <Tr key={invoice.id} onClick={() => router.push(`/admin/payments/invoices/${invoice.id}`)}>
-                <Td className="font-medium">{invoice.invoice_number || `#${invoice.id}`}</Td>
+              <Tr
+                key={invoice.id}
+                onClick={() =>
+                  router.push(`/admin/payments/invoices/${invoice.id}`)
+                }
+              >
+                <Td className="font-medium">
+                  {invoice.invoice_number || `#${invoice.id}`}
+                </Td>
                 <Td className="text-ink-muted">#{invoice.order}</Td>
                 <Td align="right" className="tabular-nums">
                   {formatCurrency(invoice.amount_due)}
@@ -148,16 +178,27 @@ export default function AdminInvoicesPage() {
                     tone={invoice.is_settled ? "ready" : "pending"}
                   />
                 </Td>
-                <Td className="whitespace-nowrap text-ink-muted">{new Date(invoice.issued_at).toLocaleDateString()}</Td>
+                <Td className="whitespace-nowrap text-ink-muted">
+                  {new Date(invoice.issued_at).toLocaleDateString()}
+                </Td>
                 <Td>
-                  <ChevronRight className="h-4 w-4 text-ink-muted" aria-hidden="true" />
+                  <ChevronRight
+                    className="h-4 w-4 text-ink-muted"
+                    aria-hidden="true"
+                  />
                 </Td>
               </Tr>
             ))}
         </TBody>
       </TableContainer>
 
-      {data && <Pagination currentPage={data.current_page} numPages={data.num_pages} onPageChange={setPage} />}
+      {data && (
+        <Pagination
+          currentPage={data.current_page}
+          numPages={data.num_pages}
+          onPageChange={setPage}
+        />
+      )}
     </main>
   );
 }
