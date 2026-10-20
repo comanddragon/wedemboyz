@@ -1,7 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Info } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -21,7 +20,7 @@ import {
 } from "@/src/components/admin/Table";
 import { Tabs } from "@/src/components/admin/Tabs";
 import { useSort } from "@/src/components/admin/useSort";
-import { Select, StatusBadge, refundStatusTone } from "@/src/components/ui";
+import { Button, Select, StatusBadge, refundStatusTone } from "@/src/components/ui";
 import { paymentsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
@@ -39,6 +38,7 @@ const STATUS_OPTIONS: { value: RefundStatus | "ALL"; label: string }[] = [
 type SortKey = "id" | "payment" | "amount" | "status" | "created_at";
 
 export default function AdminRefundsPage() {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RefundStatus | "ALL">("ALL");
@@ -46,6 +46,19 @@ export default function AdminRefundsPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.payments.refunds(page),
     queryFn: () => paymentsApi.listRefunds(page),
+  });
+
+  const actionMutation = useMutation({
+    mutationFn: ({ id, action }: { id: number; action: "approve" | "reject" | "process" }) => {
+      if (action === "approve") return paymentsApi.approveRefund(id);
+      if (action === "reject") return paymentsApi.rejectRefund(id);
+      return paymentsApi.processRefund(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["refunds"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+    },
   });
 
   const filtered = useMemo(() => {
@@ -94,14 +107,6 @@ export default function AdminRefundsPage() {
         ]}
       />
 
-      <div className="mb-4 flex items-start gap-2 rounded-card bg-status-progress-bg px-3.5 py-2.5 text-xs text-status-progress-text">
-        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <p>
-          View-only for now — there&apos;s no confirmed approve/reject/process
-          endpoint yet, so this table can&apos;t take action on a refund.
-        </p>
-      </div>
-
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
           placeholder="Search this page by refund # or payment #"
@@ -146,6 +151,7 @@ export default function AdminRefundsPage() {
             direction={directionFor("id")}
             onSort={() => toggle("id")}
           />
+          <Th align="right">Actions</Th>
           <SortableTh
             label="Payment"
             active={directionFor("payment") !== null}
@@ -174,10 +180,10 @@ export default function AdminRefundsPage() {
           />
         </THead>
         <TBody>
-          {isLoading && <TableSkeleton columns={6} />}
+          {isLoading && <TableSkeleton columns={7} />}
 
           {!isLoading && sorted && sorted.length === 0 && (
-            <TableEmptyRow colSpan={6}>
+            <TableEmptyRow colSpan={7}>
               {data && data.results.length === 0
                 ? "No refunds requested yet."
                 : "No refunds match your search or filter."}
@@ -208,6 +214,40 @@ export default function AdminRefundsPage() {
                 </Td>
                 <Td className="whitespace-nowrap text-ink-muted">
                   {new Date(refund.created_at).toLocaleDateString()}
+                </Td>
+                <Td align="right">
+                  <div className="flex justify-end gap-1.5">
+                    {refund.status === "PENDING" && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={actionMutation.isPending}
+                          onClick={() => actionMutation.mutate({ id: refund.id, action: "approve" })}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={actionMutation.isPending}
+                          onClick={() => actionMutation.mutate({ id: refund.id, action: "reject" })}
+                        >
+                          Reject
+                        </Button>
+                      </>
+                    )}
+                    {refund.status === "APPROVED" && (
+                      <Button
+                        size="sm"
+                        variant="gold"
+                        disabled={actionMutation.isPending}
+                        onClick={() => actionMutation.mutate({ id: refund.id, action: "process" })}
+                      >
+                        Mark refunded
+                      </Button>
+                    )}
+                  </div>
                 </Td>
               </Tr>
             ))}

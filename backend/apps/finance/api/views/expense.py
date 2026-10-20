@@ -1,8 +1,26 @@
+import csv
+
+from django.http import HttpResponse
 from rest_framework import generics, permissions
+from rest_framework.views import APIView
 
 from apps.finance.api.serializers import ExpenseSerializer
 from apps.finance.models import Expense
 from apps.staff.permissions import HasStaffPermission, StaffPermission
+
+
+def expense_queryset(params):
+    queryset = Expense.objects.select_related("created_by")
+    category = params.get("category")
+    start = params.get("start")
+    end = params.get("end")
+    if category:
+        queryset = queryset.filter(category=category)
+    if start:
+        queryset = queryset.filter(date__gte=start)
+    if end:
+        queryset = queryset.filter(date__lte=end)
+    return queryset
 
 
 class ExpenseListCreateView(generics.ListCreateAPIView):
@@ -19,17 +37,7 @@ class ExpenseListCreateView(generics.ListCreateAPIView):
         return super().get_permissions()
 
     def get_queryset(self):
-        qs = Expense.objects.select_related("created_by")
-        category = self.request.query_params.get("category")
-        start = self.request.query_params.get("start")
-        end = self.request.query_params.get("end")
-        if category:
-            qs = qs.filter(category=category)
-        if start:
-            qs = qs.filter(date__gte=start)
-        if end:
-            qs = qs.filter(date__lte=end)
-        return qs
+        return expense_queryset(self.request.query_params)
 
 
 class ExpenseDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -39,3 +47,21 @@ class ExpenseDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [HasStaffPermission]
     required_staff_permission = StaffPermission.FINANCE_MANAGE
     queryset = Expense.objects.select_related("created_by")
+
+
+class ExpenseExportView(APIView):
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.REPORTS_EXPORT
+
+    def get(self, request):
+        queryset = expense_queryset(request.query_params)
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="wedemboyz-expenses.csv"'
+        writer = csv.writer(response)
+        writer.writerow(["Date", "Category", "Amount", "Currency", "Notes", "Recorded by"])
+        for expense in queryset:
+            writer.writerow([
+                expense.date, expense.get_category_display(), expense.amount,
+                expense.currency, expense.notes, str(expense.created_by or ""),
+            ])
+        return response

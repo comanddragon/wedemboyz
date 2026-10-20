@@ -3,20 +3,27 @@ from datetime import date, timedelta
 from django.db.models import Avg, Count, Sum
 from django.db.models.functions import TruncDate, TruncMonth
 from rest_framework import permissions
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.finance.models import Expense, PayrollEntry
+from apps.orders.models import Order
 from apps.payments.models import Payment
-from core.constants import PaymentStatus
+from core.constants import OrderStatus, PaymentStatus
 from apps.staff.permissions import HasStaffPermission, StaffPermission
 
 
 def _parse_date_range(request, default_days=30):
     start = request.query_params.get("start")
     end = request.query_params.get("end")
-    end_date = date.fromisoformat(end) if end else date.today()
-    start_date = date.fromisoformat(start) if start else end_date - timedelta(days=default_days)
+    try:
+        end_date = date.fromisoformat(end) if end else date.today()
+        start_date = date.fromisoformat(start) if start else end_date - timedelta(days=default_days)
+    except ValueError as exc:
+        raise ValidationError("Dates must use YYYY-MM-DD format.") from exc
+    if start_date > end_date:
+        raise ValidationError("Start date must be on or before end date.")
     return start_date, end_date
 
 
@@ -33,19 +40,31 @@ class RevenueAnalyticsView(APIView):
         period = request.query_params.get("period", "daily")
         start_date, end_date = _parse_date_range(request)
 
-        qs = Payment.objects.filter(
+        orders = Order.objects.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date,
+        ).exclude(status=OrderStatus.CANCELLED)
+        payments = Payment.objects.filter(
             status=PaymentStatus.SUCCEEDED,
-            paid_at__date__gte=start_date,
-            paid_at__date__lte=end_date,
+            voided_at__isnull=True,
+            received_at__date__gte=start_date,
+            received_at__date__lte=end_date,
         )
 
-        trunc = TruncMonth("paid_at") if period == "monthly" else TruncDate("paid_at")
-        rows = (
-            qs.annotate(bucket=trunc)
+        order_trunc = TruncMonth("created_at") if period == "monthly" else TruncDate("created_at")
+        payment_trunc = TruncMonth("received_at") if period == "monthly" else TruncDate("received_at")
+        rows = list(
+            orders.annotate(bucket=order_trunc)
             .values("bucket")
-            .annotate(revenue=Sum("amount"), payment_count=Count("id"))
+            .annotate(revenue=Sum("total_amount"), order_count=Count("id"))
             .order_by("bucket")
         )
+        cash_rows = {
+            row["bucket"]: row
+            for row in payments.annotate(bucket=payment_trunc)
+            .values("bucket")
+            .annotate(cash_received=Sum("amount"), payment_count=Count("id"))
+        }
 
         return Response(
             {
@@ -56,7 +75,9 @@ class RevenueAnalyticsView(APIView):
                     {
                         "date": row["bucket"].date() if hasattr(row["bucket"], "date") else row["bucket"],
                         "revenue": row["revenue"] or 0,
-                        "payment_count": row["payment_count"],
+                        "order_count": row["order_count"],
+                        "cash_received": cash_rows.get(row["bucket"], {}).get("cash_received", 0),
+                        "payment_count": cash_rows.get(row["bucket"], {}).get("payment_count", 0),
                     }
                     for row in rows
                 ],
@@ -76,12 +97,20 @@ class FinanceSummaryView(APIView):
     def get(self, request):
         start_date, end_date = _parse_date_range(request)
 
+        orders_qs = Order.objects.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date,
+        ).exclude(status=OrderStatus.CANCELLED)
         payments_qs = Payment.objects.filter(
             status=PaymentStatus.SUCCEEDED,
-            paid_at__date__gte=start_date,
-            paid_at__date__lte=end_date,
+            voided_at__isnull=True,
+            received_at__date__gte=start_date,
+            received_at__date__lte=end_date,
         )
-        revenue_agg = payments_qs.aggregate(total=Sum("amount"), count=Count("id"), avg=Avg("amount"))
+        income_agg = orders_qs.aggregate(
+            total=Sum("total_amount"), count=Count("id"), avg=Avg("total_amount")
+        )
+        cash_agg = payments_qs.aggregate(total=Sum("amount"), count=Count("id"))
 
         expenses_agg = Expense.objects.filter(
             date__gte=start_date, date__lte=end_date
@@ -93,17 +122,25 @@ class FinanceSummaryView(APIView):
             paid_on__lte=end_date,
         ).aggregate(total=Sum("amount"))
 
-        revenue = revenue_agg["total"] or 0
+        income = income_agg["total"] or 0
+        cash_received = cash_agg["total"] or 0
         expenses = (expenses_agg["total"] or 0) + (payroll_agg["total"] or 0)
 
         return Response(
             {
                 "start": start_date,
                 "end": end_date,
-                "revenue": revenue,
+                "revenue": income,
+                "income_booked": income,
+                "cash_received": cash_received,
+                "outstanding": max(income - cash_received, 0),
                 "expenses": expenses,
-                "profit": revenue - expenses,
-                "payment_count": revenue_agg["count"] or 0,
-                "average_payment": revenue_agg["avg"] or 0,
+                "profit": income - expenses,
+                "order_count": income_agg["count"] or 0,
+                "average_order": income_agg["avg"] or 0,
+                "payment_count": cash_agg["count"] or 0,
+                "average_payment": (
+                    cash_received / cash_agg["count"] if cash_agg["count"] else 0
+                ),
             }
         )

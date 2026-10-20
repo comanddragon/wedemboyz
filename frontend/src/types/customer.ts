@@ -17,6 +17,11 @@ export interface CustomerListItem {
   lifetime_spend: string;
   loyalty_tier: LoyaltyTier | null;
   credit_balance: string;
+  last_order_at: string | null;
+  source: "ONLINE" | "WALK_IN" | "REFERRAL" | "OTHER";
+  is_blocked: boolean;
+  tags: string[];
+  is_walk_in: boolean;
   created_at: string;
 }
 
@@ -29,13 +34,31 @@ export interface CustomerDetail extends CustomerListItem {
   recent_orders: OrderListItem[];
   /** Last 10 credit ledger entries. */
   recent_credit_transactions: CreditTransaction[];
+  notes: string;
+  blocked_reason: string;
+  marketing_opt_in: boolean;
+  whatsapp_number: string;
+  secondary_phone: string;
+  default_pickup_address: string;
 }
+
+export type CustomerInput = Partial<Pick<CustomerDetail,
+  "first_name" | "last_name" | "phone_number" | "email" | "is_active" |
+  "address_line" | "notes" | "source" | "tags" | "is_blocked" |
+  "blocked_reason" | "marketing_opt_in" | "whatsapp_number" |
+  "secondary_phone" | "default_pickup_address" | "is_walk_in"
+>>;
 
 /** Query params for GET /api/v1/users/customers/ */
 export interface ListCustomersParams {
   page?: number;
   /** Matches name/phone/email. */
   search?: string;
+  tier?: LoyaltyTier;
+  has_credit?: boolean;
+  active?: boolean;
+  source?: CustomerListItem["source"];
+  last_order_before?: string;
   ordering?:
     | "created_at"
     | "-created_at"

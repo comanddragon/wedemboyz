@@ -3,6 +3,9 @@ from .loyalty import (
     LoyaltyTransactionSerializer,
     RedeemPointsSerializer,
     StampCardConfigSerializer,
+    LoyaltyAdjustmentSerializer,
+    LoyaltyRuleSerializer,
+    LoyaltyTierConfigSerializer,
 )
 from .promo import DiscountCampaignSerializer, PromoCodeSerializer, PromoValidateSerializer
 
@@ -14,4 +17,7 @@ __all__ = [
     "LoyaltyTransactionSerializer",
     "RedeemPointsSerializer",
     "StampCardConfigSerializer",
+    "LoyaltyAdjustmentSerializer",
+    "LoyaltyRuleSerializer",
+    "LoyaltyTierConfigSerializer",
 ]

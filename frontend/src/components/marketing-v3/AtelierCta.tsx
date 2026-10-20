@@ -10,7 +10,7 @@ export function AtelierCta() {
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <section className="relative overflow-hidden border-t border-[var(--at-line)] px-6 py-24 md:py-28">
+    <section className="relative overflow-hidden border-t border-[var(--at-line)] px-4 py-14 sm:px-6 sm:py-20 md:py-28">
       <motion.div
         aria-hidden="true"
         className="pointer-events-none absolute left-1/2 top-0 h-px w-2/3 -translate-x-1/2"
@@ -26,17 +26,17 @@ export function AtelierCta() {
         <span className="at-display text-xs font-semibold uppercase tracking-[0.24em] text-[var(--at-brass-bright)]">
           Ready when you are
         </span>
-        <h2 className="at-display mt-4 text-3xl font-bold leading-tight text-[var(--at-ivory)] md:text-5xl">
+        <h2 className="at-display mt-2 text-2xl font-bold leading-tight text-[var(--at-ivory)] sm:mt-4 sm:text-3xl md:text-5xl">
           Hand it over. We&apos;ll take it from here.
         </h2>
-        <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-[var(--at-slate)]">
-          Reserve your first pickup today. Most orders are weighed, cleaned,
-          and returned within 48 hours.
+        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[var(--at-slate)] sm:mt-5 sm:text-base sm:leading-relaxed">
+          Reserve your first pickup today. Most orders are weighed, cleaned, and
+          returned within 48 hours.
         </p>
-        <div className="mt-9 flex justify-center">
+        <div className="mt-5 flex justify-center sm:mt-9">
           <Link
             href="/register"
-            className="at-focus at-btn-primary group inline-flex items-center gap-2 rounded-sm px-8 py-4 text-sm font-semibold uppercase tracking-wider transition-colors"
+            className="at-focus at-btn-primary group inline-flex min-h-11 items-center gap-2 rounded-sm px-6 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors sm:px-8 sm:py-4 sm:text-sm"
           >
             Schedule a pickup
             <ArrowRight

@@ -7,6 +7,12 @@ from apps.discounts.api.views import (
     StampCardConfigDetailView,
     StampCardConfigListCreateView,
     StampCardRedeemView,
+    CustomerLoyaltyAdjustmentView,
+    CustomerLoyaltyTransactionsView,
+    LoyaltyRuleDetailView,
+    LoyaltyRuleListCreateView,
+    LoyaltyTierConfigDetailView,
+    LoyaltyTierConfigListView,
 )
 
 urlpatterns = [
@@ -14,6 +20,12 @@ urlpatterns = [
     path("transactions/", LoyaltyTransactionListView.as_view(), name="loyalty-transactions"),
     path("redeem/", LoyaltyRedeemView.as_view(), name="loyalty-redeem"),
     path("stamp-card/redeem/", StampCardRedeemView.as_view(), name="loyalty-stamp-card-redeem"),
+    path("admin/rules/", LoyaltyRuleListCreateView.as_view(), name="loyalty-rule-list"),
+    path("admin/rules/<int:pk>/", LoyaltyRuleDetailView.as_view(), name="loyalty-rule-detail"),
+    path("admin/tiers/", LoyaltyTierConfigListView.as_view(), name="loyalty-tier-list"),
+    path("admin/tiers/<int:pk>/", LoyaltyTierConfigDetailView.as_view(), name="loyalty-tier-detail"),
+    path("admin/customers/<int:user_id>/adjust/", CustomerLoyaltyAdjustmentView.as_view(), name="loyalty-customer-adjust"),
+    path("admin/customers/<int:user_id>/transactions/", CustomerLoyaltyTransactionsView.as_view(), name="loyalty-customer-transactions"),
     path(
         "admin/stamp-card-config/",
         StampCardConfigListCreateView.as_view(),

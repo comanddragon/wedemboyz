@@ -221,15 +221,27 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
   const links = (admin ? ADMIN_LINKS : CUSTOMER_LINKS).filter(
     (item) => !item.permission || canAccess(permissions, item.permission),
   );
+  const mobileLinks = admin
+    ? links.filter((item) =>
+        [
+          "/admin",
+          "/admin/quick-sale",
+          "/admin/orders",
+          "/admin/chat",
+        ].includes(item.href),
+      )
+    : links.filter((item) =>
+        ["/dashboard", "/book", "/orders", "/chat"].includes(item.href),
+      );
   useLockBodyScroll(open);
 
   return (
     <>
-      <header className="relative z-40 flex h-[84px] shrink-0 items-center gap-3 bg-gradient-to-b from-crease via-steam to-steam/0 px-4 sm:px-6 xl:px-7">
+      <header className="mobile-safe-top relative z-40 flex h-[64px] shrink-0 items-center gap-3 border-b border-crease/70 bg-white/95 px-4 backdrop-blur-xl sm:h-[76px] sm:px-6 lg:border-0 lg:bg-gradient-to-b lg:from-crease lg:via-steam lg:to-steam/0 xl:px-7">
         <Link
           href="/"
-          className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-crease-strong bg-transparent px-3.5 text-navy transition-colors hover:border-navy hover:bg-white/60"
-          aria-label="WEDEMBOYZ — back to home page"
+          className="flex h-11 shrink-0 items-center gap-2 text-navy transition-colors sm:rounded-full sm:border sm:border-crease-strong sm:px-3.5 lg:h-10 lg:hover:border-navy lg:hover:bg-white/60"
+          aria-label="Wedemboyz Lavomatique — back to home page"
         >
           <Image
             src="/icon-mark.png"
@@ -239,8 +251,8 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
             priority
             className="h-7 w-auto"
           />
-          <span className="hidden font-display text-[0.95rem] font-medium tracking-[0.01em] sm:block">
-            WEDEMBOYZ
+          <span className="font-display text-[0.95rem] font-semibold tracking-[-0.01em]">
+            Wedemboyz Lavomatique
           </span>
         </Link>
 
@@ -265,10 +277,10 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
         <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-0">
           <Link
             href={admin ? "/admin/chat" : "/notifications"}
-            className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-white/90 shadow-float text-navy transition-colors hover:border-gold hover:bg-gold-50"
+            className="relative grid h-11 w-11 place-items-center rounded-full bg-mist text-navy transition-colors hover:bg-gold-50 sm:bg-white/90 sm:shadow-float lg:h-10 lg:w-10"
             aria-label={admin ? "Open inbox" : "Open notifications"}
           >
-            <Bell className="h-4 w-4" />
+            {admin ? <MessageCircle className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
             <span className="absolute right-2.5 top-2 h-1.5 w-1.5 rounded-full bg-gold" />
           </Link>
           <details className="group relative hidden sm:block">
@@ -304,13 +316,49 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="grid h-10 w-10 place-items-center rounded-full bg-navy text-white lg:hidden"
+            className="grid h-11 w-11 place-items-center rounded-full bg-navy text-white lg:hidden"
             aria-label="Open navigation"
           >
             <Menu className="h-4 w-4" />
           </button>
         </div>
       </header>
+
+      <nav
+        className="mobile-safe-bottom fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-crease/80 bg-white/95 px-2 pt-2 shadow-[0_-12px_32px_-20px_color-mix(in_srgb,var(--color-navy)_45%,transparent)] backdrop-blur-xl lg:hidden"
+        aria-label={
+          admin ? "Admin quick navigation" : "Customer quick navigation"
+        }
+      >
+        {mobileLinks.map(({ href, label, icon: Icon }) => {
+          const active = isActive(pathname, href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[0.68rem] font-semibold transition-colors ${active ? "bg-navy text-white" : "text-ink-muted active:bg-steam active:text-navy"}`}
+              aria-current={active ? "page" : undefined}
+            >
+              <Icon
+                className={`h-[19px] w-[19px] ${active ? "text-gold" : ""}`}
+                aria-hidden="true"
+              />
+              <span className="max-w-full truncate">
+                {label.replace(" pickup", "")}
+              </span>
+            </Link>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[0.68rem] font-semibold text-ink-muted active:bg-steam active:text-navy"
+          aria-label="Open all navigation"
+        >
+          <Menu className="h-[19px] w-[19px]" aria-hidden="true" />
+          More
+        </button>
+      </nav>
 
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
@@ -319,7 +367,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
             onClick={() => setOpen(false)}
             aria-label="Close navigation"
           />
-          <div className="absolute inset-y-0 right-0 flex w-[min(88vw,360px)] flex-col bg-white p-5 shadow-2xl">
+          <div className="mobile-safe-top mobile-safe-bottom absolute inset-y-0 right-0 flex w-[min(92vw,380px)] flex-col bg-white p-5 shadow-2xl">
             <div className="flex items-center justify-between">
               <p className="font-display text-lg font-bold text-navy">Menu</p>
               <button
@@ -330,13 +378,16 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="mt-7 grid gap-1" aria-label="Mobile navigation">
+            <nav
+              className="mt-6 grid grid-cols-2 gap-2 overflow-y-auto"
+              aria-label="All navigation"
+            >
               {links.map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
                   href={href}
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold ${isActive(pathname, href) ? "bg-navy text-white" : "text-ink-soft hover:bg-mist"}`}
+                  className={`flex min-h-14 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold ${isActive(pathname, href) ? "bg-navy text-white" : "bg-mist text-ink-soft active:bg-steam"}`}
                 >
                   <Icon className="h-[18px] w-[18px]" />
                   {label}

@@ -36,6 +36,33 @@ export interface PayrollEntryInput {
   notes?: string;
 }
 
+export interface PayrollGenerationResult {
+  created: PayrollEntry[];
+  created_count: number;
+  skipped_count: number;
+}
+
+export type PaymentMethodTotals = Partial<Record<"CASH" | "MTN_MOMO" | "ORANGE_MONEY" | "BANK_TRANSFER" | "OTHER", string>>;
+
+export interface CashRegisterDay {
+  id: number;
+  date: string;
+  opening_float: string;
+  cash_expenses: string;
+  counted_cash: string | null;
+  status: "OPEN" | "CLOSED";
+  notes: string;
+  opened_by: number | null;
+  closed_by: number | null;
+  closed_at: string | null;
+  received_by_method: PaymentMethodTotals;
+  refunded_by_method: PaymentMethodTotals;
+  expected_cash: string;
+  variance: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Mirrors apps.finance.api.serializers.expense.ExpenseSerializer */
 export interface Expense {
   id: number;
@@ -72,6 +99,8 @@ export interface RevenueAnalyticsPoint {
   date: string; // ISO date (or year-month for monthly buckets)
   revenue: number;
   payment_count: number;
+  order_count: number;
+  cash_received: number;
 }
 
 /** GET /api/v1/finance/analytics/revenue/?period=daily|monthly&start=&end= */
@@ -93,10 +122,15 @@ export interface FinanceSummary {
   start: string;
   end: string;
   revenue: number;
+  income_booked: number;
+  cash_received: number;
+  outstanding: number;
   expenses: number;
   profit: number;
   payment_count: number;
   average_payment: number;
+  order_count: number;
+  average_order: number;
 }
 
 export interface FinanceSummaryParams {

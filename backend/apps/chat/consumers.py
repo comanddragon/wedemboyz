@@ -66,10 +66,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _user_can_access_room(self, user, room_id):
+        from apps.staff.permissions import StaffPermission, has_staff_permission
+
         from .models import ChatRoom
 
         if user.is_staff:
-            return ChatRoom.objects.filter(pk=room_id).exists()
+            return has_staff_permission(user, StaffPermission.CHAT_MANAGE) and ChatRoom.objects.filter(pk=room_id).exists()
         return ChatRoom.objects.filter(pk=room_id).filter(_access_filter(user)).exists()
 
     @database_sync_to_async

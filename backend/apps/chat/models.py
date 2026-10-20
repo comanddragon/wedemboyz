@@ -19,6 +19,14 @@ class ChatRoom(TimeStampedModel):
         blank=True,
         related_name="chat_rooms_as_agent",
     )
+    assigned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="chat_assignments_made",
+    )
+    assigned_at = models.DateTimeField(null=True, blank=True)
     order = models.ForeignKey(
         "orders.Order",
         on_delete=models.SET_NULL,
@@ -28,6 +36,7 @@ class ChatRoom(TimeStampedModel):
         help_text="Optional — link to the order this chat is about.",
     )
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    closed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-updated_at"]

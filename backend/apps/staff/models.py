@@ -18,9 +18,17 @@ def default_invite_expiry():
 class StaffRole(models.TextChoices):
     MANAGER = "MANAGER", "Manager"
     ATTENDANT = "ATTENDANT", "Attendant"
+    CASHIER = "CASHIER", "Cashier"
+    DRIVER = "DRIVER", "Driver"
 
 
 class StaffProfile(TimeStampedModel):
+    class EmploymentStatus(models.TextChoices):
+        ACTIVE = "ACTIVE", "Active"
+        ON_LEAVE = "ON_LEAVE", "On leave"
+        SUSPENDED = "SUSPENDED", "Suspended"
+        TERMINATED = "TERMINATED", "Terminated"
+
     """
     One row per staff user (CustomUser.is_staff=True), carrying the role +
     admin-management metadata that a plain `is_staff` boolean can't. Created
@@ -43,12 +51,36 @@ class StaffProfile(TimeStampedModel):
         related_name="staff_members_invited",
     )
     joined_at = models.DateTimeField(auto_now_add=True)
+    hire_date = models.DateField(null=True, blank=True)
+    employment_status = models.CharField(
+        max_length=12,
+        choices=EmploymentStatus.choices,
+        default=EmploymentStatus.ACTIVE,
+    )
+    base_salary = models.DecimalField(max_digits=12, decimal_places=0, null=True, blank=True)
+    address = models.CharField(max_length=255, blank=True)
+    emergency_contact_name = models.CharField(max_length=150, blank=True)
+    emergency_contact_phone = models.CharField(max_length=20, blank=True)
+    notes = models.TextField(blank=True)
+    is_available_for_chat = models.BooleanField(
+        default=True,
+        help_text="Available to receive new customer chat assignments.",
+    )
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.user} — {self.role}"
+
+    @property
+    def can_receive_chats(self):
+        return (
+            self.is_active
+            and self.employment_status == self.EmploymentStatus.ACTIVE
+            and self.is_available_for_chat
+            and self.user.is_active
+        )
 
 
 class StaffInvite(TimeStampedModel):
@@ -105,6 +137,58 @@ class StaffActivityLog(TimeStampedModel):
 
     def __str__(self):
         return f"{self.staff} — {self.action}"
+
+
+class BusinessSettings(TimeStampedModel):
+    business_name = models.CharField(max_length=150, default="Wedemboyz Lavomatique")
+    address = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=30, blank=True)
+    tax_number = models.CharField(max_length=80, blank=True)
+    receipt_footer = models.TextField(blank=True)
+    delivery_fee_flat = models.DecimalField(max_digits=10, decimal_places=0, default=1500)
+    free_delivery_threshold = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)
+    tax_rate_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    subscription_period_days = models.PositiveIntegerField(default=30)
+    operating_hours = models.JSONField(default=dict, blank=True)
+    closed_days = models.JSONField(default=list, blank=True)
+    slot_capacities = models.JSONField(default=dict, blank=True)
+    notification_channels = models.JSONField(default=dict, blank=True)
+    notification_templates = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        verbose_name_plural = "business settings"
+
+    @classmethod
+    def load(cls):
+        instance, _ = cls.objects.get_or_create(pk=1)
+        return instance
+
+
+class PriceItem(TimeStampedModel):
+    class UnitMode(models.TextChoices):
+        PIECE = "PIECE", "Per piece"
+        KILOGRAM = "KILOGRAM", "Per kilogram"
+
+    service_type = models.CharField(max_length=40)
+    label = models.CharField(max_length=120)
+    unit_mode = models.CharField(max_length=12, choices=UnitMode.choices)
+    price = models.DecimalField(max_digits=10, decimal_places=0)
+    minimum_charge = models.DecimalField(max_digits=10, decimal_places=0, default=0)
+    effective_from = models.DateField(default=timezone.localdate)
+    effective_until = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["service_type", "-effective_from"]
+        indexes = [models.Index(fields=["service_type", "is_active", "effective_from"])]
+
+
+class SubscriptionPlanSetting(TimeStampedModel):
+    plan = models.CharField(max_length=20, unique=True)
+    label = models.CharField(max_length=120)
+    price = models.DecimalField(max_digits=10, decimal_places=0)
+    kilos = models.DecimalField(max_digits=6, decimal_places=2)
+    is_active = models.BooleanField(default=True)
 
 
 def log_activity(staff, action: str, description: str = ""):

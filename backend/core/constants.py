@@ -50,6 +50,26 @@ class PaymentStatus(models.TextChoices):
     PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED", "Partially Refunded"
 
 
+class OrderPaymentStatus(models.TextChoices):
+    UNPAID = "UNPAID", "Unpaid"
+    PARTIALLY_PAID = "PARTIALLY_PAID", "Partially paid"
+    PAID = "PAID", "Paid"
+    OVERPAID = "OVERPAID", "Overpaid"
+    PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED", "Partially refunded"
+    REFUNDED = "REFUNDED", "Refunded"
+    WAIVED = "WAIVED", "Waived"
+    NO_CHARGE = "NO_CHARGE", "No charge"
+    VOID = "VOID", "Void"
+
+
+class PaymentMethodType(models.TextChoices):
+    CASH = "CASH", "Cash"
+    MTN_MOMO = "MTN_MOMO", "MTN Mobile Money"
+    ORANGE_MONEY = "ORANGE_MONEY", "Orange Money"
+    BANK_TRANSFER = "BANK_TRANSFER", "Bank transfer"
+    OTHER = "OTHER", "Other"
+
+
 class PaymentGateway(models.TextChoices):
     STRIPE = "STRIPE", "Card (Stripe)"
     PAYPAL = "PAYPAL", "PayPal"

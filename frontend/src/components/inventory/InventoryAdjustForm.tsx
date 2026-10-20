@@ -42,6 +42,8 @@ export function InventoryAdjustForm({
   const [changeType, setChangeType] = useState<InventoryChangeType>("RESTOCK");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
+  const [unitCost, setUnitCost] = useState("");
+  const [reference, setReference] = useState("");
 
   const adjustMutation = useMutation({
     mutationFn: () => {
@@ -55,6 +57,8 @@ export function InventoryAdjustForm({
         change_type: changeType,
         quantity_change,
         reason: reason.trim() || undefined,
+        unit_cost: changeType === "RESTOCK" && unitCost ? Number(unitCost) : undefined,
+        reference: reference.trim() || undefined,
       });
     },
     onSuccess: (updated) => {
@@ -126,6 +130,29 @@ export function InventoryAdjustForm({
           placeholder="e.g. delivery from Casino, or weekly stocktake"
         />
       </Field>
+
+      {changeType === "RESTOCK" && (
+        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+          <Field label="Purchase cost per unit" htmlFor="adjust-unit-cost">
+            <Input
+              id="adjust-unit-cost"
+              type="number"
+              min="0"
+              step="1"
+              inputMode="numeric"
+              value={unitCost}
+              onChange={(e) => setUnitCost(e.target.value)}
+            />
+          </Field>
+          <Field label="Supplier invoice / reference" htmlFor="adjust-reference">
+            <Input
+              id="adjust-reference"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+            />
+          </Field>
+        </div>
+      )}
 
       {adjustMutation.isError && (
         <p className="mb-3 text-sm text-status-cancelled-text">

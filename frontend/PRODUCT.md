@@ -8,7 +8,7 @@ product
 
 Two audiences share this codebase under one visual system:
 
-- **Customers** in Yaoundé booking laundry pickup/delivery, comparing WEDEMBOYZ against DIY laundry or an informal
+- **Customers** in Yaoundé booking laundry pickup/delivery, comparing Wedemboyz Lavomatique against DIY laundry or an informal
   option — mostly mobile, price-sensitive, need quick trust signals (see PRODUCT.md context below).
 - **Staff/admin** (ops, dispatch, support) running the business day-to-day: triaging orders, resolving payment/refund
   issues, staffing the chat inbox. They're in a task, at a desk, repeatedly — familiarity and speed matter more than
@@ -18,7 +18,7 @@ This file's admin scope is the staff-facing surface at `/admin/*`.
 
 ## Product Purpose
 
-WEDEMBOYZ Lavomatique is a pickup-and-delivery laundry service. The admin surface exists so staff can run operations:
+Wedemboyz Lavomatique is a pickup-and-delivery laundry service. The admin surface exists so staff can run operations:
 see and update order status, keep an eye on payments/refunds, staff the customer chat inbox. Success looks like a staff
 member finding what they need in one glance and completing an action (update a status, jump into a chat) in one or two
 clicks — without needing training.

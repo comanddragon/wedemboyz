@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.discounts.models import LoyaltyTransaction, StampCardConfig
+from apps.discounts.models import LoyaltyRule, LoyaltyTierConfig, LoyaltyTransaction, StampCardConfig
 from apps.users.models import LoyaltyAccount
 from services.loyalty import stamp_card_progress
 
@@ -34,3 +34,27 @@ class LoyaltyTransactionSerializer(serializers.ModelSerializer):
 class RedeemPointsSerializer(serializers.Serializer):
     points = serializers.IntegerField(min_value=1)
     note = serializers.CharField(required=False, allow_blank=True)
+
+
+class LoyaltyRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LoyaltyRule
+        fields = ["id", "name", "points_per_currency_unit", "min_spend", "is_active", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+
+class LoyaltyTierConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LoyaltyTierConfig
+        fields = ["id", "tier", "minimum_lifetime_points", "discount_percent", "bonus_points_percent", "priority_service", "is_active"]
+        read_only_fields = ["id", "tier"]
+
+
+class LoyaltyAdjustmentSerializer(serializers.Serializer):
+    points = serializers.IntegerField()
+    reason = serializers.CharField(max_length=255)
+
+    def validate_points(self, value):
+        if value == 0:
+            raise serializers.ValidationError("Adjustment cannot be zero.")
+        return value

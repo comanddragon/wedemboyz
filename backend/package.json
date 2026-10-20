@@ -1,0 +1,13 @@
+{
+  "name": "wedemboyz-api-cloudflare",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:cloudflare": "wrangler dev",
+    "deploy:cloudflare": "wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "wrangler": "latest"
+  }
+}

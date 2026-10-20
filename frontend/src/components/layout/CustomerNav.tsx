@@ -94,7 +94,7 @@ function Sidebar({ close }: { close: () => void }) {
       <div className="flex h-20 items-center gap-3 border-b border-crease px-5">
         <Link
           href="/"
-          aria-label="WEDEMBOYZ — back to home page"
+          aria-label="Wedemboyz Lavomatique — back to home page"
           className="flex items-center gap-3"
         >
           <Image
@@ -107,7 +107,7 @@ function Sidebar({ close }: { close: () => void }) {
           />
           <div>
             <p className="font-display text-base font-semibold text-navy">
-              WEDEMBOYZ
+              Wedemboyz Lavomatique
             </p>
             <p className="text-xs text-ink-muted">My laundry</p>
           </div>

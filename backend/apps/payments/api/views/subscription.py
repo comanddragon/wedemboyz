@@ -10,10 +10,13 @@ from apps.payments.api.serializers import (
     SubscriptionCheckoutSerializer,
     SubscriptionCreateSerializer,
     SubscriptionSerializer,
+    AdminSubscriptionSerializer,
+    SubscriptionAdminActionSerializer,
 )
 from apps.payments.models import Payment, Subscription
 from core.constants import PaymentGateway, PaymentStatus
 from services.pricing import price_for_subscription_plan
+from apps.staff.permissions import HasStaffPermission, StaffPermission
 
 
 class SubscriptionListCreateView(generics.ListCreateAPIView):
@@ -155,7 +158,7 @@ class SubscriptionCheckoutView(APIView):
             result = campay_gateway.initiate_collection(
                 amount=amount,
                 phone_number=phone_number,
-                description=f"WEDEMBOYZ Lavomatique — {subscription.get_plan_display()}",
+                description=f"Wedemboyz Lavomatique — {subscription.get_plan_display()}",
                 external_reference=f"subscription-{subscription.pk}",
                 user=subscription.user,
             )
@@ -252,3 +255,51 @@ class SubscriptionActionView(APIView):
                 subscription.external_subscription_id,
                 subscription.gateway,
             )
+
+
+class AdminSubscriptionListView(generics.ListAPIView):
+    serializer_class = AdminSubscriptionSerializer
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.FINANCE_MANAGE
+
+    def get_queryset(self):
+        queryset = Subscription.objects.select_related("user")
+        status_filter = self.request.query_params.get("status")
+        search = self.request.query_params.get("search", "").strip()
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        if search:
+            from django.db.models import Q
+            queryset = queryset.filter(Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search) | Q(user__phone_number__icontains=search))
+        return queryset
+
+
+class AdminSubscriptionActionView(APIView):
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.FINANCE_MANAGE
+
+    @transaction.atomic
+    def post(self, request, pk):
+        subscription = get_object_or_404(Subscription.objects.select_for_update(), pk=pk)
+        serializer = SubscriptionAdminActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        action = serializer.validated_data["action"]
+        from django.utils import timezone
+        from datetime import timedelta
+        from services.pricing import SUBSCRIPTION_PERIOD_DAYS, kg_allowance_for_plan
+
+        if action in {"activate", "renew"}:
+            subscription.status = Subscription.Status.ACTIVE
+            subscription.start_date = timezone.localdate()
+            subscription.end_date = subscription.start_date + timedelta(days=SUBSCRIPTION_PERIOD_DAYS)
+            subscription.kg_remaining = kg_allowance_for_plan(subscription.plan)
+        elif action == "pause":
+            subscription.status = Subscription.Status.PAUSED
+        elif action == "resume":
+            subscription.status = Subscription.Status.ACTIVE
+        elif action == "cancel":
+            subscription.status = Subscription.Status.CANCELLED
+        elif action == "adjust_kilos":
+            subscription.kg_remaining = serializer.validated_data["kilos"]
+        subscription.save()
+        return Response(AdminSubscriptionSerializer(subscription).data)

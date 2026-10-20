@@ -38,7 +38,7 @@ class TestInitiateCollection:
         result = campay_gateway.initiate_collection(
             amount=25,
             phone_number="237677300001",
-            description="WEDEMBOYZ Lavomatique — Order #5409",
+            description="Wedemboyz Lavomatique — Order #5409",
             external_reference="order-5409",
         )
 

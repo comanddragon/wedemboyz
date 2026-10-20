@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileDown } from "lucide-react";
+import { ArrowLeft, FileDown, Printer } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { ReactNode } from "react";
@@ -89,12 +89,17 @@ export default function AdminInvoiceDetailPage() {
         />
       </Card>
 
+      <div className="mt-4 flex flex-wrap gap-2 print:hidden">
+        <Button variant="secondary" onClick={() => window.print()}>
+          <Printer className="h-4 w-4" aria-hidden="true" />
+          Print invoice
+        </Button>
       {invoice.pdf_file && (
         <a
           href={invoice.pdf_file}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 inline-block"
+          className="inline-block"
         >
           <Button variant="secondary">
             <FileDown className="h-4 w-4" aria-hidden="true" />
@@ -102,6 +107,7 @@ export default function AdminInvoiceDetailPage() {
           </Button>
         </a>
       )}
+      </div>
     </main>
   );
 }

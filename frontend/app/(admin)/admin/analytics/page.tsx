@@ -109,7 +109,7 @@ export default function AdminAnalyticsPage() {
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
         title="Analytics"
-        description="Revenue, expenses, and profit over time."
+        description="Income booked from orders, cash collected, expenses, and profit."
         action={<DateRangePicker preset={preset} onPresetChange={setPreset} />}
       />
 
@@ -122,32 +122,30 @@ export default function AdminAnalyticsPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={TrendingUp}
-          label="Revenue"
-          value={summaryLoading ? "—" : formatCurrency(summary?.revenue ?? 0)}
+          label="Income booked"
+          value={summaryLoading ? "—" : formatCurrency(summary?.income_booked ?? 0)}
         />
         <StatCard
           icon={TrendingDown}
-          label="Expenses"
-          value={summaryLoading ? "—" : formatCurrency(summary?.expenses ?? 0)}
+          label="Cash received"
+          value={summaryLoading ? "—" : formatCurrency(summary?.cash_received ?? 0)}
         />
         <StatCard
           icon={Wallet}
-          label="Profit"
-          value={summaryLoading ? "—" : formatCurrency(summary?.profit ?? 0)}
+          label="Outstanding"
+          value={summaryLoading ? "—" : formatCurrency(summary?.outstanding ?? 0)}
           accent="gold"
         />
         <StatCard
           icon={Receipt}
-          label="Avg. payment"
-          value={
-            summaryLoading ? "—" : formatCurrency(summary?.average_payment ?? 0)
-          }
+          label="Operating profit"
+          value={summaryLoading ? "—" : formatCurrency(summary?.profit ?? 0)}
         />
       </div>
       {!summaryLoading && summary && (
         <p className="mt-2 text-xs text-ink-muted">
-          {summary.payment_count} payment
-          {summary.payment_count === 1 ? "" : "s"} between{" "}
+          {summary.order_count} order
+          {summary.order_count === 1 ? "" : "s"} booked between{" "}
           {new Date(summary.start).toLocaleDateString()} and{" "}
           {new Date(summary.end).toLocaleDateString()}.
         </p>
@@ -160,7 +158,7 @@ export default function AdminAnalyticsPage() {
               <BarChart3 className="h-[18px] w-[18px]" aria-hidden="true" />
             </span>
             <h2 className="font-display text-sm font-medium text-ink">
-              Revenue
+              Income booked
             </h2>
           </div>
           <div className="inline-flex rounded-md border border-crease bg-white p-0.5">

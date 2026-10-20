@@ -1,4 +1,4 @@
-export const APP_NAME = "WEDEMBOYZ Lavomatique";
+export const APP_NAME = "Wedemboyz Lavomatique";
 
 /** Real contact/location info, taken from the storefront signboard. Single
  * source of truth — every component that shows the phone number, WhatsApp

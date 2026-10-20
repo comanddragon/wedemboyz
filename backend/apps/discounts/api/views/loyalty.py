@@ -8,9 +8,13 @@ from apps.discounts.api.serializers import (
     LoyaltyTransactionSerializer,
     RedeemPointsSerializer,
     StampCardConfigSerializer,
+    LoyaltyAdjustmentSerializer,
+    LoyaltyRuleSerializer,
+    LoyaltyTierConfigSerializer,
 )
-from apps.discounts.models import LoyaltyTransaction, StampCardConfig
+from apps.discounts.models import LoyaltyRule, LoyaltyTierConfig, LoyaltyTransaction, StampCardConfig
 from apps.users.models import LoyaltyAccount
+from apps.staff.permissions import HasStaffPermission, StaffPermission
 from services.loyalty import redeem_free_wash, redeem_points
 
 
@@ -79,7 +83,8 @@ class StampCardConfigListCreateView(generics.ListCreateAPIView):
     most recently created is_active=True row is the live configuration."""
 
     serializer_class = StampCardConfigSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.LOYALTY_MANAGE
     queryset = StampCardConfig.objects.all()
 
 
@@ -87,5 +92,70 @@ class StampCardConfigDetailView(generics.RetrieveUpdateDestroyAPIView):
     """GET/PATCH/DELETE /api/v1/loyalty/admin/stamp-card-config/{id}/"""
 
     serializer_class = StampCardConfigSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.LOYALTY_MANAGE
     queryset = StampCardConfig.objects.all()
+
+
+class LoyaltyRuleListCreateView(generics.ListCreateAPIView):
+    serializer_class = LoyaltyRuleSerializer
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.LOYALTY_MANAGE
+    queryset = LoyaltyRule.objects.all()
+
+
+class LoyaltyRuleDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = LoyaltyRuleSerializer
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.LOYALTY_MANAGE
+    queryset = LoyaltyRule.objects.all()
+
+
+class LoyaltyTierConfigListView(generics.ListAPIView):
+    serializer_class = LoyaltyTierConfigSerializer
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.LOYALTY_MANAGE
+    pagination_class = None
+    queryset = LoyaltyTierConfig.objects.all()
+
+
+class LoyaltyTierConfigDetailView(generics.UpdateAPIView):
+    serializer_class = LoyaltyTierConfigSerializer
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.LOYALTY_MANAGE
+    queryset = LoyaltyTierConfig.objects.all()
+
+
+class CustomerLoyaltyAdjustmentView(APIView):
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.LOYALTY_MANAGE
+
+    def post(self, request, user_id):
+        serializer = LoyaltyAdjustmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        account, _ = LoyaltyAccount.objects.get_or_create(user_id=user_id)
+        points = serializer.validated_data["points"]
+        if account.points_balance + points < 0:
+            raise ValidationError("This adjustment would make the balance negative.")
+        account.points_balance += points
+        if points > 0:
+            account.lifetime_points_earned += points
+        from services.loyalty import _tier_for_lifetime_points
+        account.tier = _tier_for_lifetime_points(account.lifetime_points_earned)
+        account.save(update_fields=["points_balance", "lifetime_points_earned", "tier"])
+        transaction = LoyaltyTransaction.objects.create(
+            loyalty_account=account,
+            points=points,
+            transaction_type=LoyaltyTransaction.TransactionType.ADJUST,
+            note=serializer.validated_data["reason"],
+        )
+        return Response(LoyaltyTransactionSerializer(transaction).data, status=status.HTTP_201_CREATED)
+
+
+class CustomerLoyaltyTransactionsView(generics.ListAPIView):
+    serializer_class = LoyaltyTransactionSerializer
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.CUSTOMERS_VIEW
+
+    def get_queryset(self):
+        return LoyaltyTransaction.objects.filter(loyalty_account__user_id=self.kwargs["user_id"]).select_related("order")

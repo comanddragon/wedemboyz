@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.chat.api.serializers import (
+    ChatRoomAssignmentSerializer,
     ChatRoomCreateSerializer,
     ChatRoomSerializer,
     MessageCreateSerializer,
@@ -20,10 +21,19 @@ from apps.chat.constants import (
 )
 from apps.chat.models import ChatRoom, Message, MessageAttachment
 from apps.chat.realtime import broadcast_message
+from apps.staff.models import log_activity
+from apps.staff.permissions import HasStaffPermission, StaffPermission, has_staff_permission
 
 
 def _assert_room_access(request, room):
-    if not (request.user.is_staff or room.customer_id == request.user.id or room.agent_id == request.user.id):
+    staff_can_chat = request.user.is_staff and has_staff_permission(
+        request.user, StaffPermission.CHAT_MANAGE
+    )
+    if not (
+        staff_can_chat
+        or room.customer_id == request.user.id
+        or room.agent_id == request.user.id
+    ):
         raise PermissionDenied("You do not have access to this chat room.")
 
 
@@ -48,8 +58,33 @@ class ChatRoomListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = ChatRoom.objects.select_related("customer", "agent", "order")
+        qs = ChatRoom.objects.select_related(
+            "customer", "agent", "assigned_by", "order"
+        )
         if user.is_staff:
+            if not has_staff_permission(user, StaffPermission.CHAT_MANAGE):
+                return qs.none()
+            status_filter = self.request.query_params.get("status")
+            assignment = self.request.query_params.get("assignment")
+            agent_id = self.request.query_params.get("agent")
+            search = self.request.query_params.get("search", "").strip()
+            if status_filter in ChatRoom.Status.values:
+                qs = qs.filter(status=status_filter)
+            if assignment == "unassigned":
+                qs = qs.filter(agent__isnull=True, status=ChatRoom.Status.OPEN)
+            elif assignment == "mine":
+                qs = qs.filter(agent=user)
+            if agent_id and agent_id.isdigit():
+                qs = qs.filter(agent_id=int(agent_id))
+            if search:
+                search_filter = (
+                    Q(customer__first_name__icontains=search)
+                    | Q(customer__last_name__icontains=search)
+                    | Q(customer__phone_number__icontains=search)
+                )
+                if search.isdigit():
+                    search_filter |= Q(order_id=int(search))
+                qs = qs.filter(search_filter)
             return qs
         return qs.filter(Q(customer=user) | Q(agent=user))
 
@@ -72,9 +107,11 @@ class ChatRoomDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = ChatRoom.objects.select_related("customer", "agent", "order")
+        qs = ChatRoom.objects.select_related(
+            "customer", "agent", "assigned_by", "order"
+        )
         if user.is_staff:
-            return qs
+            return qs if has_staff_permission(user, StaffPermission.CHAT_MANAGE) else qs.none()
         return qs.filter(Q(customer=user) | Q(agent=user))
 
 
@@ -85,11 +122,76 @@ class ChatRoomCloseView(APIView):
 
     def post(self, request, pk):
         room = get_object_or_404(ChatRoom, pk=pk)
-        if not (request.user.is_staff or room.agent_id == request.user.id):
+        can_manage = request.user.is_staff and has_staff_permission(
+            request.user, StaffPermission.CHAT_MANAGE
+        )
+        if not (can_manage or room.agent_id == request.user.id):
             raise PermissionDenied("Only an assigned agent or staff can close a chat.")
 
         room.status = ChatRoom.Status.CLOSED
-        room.save(update_fields=["status"])
+        room.closed_at = timezone.now()
+        room.save(update_fields=["status", "closed_at", "updated_at"])
+        log_activity(request.user, "chat.closed", f"Closed chat #{room.pk}")
+        return Response(ChatRoomSerializer(room, context={"request": request}).data)
+
+
+class ChatRoomReopenView(APIView):
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.CHAT_MANAGE
+
+    def post(self, request, pk):
+        room = get_object_or_404(ChatRoom, pk=pk)
+        room.status = ChatRoom.Status.OPEN
+        room.closed_at = None
+        room.save(update_fields=["status", "closed_at", "updated_at"])
+        log_activity(request.user, "chat.reopened", f"Reopened chat #{room.pk}")
+        return Response(ChatRoomSerializer(room, context={"request": request}).data)
+
+
+class ChatRoomAssignView(APIView):
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.CHAT_MANAGE
+
+    def post(self, request, pk):
+        room = get_object_or_404(ChatRoom, pk=pk)
+        if room.status == ChatRoom.Status.CLOSED:
+            raise ValidationError("Reopen this conversation before assigning it.")
+        serializer = ChatRoomAssignmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        agent_id = serializer.validated_data.get("agent_id")
+        previous_agent_id = room.agent_id
+        room.agent = getattr(serializer, "agent", None) if agent_id is not None else None
+        room.assigned_by = request.user if agent_id is not None else None
+        room.assigned_at = timezone.now() if agent_id is not None else None
+        room.save(update_fields=["agent", "assigned_by", "assigned_at", "updated_at"])
+        action = "chat.assigned" if agent_id is not None else "chat.unassigned"
+        description = (
+            f"Assigned chat #{room.pk} to user #{agent_id}"
+            if agent_id is not None
+            else f"Unassigned chat #{room.pk} from user #{previous_agent_id}"
+        )
+        log_activity(request.user, action, description)
+        return Response(ChatRoomSerializer(room, context={"request": request}).data)
+
+
+class ChatRoomClaimView(APIView):
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.CHAT_MANAGE
+
+    def post(self, request, pk):
+        room = get_object_or_404(ChatRoom, pk=pk)
+        if room.status == ChatRoom.Status.CLOSED:
+            raise ValidationError("Reopen this conversation before claiming it.")
+        if room.agent_id and room.agent_id != request.user.id:
+            raise ValidationError("This conversation is already assigned.")
+        profile = getattr(request.user, "staff_profile", None)
+        if profile is not None and not profile.can_receive_chats:
+            raise ValidationError("You are not currently available for chat assignment.")
+        room.agent = request.user
+        room.assigned_by = request.user
+        room.assigned_at = timezone.now()
+        room.save(update_fields=["agent", "assigned_by", "assigned_at", "updated_at"])
+        log_activity(request.user, "chat.claimed", f"Claimed chat #{room.pk}")
         return Response(ChatRoomSerializer(room, context={"request": request}).data)
 
 

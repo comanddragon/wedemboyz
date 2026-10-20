@@ -14,6 +14,13 @@ TIER_THRESHOLDS = {
 
 
 def _tier_for_lifetime_points(lifetime_points: int) -> str:
+    from apps.discounts.models import LoyaltyTierConfig
+
+    configured = LoyaltyTierConfig.objects.filter(
+        is_active=True, minimum_lifetime_points__lte=lifetime_points
+    ).order_by("-minimum_lifetime_points").first()
+    if configured:
+        return configured.tier
     if lifetime_points >= TIER_THRESHOLDS["GOLD"]:
         return "GOLD"
     if lifetime_points >= TIER_THRESHOLDS["SILVER"]:

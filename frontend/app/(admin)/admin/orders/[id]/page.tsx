@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Save, Truck, UserRound } from "lucide-react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
@@ -14,33 +14,47 @@ import {
   THead,
   Tr,
 } from "@/src/components/admin/Table";
+import { PaymentSummary } from "@/src/components/payments/PaymentSummary";
+import { PaymentMethodIcon } from "@/src/components/payments/PaymentMethodIcon";
 import {
   Button,
   Card,
   Field,
+  Input,
   Select,
   ServiceIcon,
   StatusBadge,
   Textarea,
   orderStatusTone,
+  paymentStatusTone,
   serviceLabel,
 } from "@/src/components/ui";
-import { ordersApi } from "@/src/lib/api";
+import { ordersApi, paymentsApi, scheduleApi, staffApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import { customerFullName } from "@/src/lib/utils";
-import type { OrderStatus } from "@/src/types";
+import type { OrderItem, OrderStatus, PaymentMethodType } from "@/src/types";
 
-const STATUSES: OrderStatus[] = [
-  "PENDING",
-  "CONFIRMED",
-  "IN_PROGRESS",
-  "READY",
-  "OUT_FOR_DELIVERY",
-  "DELIVERED",
-  "CANCELLED",
+const PAYMENT_METHODS: Array<{ value: PaymentMethodType; label: string }> = [
+  { value: "CASH", label: "Cash" },
+  { value: "MTN_MOMO", label: "MTN Mobile Money" },
+  { value: "ORANGE_MONEY", label: "Orange Money" },
+  { value: "BANK_TRANSFER", label: "Bank transfer" },
+  { value: "OTHER", label: "Other" },
 ];
+
+const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
+  PENDING: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["IN_PROGRESS", "CANCELLED"],
+  IN_PROGRESS: ["READY"],
+  READY: ["OUT_FOR_DELIVERY", "DELIVERED"],
+  OUT_FOR_DELIVERY: ["DELIVERED"],
+  DELIVERED: [],
+  CANCELLED: [],
+};
+
+const ITEM_STATUSES: OrderItem["status"][] = ["RECEIVED", "WASHED", "PRESSED", "PACKED"];
 
 export default function AdminOrderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -56,20 +70,84 @@ export default function AdminOrderDetailPage() {
     queryFn: () => ordersApi.getOrder(orderId),
   });
 
-  const [nextStatus, setNextStatus] = useState<OrderStatus>("CONFIRMED");
   const [note, setNote] = useState("");
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("CASH");
+  const [paymentReference, setPaymentReference] = useState("");
+
+  const paymentsQuery = useQuery({
+    queryKey: ["orders", orderId, "payments"],
+    queryFn: () => paymentsApi.listOrderPayments(orderId),
+  });
+
+  const staffQuery = useQuery({
+    queryKey: ["staff", "operations"],
+    queryFn: () => staffApi.listOperationalStaff(),
+  });
+
+  const scheduleQuery = useQuery({
+    queryKey: ["schedule", orderId],
+    queryFn: () => scheduleApi.getSchedule(orderId),
+    enabled: Boolean(order?.has_schedule),
+  });
 
   const statusMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (nextStatus: OrderStatus) =>
       ordersApi.updateOrderStatus(orderId, {
         status: nextStatus,
         note: note || undefined,
+        allow_unpaid_delivery:
+          nextStatus === "DELIVERED" && Number(order?.balance_due ?? 0) > 0,
       }),
     onSuccess: () => {
       setNote("");
       queryClient.invalidateQueries({
         queryKey: queryKeys.orders.detail(orderId),
       });
+    },
+  });
+
+  const assignmentMutation = useMutation({
+    mutationFn: (input: { assigned_to: number | null; driver: number | null }) =>
+      ordersApi.assignOrder(orderId, input),
+    onSuccess: (updated) => queryClient.setQueryData(queryKeys.orders.detail(orderId), updated),
+  });
+
+  const itemMutation = useMutation({
+    mutationFn: ({ itemId, input }: { itemId: number; input: Parameters<typeof ordersApi.updateOrderItem>[2] }) =>
+      ordersApi.updateOrderItem(orderId, itemId, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(orderId) }),
+  });
+
+  const detailsMutation = useMutation({
+    mutationFn: (input: Parameters<typeof ordersApi.updateOrder>[1]) => ordersApi.updateOrder(orderId, input),
+    onSuccess: (updated) => queryClient.setQueryData(queryKeys.orders.detail(orderId), updated),
+  });
+
+  const scheduleMutation = useMutation({
+    mutationFn: (input: Parameters<typeof scheduleApi.createSchedule>[0]) =>
+      order?.has_schedule
+        ? scheduleApi.updateSchedule(orderId, input)
+        : scheduleApi.createSchedule(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedule", orderId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(orderId) });
+    },
+  });
+
+  const paymentMutation = useMutation({
+    mutationFn: () =>
+      paymentsApi.recordOrderPayment(orderId, {
+        amount: paymentAmount,
+        payment_method_type: paymentMethod,
+        reference: paymentReference,
+      }),
+    onSuccess: () => {
+      setPaymentAmount("");
+      setPaymentReference("");
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(orderId) });
+      queryClient.invalidateQueries({ queryKey: ["orders", orderId, "payments"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
     },
   });
 
@@ -104,10 +182,10 @@ export default function AdminOrderDetailPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
-            Order #{order.id}
+            {order.ticket_number ?? `Order #${order.id}`}
           </h1>
           <p className="mt-0.5 text-xs text-ink-muted">
-            {customerFullName(order.customer) ?? `Customer #${order.user}`}
+            {customerFullName(order.customer) ?? `Customer #${order.user}`} · {order.source.replace(/_/g, " ")} · {order.priority}
           </p>
         </div>
         <StatusBadge
@@ -121,6 +199,7 @@ export default function AdminOrderDetailPage() {
           <div className="space-y-1 p-5 pb-4 text-sm text-ink-muted">
             <p>Pickup: {order.pickup_address}</p>
             <p>Delivery: {order.delivery_address}</p>
+            <p>{order.pieces_count} piece{order.pieces_count === 1 ? "" : "s"} · {Number(order.weight_kg_total).toFixed(1)} kg</p>
             {order.notes && <p>Notes: {order.notes}</p>}
           </div>
 
@@ -128,6 +207,7 @@ export default function AdminOrderDetailPage() {
             <THead>
               <Th>Item</Th>
               <Th>Service</Th>
+              <Th>Progress</Th>
               <Th align="right">Weight</Th>
               <Th align="right">Qty</Th>
               <Th align="right">Subtotal</Th>
@@ -155,8 +235,31 @@ export default function AdminOrderDetailPage() {
                   <Td className="text-ink-muted">
                     {serviceLabel(item.service_type)}
                   </Td>
+                  <Td>
+                    <Select
+                      value={item.status}
+                      className="min-w-28 py-1 text-xs"
+                      aria-label={`Progress for ${item.label || serviceLabel(item.service_type)}`}
+                      onChange={(event) => itemMutation.mutate({ itemId: item.id, input: { status: event.target.value as OrderItem["status"] } })}
+                      disabled={itemMutation.isPending}
+                    >
+                      {ITEM_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </Select>
+                  </Td>
                   <Td align="right" className="tabular-nums text-ink-muted">
-                    {item.weight_kg}kg
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      defaultValue={item.weight_kg ?? ""}
+                      placeholder="—"
+                      className="ml-auto w-20 py-1 text-right text-xs"
+                      aria-label={`Weight for ${item.label || serviceLabel(item.service_type)}`}
+                      onBlur={(event) => {
+                        const value = event.target.value;
+                        if (value !== (item.weight_kg ?? "")) itemMutation.mutate({ itemId: item.id, input: { weight_kg: value ? Number(value) : null } });
+                      }}
+                    />
                   </Td>
                   <Td align="right" className="tabular-nums text-ink-muted">
                     {item.quantity}
@@ -199,52 +302,231 @@ export default function AdminOrderDetailPage() {
 
         <div className="space-y-6">
           <Card>
-            <h2 className="font-display mb-3 text-sm font-medium text-ink">
-              Update status
-            </h2>
+            <h2 className="mb-3 text-sm font-semibold text-navy">Operations</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Assigned staff" htmlFor="assigned-staff">
+                <Select
+                  id="assigned-staff"
+                  value={order.assigned_to ?? ""}
+                  disabled={assignmentMutation.isPending}
+                  onChange={(event) => assignmentMutation.mutate({ assigned_to: event.target.value ? Number(event.target.value) : null, driver: order.driver })}
+                >
+                  <option value="">Unassigned</option>
+                  {staffQuery.data?.map((profile) => (
+                    <option key={profile.id} value={profile.user.id}>{profile.user.first_name} {profile.user.last_name} · {profile.role}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Driver" htmlFor="order-driver">
+                <Select
+                  id="order-driver"
+                  value={order.driver ?? ""}
+                  disabled={assignmentMutation.isPending}
+                  onChange={(event) => assignmentMutation.mutate({ assigned_to: order.assigned_to, driver: event.target.value ? Number(event.target.value) : null })}
+                >
+                  <option value="">No driver</option>
+                  {staffQuery.data?.filter((profile) => profile.role === "DRIVER").map((profile) => (
+                    <option key={profile.id} value={profile.user.id}>{profile.user.first_name} {profile.user.last_name}</option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                statusMutation.mutate();
+              key={`${order.updated_at}-${order.assigned_to}-${order.driver}`}
+              className="mt-3 grid gap-3 sm:grid-cols-[1fr_130px_auto] sm:items-end"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                detailsMutation.mutate({
+                  internal_notes: String(data.get("internal_notes") ?? ""),
+                  tag_number: String(data.get("tag_number") ?? ""),
+                  priority: String(data.get("priority")) as "NORMAL" | "EXPRESS" | "URGENT",
+                  is_express: data.get("priority") !== "NORMAL",
+                });
               }}
             >
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[160px_1fr]">
-                <Field label="New status" htmlFor="next-status">
-                  <Select
-                    id="next-status"
-                    value={nextStatus}
-                    onChange={(e) =>
-                      setNextStatus(e.target.value as OrderStatus)
-                    }
-                  >
-                    {STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {s.replace(/_/g, " ")}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field
-                  label="Note"
-                  htmlFor="status-note"
-                  hint="Optional — visible in this order's status history."
-                >
-                  <Textarea
-                    id="status-note"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    rows={1}
+              <Field label="Internal note" htmlFor="internal-notes">
+                <Input id="internal-notes" name="internal_notes" defaultValue={order.internal_notes} placeholder="Visible to staff only" />
+              </Field>
+              <Field label="Tag" htmlFor="tag-number">
+                <Input id="tag-number" name="tag_number" defaultValue={order.tag_number} />
+              </Field>
+              <div className="flex gap-2">
+                <Select name="priority" defaultValue={order.priority} aria-label="Order priority" className="w-28">
+                  <option value="NORMAL">Normal</option><option value="EXPRESS">Express</option><option value="URGENT">Urgent</option>
+                </Select>
+                <Button type="submit" size="sm" aria-label="Save order operations" disabled={detailsMutation.isPending}>
+                  <Save className="h-3.5 w-3.5" aria-hidden="true" />
+                </Button>
+              </div>
+            </form>
+            {(assignmentMutation.error || detailsMutation.error || itemMutation.error) && (
+              <p className="mt-2 text-xs text-status-cancelled-text">{getApiErrorMessage(assignmentMutation.error || detailsMutation.error || itemMutation.error)}</p>
+            )}
+          </Card>
+
+          <Card>
+            <h2 className="mb-3 text-sm font-semibold text-navy">Pickup & delivery</h2>
+            <form
+              key={scheduleQuery.data ? `${scheduleQuery.data.pickup_date}-${scheduleQuery.data.delivery_date}-${scheduleQuery.data.pickup_time_slot}-${scheduleQuery.data.delivery_time_slot}` : "new-schedule"}
+              className="grid gap-3 sm:grid-cols-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                scheduleMutation.mutate({
+                  order: orderId,
+                  pickup_date: String(data.get("pickup_date")),
+                  pickup_time_slot: String(data.get("pickup_time_slot")) as "MORNING" | "MIDDAY" | "AFTERNOON" | "EVENING",
+                  delivery_date: String(data.get("delivery_date")),
+                  delivery_time_slot: String(data.get("delivery_time_slot")) as "MORNING" | "MIDDAY" | "AFTERNOON" | "EVENING",
+                  driver: order.driver,
+                  contact_phone: String(data.get("contact_phone") ?? ""),
+                  address_override: String(data.get("address_override") ?? ""),
+                });
+              }}
+            >
+              <Field label="Pickup date" htmlFor="pickup-date"><Input id="pickup-date" name="pickup_date" type="date" required defaultValue={scheduleQuery.data?.pickup_date} /></Field>
+              <Field label="Pickup window" htmlFor="pickup-slot"><Select id="pickup-slot" name="pickup_time_slot" defaultValue={scheduleQuery.data?.pickup_time_slot ?? "MORNING"}>{["MORNING", "MIDDAY", "AFTERNOON", "EVENING"].map((slot) => <option key={slot}>{slot}</option>)}</Select></Field>
+              <Field label="Delivery date" htmlFor="delivery-date"><Input id="delivery-date" name="delivery_date" type="date" required defaultValue={scheduleQuery.data?.delivery_date} /></Field>
+              <Field label="Delivery window" htmlFor="delivery-slot"><Select id="delivery-slot" name="delivery_time_slot" defaultValue={scheduleQuery.data?.delivery_time_slot ?? "AFTERNOON"}>{["MORNING", "MIDDAY", "AFTERNOON", "EVENING"].map((slot) => <option key={slot}>{slot}</option>)}</Select></Field>
+              <Field label="Contact phone" htmlFor="schedule-phone"><Input id="schedule-phone" name="contact_phone" defaultValue={scheduleQuery.data?.contact_phone} /></Field>
+              <Field label="Address override" htmlFor="schedule-address"><Input id="schedule-address" name="address_override" defaultValue={scheduleQuery.data?.address_override} placeholder="Use order address" /></Field>
+              <div className="flex items-center gap-2 sm:col-span-2">
+                <Button size="sm" type="submit" disabled={scheduleMutation.isPending}>{order.has_schedule ? "Save schedule" : "Create schedule"}</Button>
+                {scheduleQuery.data && <span className="text-xs text-ink-muted">Pickup {scheduleQuery.data.pickup_status.toLowerCase()} · Delivery {scheduleQuery.data.delivery_status.toLowerCase()}</span>}
+              </div>
+            </form>
+            {scheduleMutation.error && <p className="mt-2 text-xs text-status-cancelled-text">{getApiErrorMessage(scheduleMutation.error)}</p>}
+          </Card>
+
+          <Card>
+            <PaymentSummary
+              status={order.payment_status}
+              total={order.total_amount}
+              paid={order.amount_paid}
+              balance={order.balance_due}
+            />
+
+            {!(["PAID", "NO_CHARGE", "WAIVED", "VOID"] as string[]).includes(
+              order.payment_status,
+            ) && (
+              <form
+                className="mt-5 border-t border-crease pt-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  paymentMutation.mutate();
+                }}
+              >
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Amount received" htmlFor="payment-amount">
+                    <Input
+                      id="payment-amount"
+                      type="number"
+                      min="1"
+                      max={order.balance_due}
+                      required
+                      value={paymentAmount}
+                      onChange={(event) => setPaymentAmount(event.target.value)}
+                      placeholder={order.balance_due}
+                    />
+                  </Field>
+                  <Field label="Method" htmlFor="payment-method">
+                    <div className="flex items-center gap-2">
+                    <PaymentMethodIcon method={paymentMethod} />
+                    <Select
+                      id="payment-method"
+                      value={paymentMethod}
+                      onChange={(event) =>
+                        setPaymentMethod(event.target.value as PaymentMethodType)
+                      }
+                    >
+                      {PAYMENT_METHODS.map((method) => (
+                        <option key={method.value} value={method.value}>
+                          {method.label}
+                        </option>
+                      ))}
+                    </Select>
+                    </div>
+                  </Field>
+                </div>
+                <Field label="Reference" htmlFor="payment-reference" hint="Optional transaction or receipt number.">
+                  <Input
+                    id="payment-reference"
+                    value={paymentReference}
+                    onChange={(event) => setPaymentReference(event.target.value)}
                   />
                 </Field>
+                <Button type="submit" disabled={paymentMutation.isPending || !paymentAmount}>
+                  {paymentMutation.isPending ? "Recording…" : "Record payment"}
+                </Button>
+                {paymentMutation.error && (
+                  <p className="mt-2 text-xs text-status-cancelled-text">
+                    {getApiErrorMessage(paymentMutation.error)}
+                  </p>
+                )}
+              </form>
+            )}
+          </Card>
+
+          <Card className="p-0">
+            <h2 className="p-5 pb-3 text-sm font-semibold text-navy">Payments received</h2>
+            {paymentsQuery.data?.length ? (
+              <div className="divide-y divide-crease">
+                {paymentsQuery.data.map((payment) => (
+                  <div key={payment.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+                    <PaymentMethodIcon method={payment.payment_method_type} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-ink">
+                        {payment.payment_method_type.replace(/_/g, " ")}
+                      </p>
+                      <p className="mt-0.5 text-xs text-ink-muted">
+                        {new Date(payment.received_at).toLocaleString()}
+                        {payment.reference ? ` · ${payment.reference}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold tabular-nums text-navy">
+                        {formatCurrency(payment.amount)}
+                      </p>
+                      {payment.voided_at && (
+                        <StatusBadge label="Voided" tone={paymentStatusTone("VOID")} />
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <Button
-                type="submit"
-                className="mt-1"
-                disabled={statusMutation.isPending}
-              >
-                {statusMutation.isPending ? "Updating..." : "Update status"}
-              </Button>
-            </form>
+            ) : (
+              <p className="px-5 pb-5 text-sm text-ink-muted">No payment has been recorded.</p>
+            )}
+          </Card>
+
+          <Card>
+            <h2 className="mb-3 text-sm font-semibold text-navy">Move order forward</h2>
+            {NEXT_STATUSES[order.status].length ? (
+              <>
+                <Field label={NEXT_STATUSES[order.status].includes("CANCELLED") ? "Status note / cancellation reason" : "Status note"} htmlFor="status-note">
+                  <Textarea id="status-note" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
+                </Field>
+                <div className="flex flex-wrap gap-2">
+                  {NEXT_STATUSES[order.status].map((status) => (
+                    <Button
+                      key={status}
+                      type="button"
+                      size="sm"
+                      variant={status === "CANCELLED" ? "danger" : "primary"}
+                      disabled={statusMutation.isPending || (status === "CANCELLED" && !note.trim())}
+                      onClick={() => {
+                        if (status === "DELIVERED" && Number(order.balance_due) > 0 && !window.confirm(`Deliver with ${formatCurrency(order.balance_due)} still due?`)) return;
+                        statusMutation.mutate(status);
+                      }}
+                    >
+                      {status === "OUT_FOR_DELIVERY" ? <Truck className="h-3.5 w-3.5" aria-hidden="true" /> : <UserRound className="h-3.5 w-3.5" aria-hidden="true" />}
+                      {status.replace(/_/g, " ")}
+                    </Button>
+                  ))}
+                </div>
+              </>
+            ) : <p className="text-sm text-ink-muted">This order is {order.status.toLowerCase()} and has no further workflow actions.</p>}
             {statusMutation.error && (
               <p className="mt-2 text-sm text-status-cancelled-text">
                 {getApiErrorMessage(statusMutation.error)}

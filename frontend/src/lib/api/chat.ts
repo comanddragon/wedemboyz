@@ -8,10 +8,35 @@ import type {
 } from "@/src/types";
 
 /** GET /chat/rooms/ */
-export async function listChatRooms(): Promise<ChatRoom[]> {
-  const res = await apiClient.get("/chat/rooms/");
+export async function listChatRooms(params?: {
+  status?: "OPEN" | "CLOSED";
+  assignment?: "unassigned" | "mine";
+  agent?: number;
+  search?: string;
+}): Promise<ChatRoom[]> {
+  const res = await apiClient.get("/chat/rooms/", { params });
   const data = unwrap<Paginated<ChatRoom>>(res);
   return data.results;
+}
+
+export async function assignChatRoom(
+  roomId: number,
+  agentId: number | null,
+): Promise<ChatRoom> {
+  const res = await apiClient.post(`/chat/rooms/${roomId}/assign/`, {
+    agent_id: agentId,
+  });
+  return unwrap<ChatRoom>(res);
+}
+
+export async function claimChatRoom(roomId: number): Promise<ChatRoom> {
+  const res = await apiClient.post(`/chat/rooms/${roomId}/claim/`);
+  return unwrap<ChatRoom>(res);
+}
+
+export async function reopenChatRoom(roomId: number): Promise<ChatRoom> {
+  const res = await apiClient.post(`/chat/rooms/${roomId}/reopen/`);
+  return unwrap<ChatRoom>(res);
 }
 
 /** POST /chat/rooms/ */

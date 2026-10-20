@@ -5,6 +5,12 @@ from .loyalty import (
     StampCardConfigDetailView,
     StampCardConfigListCreateView,
     StampCardRedeemView,
+    CustomerLoyaltyAdjustmentView,
+    CustomerLoyaltyTransactionsView,
+    LoyaltyRuleDetailView,
+    LoyaltyRuleListCreateView,
+    LoyaltyTierConfigDetailView,
+    LoyaltyTierConfigListView,
 )
 from .promo import (
     DiscountCampaignDetailView,
@@ -26,4 +32,10 @@ __all__ = [
     "StampCardRedeemView",
     "StampCardConfigListCreateView",
     "StampCardConfigDetailView",
+    "CustomerLoyaltyAdjustmentView",
+    "CustomerLoyaltyTransactionsView",
+    "LoyaltyRuleDetailView",
+    "LoyaltyRuleListCreateView",
+    "LoyaltyTierConfigDetailView",
+    "LoyaltyTierConfigListView",
 ]

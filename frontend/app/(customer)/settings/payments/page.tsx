@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CreditCard, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { PaymentMethodIcon } from "@/src/components/payments/PaymentMethodIcon";
 
 import {
   Button,
@@ -116,6 +117,8 @@ export default function SettingsPaymentsPage() {
           }}
         >
           <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+            <div className="flex items-end gap-2">
+              <PaymentMethodIcon method={gateway} className="mb-4" />
             <Field label="Gateway">
               <Select
                 value={gateway}
@@ -133,6 +136,7 @@ export default function SettingsPaymentsPage() {
                 ))}
               </Select>
             </Field>
+            </div>
             {requiresPhoneNumber && (
               <Field label="Phone number">
                 <Input
@@ -202,9 +206,7 @@ export default function SettingsPaymentsPage() {
           {methods.map((method) => (
             <li key={method.id}>
               <Card className="flex items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy">
-                  <CreditCard className="h-4 w-4" aria-hidden="true" />
-                </span>
+                <PaymentMethodIcon method={method.gateway} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-ink">
                     {method.display_label}

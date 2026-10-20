@@ -12,6 +12,8 @@ import type { StaffRole } from "@/src/types";
 const ROLE_OPTIONS: { value: StaffRole; label: string }[] = [
   { value: "ATTENDANT", label: "Attendant" },
   { value: "MANAGER", label: "Manager" },
+  { value: "CASHIER", label: "Cashier" },
+  { value: "DRIVER", label: "Driver" },
 ];
 
 export function InviteStaffForm({ onDone }: { onDone: () => void }) {

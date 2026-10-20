@@ -33,20 +33,30 @@ export interface SendMessageInput {
 /** Mirrors apps.chat.api.serializers.room.ChatRoomSerializer */
 export interface ChatRoom {
   id: number;
-    customer: {
-        id: number;
-        first_name: string;
-        last_name: string;
-    };
-  agent: number | null;
+  customer: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    phone_number: string;
+  };
+  agent: ChatAgent | null;
+  assigned_by: ChatAgent | null;
+  assigned_at: string | null;
   order: {
-      id: number;
-  }
+    id: number;
+  } | null;
   status: ChatRoomStatus;
+  closed_at: string | null;
   last_message: ChatMessage | null;
   unread_count: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ChatAgent {
+  id: number;
+  name: string;
+  phone_number: string;
 }
 
 /** Payload for POST /chat/rooms/ — mirrors ChatRoomCreateSerializer. */

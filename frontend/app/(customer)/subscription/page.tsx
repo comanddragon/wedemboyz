@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { Button, Card, EyebrowLabel, StatusBadge } from "@/src/components/ui";
+import { PaymentMethodIcon } from "@/src/components/payments/PaymentMethodIcon";
 import { subscriptionStatusTone } from "@/src/components/ui/StatusBadge";
 import { paymentsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
@@ -252,6 +253,7 @@ function CheckoutGatewayPicker({
             disabled={isPending}
             className="justify-center"
           >
+            <PaymentMethodIcon method={gateway} className="h-8 w-10" />
             {GATEWAY_LABELS[gateway]}
           </Button>
         ))}

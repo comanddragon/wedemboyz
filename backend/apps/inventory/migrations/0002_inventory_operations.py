@@ -1,0 +1,97 @@
+import django.core.validators
+import django.db.models.deletion
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+    dependencies = [
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ("finance", "0003_payrollentry_remove_salary_expense_choice"),
+        ("inventory", "0001_initial"),
+        ("orders", "0006_order_payment_state"),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name="Supplier",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                ("name", models.CharField(max_length=150, unique=True)),
+                ("phone", models.CharField(blank=True, max_length=20)),
+                ("email", models.EmailField(blank=True, max_length=254)),
+                ("address", models.CharField(blank=True, max_length=255)),
+                ("payment_terms", models.CharField(blank=True, max_length=150)),
+                ("notes", models.TextField(blank=True)),
+                ("is_active", models.BooleanField(default=True)),
+            ],
+            options={"ordering": ["name"]},
+        ),
+        migrations.CreateModel(
+            name="Machine",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                ("name", models.CharField(max_length=100, unique=True)),
+                ("machine_type", models.CharField(choices=[("WASHER", "Washer"), ("DRYER", "Dryer"), ("PRESS", "Press"), ("OTHER", "Other")], max_length=20)),
+                ("capacity_kg", models.DecimalField(blank=True, decimal_places=2, max_digits=6, null=True, validators=[django.core.validators.MinValueValidator(0)])),
+                ("status", models.CharField(choices=[("AVAILABLE", "Available"), ("IN_USE", "In use"), ("MAINTENANCE", "Maintenance"), ("OUT_OF_SERVICE", "Out of service")], default="AVAILABLE", max_length=20)),
+                ("installed_on", models.DateField(blank=True, null=True)),
+                ("last_service_on", models.DateField(blank=True, null=True)),
+                ("next_service_due", models.DateField(blank=True, db_index=True, null=True)),
+                ("usage_count", models.PositiveIntegerField(default=0)),
+                ("notes", models.TextField(blank=True)),
+            ],
+            options={"ordering": ["name"]},
+        ),
+        migrations.AddField(model_name="inventoryitem", name="deleted_at", field=models.DateTimeField(blank=True, null=True)),
+        migrations.AddField(model_name="inventoryitem", name="average_cost", field=models.DecimalField(decimal_places=2, default=0, max_digits=10, validators=[django.core.validators.MinValueValidator(0)])),
+        migrations.AddField(model_name="inventoryitem", name="barcode", field=models.CharField(blank=True, max_length=100, null=True, unique=True)),
+        migrations.AddField(model_name="inventoryitem", name="brand", field=models.CharField(blank=True, max_length=100)),
+        migrations.AddField(model_name="inventoryitem", name="expires_on", field=models.DateField(blank=True, db_index=True, null=True)),
+        migrations.AddField(model_name="inventoryitem", name="expiry_tracking", field=models.BooleanField(default=False)),
+        migrations.AddField(model_name="inventoryitem", name="image", field=models.ImageField(blank=True, null=True, upload_to="inventory/%Y/%m/")),
+        migrations.AddField(model_name="inventoryitem", name="is_active", field=models.BooleanField(db_index=True, default=True)),
+        migrations.AddField(model_name="inventoryitem", name="last_purchase_cost", field=models.DecimalField(decimal_places=2, default=0, max_digits=10, validators=[django.core.validators.MinValueValidator(0)])),
+        migrations.AddField(model_name="inventoryitem", name="pack_size", field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True, validators=[django.core.validators.MinValueValidator(0)])),
+        migrations.AddField(model_name="inventoryitem", name="pack_unit", field=models.CharField(blank=True, max_length=5)),
+        migrations.AddField(model_name="inventoryitem", name="reorder_quantity", field=models.DecimalField(decimal_places=2, default=0, max_digits=10, validators=[django.core.validators.MinValueValidator(0)])),
+        migrations.AddField(model_name="inventoryitem", name="sku", field=models.CharField(blank=True, max_length=50, null=True, unique=True)),
+        migrations.AddField(model_name="inventoryitem", name="storage_location", field=models.CharField(blank=True, max_length=150)),
+        migrations.AddField(model_name="inventoryitem", name="unit_cost", field=models.DecimalField(decimal_places=2, default=0, max_digits=10, validators=[django.core.validators.MinValueValidator(0)])),
+        migrations.AddField(model_name="inventoryitem", name="supplier", field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="items", to="inventory.supplier")),
+        migrations.AlterField(model_name="inventoryitem", name="category", field=models.CharField(default="OTHER", max_length=20)),
+        migrations.AlterField(model_name="inventoryitem", name="unit", field=models.CharField(default="PCS", max_length=5)),
+        migrations.AlterField(model_name="inventorytransaction", name="change_type", field=models.CharField(max_length=24)),
+        migrations.AlterField(model_name="inventorytransaction", name="item", field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name="transactions", to="inventory.inventoryitem")),
+        migrations.AddField(model_name="inventorytransaction", name="batch", field=models.CharField(blank=True, max_length=100)),
+        migrations.AddField(model_name="inventorytransaction", name="quantity_before", field=models.DecimalField(decimal_places=2, default=0, max_digits=10)),
+        migrations.AddField(model_name="inventorytransaction", name="quantity_after", field=models.DecimalField(decimal_places=2, default=0, max_digits=10)),
+        migrations.AddField(model_name="inventorytransaction", name="reference", field=models.CharField(blank=True, db_index=True, max_length=100)),
+        migrations.AddField(model_name="inventorytransaction", name="total_cost", field=models.DecimalField(decimal_places=2, default=0, max_digits=12)),
+        migrations.AddField(model_name="inventorytransaction", name="unit_cost", field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),
+        migrations.AddField(model_name="inventorytransaction", name="expense", field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="inventory_transactions", to="finance.expense")),
+        migrations.AddField(model_name="inventorytransaction", name="machine", field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="transactions", to="inventory.machine")),
+        migrations.AddField(model_name="inventorytransaction", name="order", field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="inventory_usage", to="orders.order")),
+        migrations.AddField(model_name="inventorytransaction", name="supplier", field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="transactions", to="inventory.supplier")),
+        migrations.CreateModel(
+            name="ServiceConsumption",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("service_type", models.CharField(max_length=24)),
+                ("quantity_per_kg", models.DecimalField(decimal_places=4, default=0, max_digits=10, validators=[django.core.validators.MinValueValidator(0)])),
+                ("quantity_per_load", models.DecimalField(decimal_places=4, default=0, max_digits=10, validators=[django.core.validators.MinValueValidator(0)])),
+                ("is_active", models.BooleanField(default=True)),
+                ("item", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name="consumption_standards", to="inventory.inventoryitem")),
+            ],
+            options={"ordering": ["service_type", "item__name"]},
+        ),
+        migrations.AddConstraint(model_name="serviceconsumption", constraint=models.UniqueConstraint(fields=("service_type", "item"), name="unique_service_inventory_standard")),
+    ]

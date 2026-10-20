@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { Button, Field, Input, Select, Textarea } from "@/src/components/ui";
@@ -18,6 +18,12 @@ const CATEGORY_OPTIONS: { value: InventoryCategory; label: string }[] = [
   { value: "SOFTENER", label: "Softener" },
   { value: "PACKAGING", label: "Packaging" },
   { value: "EQUIPMENT", label: "Equipment" },
+  { value: "STAIN_REMOVER", label: "Stain remover" },
+  { value: "BLEACH", label: "Bleach" },
+  { value: "HANGERS", label: "Hangers" },
+  { value: "BAGS", label: "Bags" },
+  { value: "MACHINE_PARTS", label: "Machine parts" },
+  { value: "CLEANING", label: "Cleaning supplies" },
   { value: "OTHER", label: "Other" },
 ];
 
@@ -26,6 +32,10 @@ const UNIT_OPTIONS: { value: InventoryUnit; label: string }[] = [
   { value: "ML", label: "Milliliters (mL)" },
   { value: "KG", label: "Kilograms (kg)" },
   { value: "PCS", label: "Pieces (pcs)" },
+  { value: "G", label: "Grams (g)" },
+  { value: "PACK", label: "Packs" },
+  { value: "BOX", label: "Boxes" },
+  { value: "ROLL", label: "Rolls" },
 ];
 
 /**
@@ -49,6 +59,18 @@ export function InventoryItemForm({
   const [unit, setUnit] = useState<InventoryUnit>(item?.unit ?? "L");
   const [threshold, setThreshold] = useState(item?.low_stock_threshold ?? "");
   const [notes, setNotes] = useState(item?.notes ?? "");
+  const [sku, setSku] = useState(item?.sku ?? "");
+  const [brand, setBrand] = useState(item?.brand ?? "");
+  const [unitCost, setUnitCost] = useState(item?.unit_cost ?? "");
+  const [supplier, setSupplier] = useState(item?.supplier ? String(item.supplier) : "");
+  const [reorderQuantity, setReorderQuantity] = useState(item?.reorder_quantity ?? "");
+  const [location, setLocation] = useState(item?.storage_location ?? "");
+  const [expiresOn, setExpiresOn] = useState(item?.expires_on ?? "");
+
+  const suppliersQuery = useQuery({
+    queryKey: ["inventory", "suppliers"],
+    queryFn: inventoryApi.listSuppliers,
+  });
 
   const saveMutation = useMutation({
     mutationFn: () => {
@@ -59,6 +81,14 @@ export function InventoryItemForm({
         low_stock_threshold:
           threshold.trim() === "" ? undefined : Number(threshold),
         notes: notes.trim() || undefined,
+        sku: sku.trim() || null,
+        brand: brand.trim() || undefined,
+        unit_cost: unitCost ? Number(unitCost) : undefined,
+        supplier: supplier ? Number(supplier) : null,
+        reorder_quantity: reorderQuantity ? Number(reorderQuantity) : undefined,
+        storage_location: location.trim() || undefined,
+        expiry_tracking: Boolean(expiresOn),
+        expires_on: expiresOn || null,
       };
       return item
         ? inventoryApi.updateInventoryItem(item.id, input)
@@ -107,6 +137,38 @@ export function InventoryItemForm({
               </option>
             ))}
           </Select>
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
+        <Field label="SKU" htmlFor="inv-sku">
+          <Input id="inv-sku" value={sku} onChange={(e) => setSku(e.target.value)} />
+        </Field>
+        <Field label="Brand" htmlFor="inv-brand">
+          <Input id="inv-brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
+        </Field>
+        <Field label="Supplier" htmlFor="inv-supplier">
+          <Select id="inv-supplier" value={supplier} onChange={(e) => setSupplier(e.target.value)}>
+            <option value="">No supplier</option>
+            {suppliersQuery.data?.map((entry) => (
+              <option key={entry.id} value={entry.id}>{entry.name}</option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Field label="Initial unit cost" htmlFor="inv-cost">
+          <Input id="inv-cost" type="number" min="0" step="1" inputMode="numeric" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} />
+        </Field>
+        <Field label="Reorder quantity" htmlFor="inv-reorder">
+          <Input id="inv-reorder" type="number" min="0" step="0.01" value={reorderQuantity} onChange={(e) => setReorderQuantity(e.target.value)} />
+        </Field>
+        <Field label="Storage location" htmlFor="inv-location">
+          <Input id="inv-location" value={location} onChange={(e) => setLocation(e.target.value)} />
+        </Field>
+        <Field label="Expiry date" htmlFor="inv-expiry">
+          <Input id="inv-expiry" type="date" value={expiresOn} onChange={(e) => setExpiresOn(e.target.value)} />
         </Field>
       </div>
 

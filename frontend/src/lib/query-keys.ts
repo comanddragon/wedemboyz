@@ -49,7 +49,7 @@ export const queryKeys = {
     preferences: ["notifications", "preferences"] as const,
   },
   customers: {
-    list: (params: { page?: number; search?: string; ordering?: string } = {}) =>
+    list: (params: { page?: number; search?: string; ordering?: string; tier?: string; has_credit?: boolean; active?: boolean; source?: string; last_order_before?: string } = {}) =>
       ["customers", "list", params] as const,
     detail: (id: number) => ["customers", id] as const,
   },
@@ -63,6 +63,9 @@ export const queryKeys = {
     payroll: {
       list: (params: { page?: number; period?: string; status?: string } = {}) =>
         ["finance", "payroll", "list", params] as const,
+    },
+    cashRegister: {
+      list: (page = 1) => ["finance", "cash-register", "list", page] as const,
     },
     expenses: {
       list: (params: { page?: number; category?: string; start?: string; end?: string } = {}) =>

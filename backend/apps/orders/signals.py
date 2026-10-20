@@ -28,7 +28,14 @@ def on_order_status_changed(sender, instance, created, **kwargs):
     previous_status = getattr(instance, "_previous_status", None)
 
     if created:
+        if not instance.ticket_number:
+            Order.objects.filter(pk=instance.pk).update(
+                ticket_number=f"WDL-{instance.pk:06d}"
+            )
         OrderStatusHistory.objects.create(order=instance, status=instance.status)
+        from services.order_payments import recompute_payment_status
+
+        recompute_payment_status(instance, reason="Order created")
         return
 
     if previous_status is not None and previous_status != instance.status:

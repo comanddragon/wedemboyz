@@ -1,19 +1,28 @@
-from rest_framework import generics, permissions, status
+import json
+
+from django.db import transaction
+from rest_framework import generics, permissions, serializers, status
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db.models import Q
+from django.utils import timezone
 
 from apps.orders.api.serializers import (
     OrderCreateSerializer,
     OrderDetailSerializer,
     OrderListSerializer,
+    OrderItemSerializer,
+    OrderItemWriteSerializer,
     OrderStatusHistorySerializer,
 )
-from apps.orders.models import Order
+from apps.orders.models import Order, OrderItem
 from core.constants import OrderStatus
 from core.permissions import IsOwner
 from apps.staff.permissions import HasStaffPermission, StaffPermission, has_staff_permission
+from apps.staff.models import log_activity
+from services.order_flow import cancel_order, validate_transition
 
 CANCELLABLE_STATUSES = {OrderStatus.PENDING, OrderStatus.CONFIRMED}
 EDITABLE_STATUSES = {OrderStatus.PENDING}
@@ -28,18 +37,96 @@ class OrderListCreateView(generics.ListCreateAPIView):
         # select_related("schedule") avoids an N+1 query for
         # OrderListSerializer.has_schedule, which does a plain hasattr()
         # check per order.
-        qs = Order.objects.select_related("user", "schedule").prefetch_related("items")
-        if has_staff_permission(self.request.user, StaffPermission.ORDERS_VIEW):
-            return qs
-        return qs.filter(user=self.request.user)
+        qs = Order.objects.select_related(
+            "user", "schedule", "assigned_to", "driver"
+        ).prefetch_related("items")
+        if not has_staff_permission(self.request.user, StaffPermission.ORDERS_VIEW):
+            return qs.filter(user=self.request.user)
+
+        status_filter = self.request.query_params.get("status")
+        payment_status = self.request.query_params.get("payment_status")
+        source = self.request.query_params.get("source")
+        assigned_to = self.request.query_params.get("assigned_to")
+        driver = self.request.query_params.get("driver")
+        date_from = self.request.query_params.get("date_from")
+        date_to = self.request.query_params.get("date_to")
+        ordering = self.request.query_params.get("ordering")
+        customer = self.request.query_params.get("customer")
+        search = self.request.query_params.get("search", "").strip()
+        overdue = self.request.query_params.get("overdue")
+        if status_filter in OrderStatus.values:
+            qs = qs.filter(status=status_filter)
+        if payment_status:
+            qs = qs.filter(payment_status=payment_status)
+        if source in Order.Source.values:
+            qs = qs.filter(source=source)
+        if assigned_to and assigned_to.isdigit():
+            qs = qs.filter(assigned_to_id=int(assigned_to))
+        if driver and driver.isdigit():
+            qs = qs.filter(driver_id=int(driver))
+        if date_from:
+            qs = qs.filter(created_at__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(created_at__date__lte=date_to)
+        if customer and customer.isdigit():
+            qs = qs.filter(user_id=int(customer))
+        if overdue == "true":
+            from django.utils import timezone
+
+            qs = qs.filter(payment_due_date__lt=timezone.localdate()).exclude(
+                payment_status__in=["PAID", "NO_CHARGE", "WAIVED", "VOID"]
+            )
+        if search:
+            query = (
+                Q(user__first_name__icontains=search)
+                | Q(user__last_name__icontains=search)
+                | Q(user__phone_number__icontains=search)
+            )
+            if search.isdigit():
+                query |= Q(pk=int(search))
+            qs = qs.filter(query)
+        if ordering in {
+            "created_at", "-created_at", "total_amount", "-total_amount",
+            "expected_ready_at", "-expected_ready_at", "priority", "-priority",
+        }:
+            qs = qs.order_by(ordering)
+        return qs
 
     def get_serializer_class(self):
         return OrderCreateSerializer if self.request.method == "POST" else OrderListSerializer
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        payload = request.data
+        uploaded_photos = {}
+        if request.content_type and request.content_type.startswith("multipart/form-data"):
+            payload = request.data.dict()
+            try:
+                payload["items"] = json.loads(payload.get("items", "[]"))
+            except (TypeError, ValueError):
+                raise ValidationError({"items": "Items must be valid JSON."})
+
+            image_field = serializers.ImageField(allow_empty_file=False)
+            for index in range(len(payload["items"])):
+                photo = request.FILES.get(f"item_photo_{index}")
+                if photo is None:
+                    continue
+                if photo.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+                    raise ValidationError({f"item_photo_{index}": "Use a JPG, PNG, or WebP image."})
+                if photo.size > 5 * 1024 * 1024:
+                    raise ValidationError({f"item_photo_{index}": "Each photo must be 5 MB or smaller."})
+                uploaded_photos[index] = image_field.run_validation(photo)
+                photo.seek(0)
+
+        serializer = self.get_serializer(data=payload)
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
+        if uploaded_photos:
+            created_items = list(order.items.order_by("id"))
+            for index, photo in uploaded_photos.items():
+                created_items[index].photo = photo
+                created_items[index].save(update_fields=["photo", "updated_at"])
+        order.refresh_from_db()
         output = OrderDetailSerializer(order, context=self.get_serializer_context())
         return Response(output.data, status=status.HTTP_201_CREATED)
 
@@ -52,7 +139,9 @@ class OrderDetailView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = Order.objects.select_related("user").prefetch_related("items", "status_history")
+        qs = Order.objects.select_related(
+            "user", "assigned_to", "driver", "created_by"
+        ).prefetch_related("items", "status_history")
         if has_staff_permission(self.request.user, StaffPermission.ORDERS_VIEW):
             return qs
         return qs.filter(user=self.request.user)
@@ -76,8 +165,11 @@ class OrderCancelView(APIView):
         if order.status not in CANCELLABLE_STATUSES:
             raise ValidationError(f"An order in status '{order.status}' can no longer be cancelled.")
 
-        order.status = OrderStatus.CANCELLED
-        order.save(update_fields=["status"])
+        order = cancel_order(
+            order,
+            changed_by=request.user,
+            reason=str(request.data.get("reason", "")).strip(),
+        )
         return Response(OrderDetailSerializer(order).data)
 
 
@@ -102,14 +194,39 @@ class OrderStatusUpdateView(APIView):
         if new_status == previous_status:
             return Response(OrderDetailSerializer(order).data)
 
+        validate_transition(previous_status, new_status)
+
+        if new_status == OrderStatus.CANCELLED:
+            order = cancel_order(order, changed_by=request.user, reason=note)
+            log_activity(request.user, "order.status_changed", f"Order #{order.pk}: {previous_status} → {new_status}")
+            return Response(OrderDetailSerializer(order).data)
+
         order.status = new_status
-        order.save(update_fields=["status"])
+        update_fields = ["status"]
+        if new_status == OrderStatus.READY:
+            order.ready_at = timezone.now()
+            update_fields.append("ready_at")
+        if new_status == OrderStatus.DELIVERED:
+            if order.balance_due > 0 and not request.data.get("allow_unpaid_delivery"):
+                raise ValidationError(
+                    "This order still has a balance. A manager override is required to deliver it."
+                )
+            order.delivered_at = timezone.now()
+            update_fields.append("delivered_at")
+        order.save(update_fields=update_fields)
+
+        if new_status == OrderStatus.IN_PROGRESS:
+            from services.inventory_usage import consume_for_order
+
+            consume_for_order(order, changed_by=request.user)
 
         latest_history = order.status_history.first()
         if latest_history is not None:
             latest_history.note = note
             latest_history.changed_by = request.user
             latest_history.save(update_fields=["note", "changed_by"])
+
+        log_activity(request.user, "order.status_changed", f"Order #{order.pk}: {previous_status} → {new_status}")
 
         return Response(OrderDetailSerializer(order).data)
 
@@ -125,3 +242,102 @@ class OrderStatusHistoryListView(generics.ListAPIView):
         if not (has_staff_permission(self.request.user, StaffPermission.ORDERS_VIEW) or order.user_id == self.request.user.id):
             raise PermissionDenied("You do not have access to this order.")
         return order.status_history.all()
+
+
+class OrderWaivePaymentView(APIView):
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.REFUNDS_MANAGE
+
+    def post(self, request, pk):
+        order = get_object_or_404(Order, pk=pk)
+        reason = str(request.data.get("reason", "")).strip()
+        if not reason:
+            raise ValidationError({"reason": "A waiver reason is required."})
+        if order.balance_due <= 0:
+            raise ValidationError("This order has no balance to waive.")
+        order.payment_waived_reason = reason
+        order.payment_waived_by = request.user
+        order.save(
+            update_fields=["payment_waived_reason", "payment_waived_by", "updated_at"]
+        )
+        from apps.staff.models import log_activity
+        from services.order_payments import recompute_payment_status
+
+        order = recompute_payment_status(
+            order, changed_by=request.user, reason=f"Balance waived: {reason}"
+        )
+        log_activity(request.user, "payment.waived", f"Waived order #{order.pk}: {reason}")
+        return Response(OrderDetailSerializer(order).data)
+
+
+class OrderItemListCreateView(generics.ListCreateAPIView):
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.ORDERS_EDIT_ITEMS
+
+    def get_order(self):
+        return get_object_or_404(Order, pk=self.kwargs["pk"])
+
+    def get_queryset(self):
+        return self.get_order().items.all()
+
+    def get_serializer_class(self):
+        return OrderItemWriteSerializer if self.request.method == "POST" else OrderItemSerializer
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), "order": self.get_order()}
+
+
+class OrderItemDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.ORDERS_EDIT_ITEMS
+    serializer_class = OrderItemWriteSerializer
+    lookup_url_kwarg = "item_id"
+
+    def get_queryset(self):
+        return OrderItem.objects.filter(order_id=self.kwargs["pk"])
+
+    def destroy(self, request, *args, **kwargs):
+        item = self.get_object()
+        if item.order.items.count() <= 1:
+            raise ValidationError("An order must keep at least one item.")
+        order = item.order
+        item.delete()
+        return Response(OrderDetailSerializer(order).data)
+
+
+class OrderAssignmentView(APIView):
+    permission_classes = [HasStaffPermission]
+    required_staff_permission = StaffPermission.ORDERS_MANAGE
+
+    def post(self, request, pk):
+        from apps.staff.models import StaffProfile
+
+        order = get_object_or_404(Order, pk=pk)
+        assigned_to_id = request.data.get("assigned_to")
+        driver_id = request.data.get("driver")
+
+        assigned_profile = None
+        driver_profile = None
+        if assigned_to_id is not None:
+            assigned_profile = get_object_or_404(
+                StaffProfile.objects.select_related("user"),
+                user_id=assigned_to_id,
+                is_active=True,
+            )
+        if driver_id is not None:
+            driver_profile = get_object_or_404(
+                StaffProfile.objects.select_related("user"),
+                user_id=driver_id,
+                role="DRIVER",
+                is_active=True,
+            )
+        order.assigned_to = assigned_profile.user if assigned_profile else None
+        order.driver = driver_profile.user if driver_profile else None
+        order.save(update_fields=["assigned_to", "driver", "updated_at"])
+        if hasattr(order, "schedule"):
+            order.schedule.driver = order.driver
+            order.schedule.save(update_fields=["driver", "updated_at"])
+        from apps.staff.models import log_activity
+
+        log_activity(request.user, "order.assigned", f"Updated assignment for order #{order.pk}")
+        return Response(OrderDetailSerializer(order).data)

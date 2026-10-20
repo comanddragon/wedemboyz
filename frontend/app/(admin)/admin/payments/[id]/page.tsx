@@ -11,15 +11,14 @@ import { paymentsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
-import type { PaymentGateway } from "@/src/types";
+import type { PaymentMethodType } from "@/src/types";
 
-const GATEWAY_LABELS: Record<PaymentGateway, string> = {
-  STRIPE: "Card",
-  PAYPAL: "PayPal",
+const METHOD_LABELS: Record<PaymentMethodType, string> = {
   MTN_MOMO: "MTN Mobile Money",
   ORANGE_MONEY: "Orange Money",
   CASH: "Cash",
-  CREDIT: "Credit (pay later)",
+  BANK_TRANSFER: "Bank transfer",
+  OTHER: "Other",
 };
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
@@ -99,21 +98,15 @@ export default function AdminPaymentDetailPage() {
       <Card>
         <Row label="Amount" value={formatCurrency(payment.amount)} />
         <Row label="Currency" value={payment.currency} />
-        <Row label="Gateway" value={GATEWAY_LABELS[payment.gateway]} />
+        <Row label="Method" value={METHOD_LABELS[payment.payment_method_type]} />
+        <Row label="Reference" value={payment.reference || "—"} />
         <Row
-          label="Gateway reference"
-          value={payment.gateway_reference || "—"}
+          label="Received at"
+          value={new Date(payment.received_at).toLocaleString()}
         />
-        <Row
-          label="Method on file"
-          value={payment.method?.display_label ?? "—"}
-        />
-        <Row
-          label="Paid at"
-          value={
-            payment.paid_at ? new Date(payment.paid_at).toLocaleString() : "—"
-          }
-        />
+        <Row label="Payer" value={payment.payer_name || "—"} />
+        <Row label="Payer phone" value={payment.payer_phone || "—"} />
+        <Row label="Notes" value={payment.notes || "—"} />
         {payment.failure_reason && (
           <Row
             label="Failure reason"

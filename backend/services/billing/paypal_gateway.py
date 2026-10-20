@@ -94,7 +94,7 @@ def create_subscription(subscription, return_url: str, cancel_url: str) -> dict:
             "plan_id": _recurring_plan_id(subscription.plan),
             "custom_id": str(subscription.pk),
             "application_context": {
-                "brand_name": "WEDEMBOYZ Lavomatique",
+                "brand_name": "Wedemboyz Lavomatique",
                 "user_action": "SUBSCRIBE_NOW",
                 "return_url": return_url,
                 "cancel_url": cancel_url,
@@ -125,12 +125,12 @@ def create_order(subscription, return_url: str, cancel_url: str) -> dict:
                 {
                     "reference_id": str(subscription.pk),
                     "custom_id": str(subscription.pk),
-                    "description": f"WEDEMBOYZ Lavomatique — {subscription.get_plan_display()} (one-time)",
+                    "description": f"Wedemboyz Lavomatique — {subscription.get_plan_display()} (one-time)",
                     "amount": {"currency_code": "USD", "value": xaf_to_usd(amount_xaf)},
                 }
             ],
             "application_context": {
-                "brand_name": "WEDEMBOYZ Lavomatique",
+                "brand_name": "Wedemboyz Lavomatique",
                 "return_url": return_url,
                 "cancel_url": cancel_url,
             },

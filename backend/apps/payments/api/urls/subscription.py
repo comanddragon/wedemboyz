@@ -1,6 +1,8 @@
 from django.urls import path
 
 from apps.payments.api.views import (
+    AdminSubscriptionActionView,
+    AdminSubscriptionListView,
     SubscriptionActionView,
     SubscriptionCheckoutView,
     SubscriptionDetailView,
@@ -9,6 +11,8 @@ from apps.payments.api.views import (
 
 urlpatterns = [
     path("", SubscriptionListCreateView.as_view(), name="subscription-list"),
+    path("admin/", AdminSubscriptionListView.as_view(), name="subscription-admin-list"),
+    path("admin/<int:pk>/action/", AdminSubscriptionActionView.as_view(), name="subscription-admin-action"),
     path("<int:pk>/", SubscriptionDetailView.as_view(), name="subscription-detail"),
     path("<int:pk>/checkout/", SubscriptionCheckoutView.as_view(), name="subscription-checkout"),
     path("<int:pk>/pause/", SubscriptionActionView.as_view(), {"action": "pause"}, name="subscription-pause"),

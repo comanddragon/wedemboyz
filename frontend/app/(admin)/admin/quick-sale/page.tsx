@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { CircleCheck, CircleOff, ShoppingBag } from "lucide-react";
+import { CircleCheck, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
+import { PaymentMethodIcon } from "@/src/components/payments/PaymentMethodIcon";
 import {
   QuickSaleItems,
   type QuickSaleLineItem,
@@ -21,18 +22,14 @@ import {
 import { ordersApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
-import type { PaymentGateway, QuickSaleResult } from "@/src/types";
+import type { PaymentMethodType, QuickSaleResult } from "@/src/types";
 
-const GATEWAYS: { value: PaymentGateway; label: string; ready: boolean }[] = [
-  { value: "CASH", label: "Cash", ready: true },
-  { value: "MTN_MOMO", label: "MTN Mobile Money", ready: true },
-  { value: "ORANGE_MONEY", label: "Orange Money", ready: true },
-  { value: "STRIPE", label: "Card (Stripe) — not wired up yet", ready: false },
-  {
-    value: "CREDIT",
-    label: "Pay later (add to customer's credit tab)",
-    ready: true,
-  },
+const PAYMENT_METHODS: { value: PaymentMethodType; label: string }[] = [
+  { value: "CASH", label: "Cash" },
+  { value: "MTN_MOMO", label: "MTN Mobile Money" },
+  { value: "ORANGE_MONEY", label: "Orange Money" },
+  { value: "BANK_TRANSFER", label: "Bank transfer" },
+  { value: "OTHER", label: "Other" },
 ];
 
 function emptyLineItemsTotal(items: QuickSaleLineItem[]): number | null {
@@ -50,13 +47,12 @@ export default function AdminQuickSalePage() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [items, setItems] = useState<QuickSaleLineItem[]>([]);
-  const [gateway, setGateway] = useState<PaymentGateway>("CASH");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("CASH");
   const [paidNow, setPaidNow] = useState(true);
   const [deliveryFee, setDeliveryFee] = useState("");
   const [notes, setNotes] = useState("");
   const [result, setResult] = useState<QuickSaleResult | null>(null);
 
-  const effectivePaidNow = gateway === "CREDIT" ? false : paidNow;
   const estimatedTotal = useMemo(() => emptyLineItemsTotal(items), [items]);
 
   const submitMutation = useMutation({
@@ -65,8 +61,8 @@ export default function AdminQuickSalePage() {
         customer_phone: customerPhone.trim(),
         customer_name: customerName.trim() || undefined,
         items: items.map(({ clientId: _clientId, ...item }) => item),
-        payment_method: gateway,
-        paid_now: effectivePaidNow,
+        payment_method: paymentMethod,
+        paid_now: paidNow,
         delivery_fee:
           deliveryFee.trim() === "" ? undefined : Number(deliveryFee),
         notes: notes.trim() || undefined,
@@ -78,7 +74,7 @@ export default function AdminQuickSalePage() {
     setCustomerPhone("");
     setCustomerName("");
     setItems([]);
-    setGateway("CASH");
+    setPaymentMethod("CASH");
     setPaidNow(true);
     setDeliveryFee("");
     setNotes("");
@@ -186,53 +182,40 @@ export default function AdminQuickSalePage() {
               <legend className="mb-2 text-sm font-medium text-ink">
                 Payment method
               </legend>
-              {GATEWAYS.map((g) => (
+              {PAYMENT_METHODS.map((method) => (
                 <label
-                  key={g.value}
-                  className={`flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm transition-all duration-200 hover:border-navy/40 ${
-                    g.ready
-                      ? "cursor-pointer border-crease"
-                      : "cursor-not-allowed border-crease text-ink-muted"
-                  } ${gateway === g.value ? "border-navy bg-gold-50/70 ring-[3px] ring-gold/15" : ""}`}
+                  key={method.value}
+                  className={`flex cursor-pointer items-center gap-2 rounded-xl border border-crease px-3.5 py-2.5 text-sm transition-colors hover:border-navy/40 ${
+                    paymentMethod === method.value
+                      ? "border-navy bg-gold-50/70 ring-[3px] ring-gold/15"
+                      : ""
+                  }`}
                 >
                   <input
                     type="radio"
-                    name="qs-gateway"
-                    value={g.value}
-                    checked={gateway === g.value}
-                    disabled={!g.ready}
-                    onChange={() => setGateway(g.value)}
+                    name="qs-payment-method"
+                    value={method.value}
+                    checked={paymentMethod === method.value}
+                    onChange={() => setPaymentMethod(method.value)}
                   />
-                  {g.ready ? (
-                    <CircleCheck
-                      className="h-4 w-4 text-status-ready-text"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <CircleOff
-                      className="h-4 w-4 text-ink-muted"
-                      aria-hidden="true"
-                    />
-                  )}
-                  {g.label}
+                  <PaymentMethodIcon method={method.value} />
+                  <span className="flex-1">{method.label}</span>
+                  {paymentMethod === method.value ? <CircleCheck className="h-4 w-4 text-status-ready-text" aria-hidden="true" /> : null}
                 </label>
               ))}
             </fieldset>
 
-            {gateway !== "CREDIT" && (
-              <label className="mt-4 flex items-center gap-2 text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={paidNow}
-                  onChange={(e) => setPaidNow(e.target.checked)}
-                />
-                Customer has paid now
-              </label>
-            )}
-            {gateway === "CREDIT" && (
-              <p className="mt-4 text-xs text-ink-muted">
-                This sale will be added to the customer&apos;s credit balance
-                instead of recording an immediate payment.
+            <label className="mt-4 flex items-center gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={paidNow}
+                onChange={(e) => setPaidNow(e.target.checked)}
+              />
+              Payment received now
+            </label>
+            {!paidNow && (
+              <p className="mt-2 text-xs text-ink-muted">
+                The sale will remain unpaid until staff records a payment.
               </p>
             )}
 

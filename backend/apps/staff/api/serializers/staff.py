@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from apps.staff.models import StaffActivityLog, StaffInvite, StaffProfile
+from apps.staff.models import BusinessSettings, PriceItem, StaffActivityLog, StaffInvite, StaffProfile, SubscriptionPlanSetting
 
 User = get_user_model()
 
@@ -9,7 +9,7 @@ User = get_user_model()
 class StaffUserSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "phone_number", "email"]
+        fields = ["id", "first_name", "last_name", "phone_number", "email", "last_login"]
         read_only_fields = fields
 
 
@@ -18,11 +18,27 @@ class StaffProfileSerializer(serializers.ModelSerializer):
 
     user = StaffUserSummarySerializer(read_only=True)
     invited_by = StaffUserSummarySerializer(read_only=True)
+    open_chat_count = serializers.IntegerField(read_only=True, default=0)
+    can_receive_chats = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = StaffProfile
-        fields = ["id", "user", "role", "is_active", "invited_by", "joined_at"]
+        fields = [
+            "id", "user", "role", "is_active", "invited_by", "joined_at",
+            "hire_date", "employment_status", "base_salary", "address",
+            "emergency_contact_name", "emergency_contact_phone", "notes",
+            "is_available_for_chat", "can_receive_chats", "open_chat_count",
+        ]
         read_only_fields = ["id", "user", "invited_by", "joined_at"]
+
+
+class StaffAssignmentSerializer(serializers.ModelSerializer):
+    user = StaffUserSummarySerializer(read_only=True)
+
+    class Meta:
+        model = StaffProfile
+        fields = ["id", "user", "role", "employment_status", "is_active"]
+        read_only_fields = fields
 
 
 class StaffProfileUpdateSerializer(serializers.ModelSerializer):
@@ -30,7 +46,16 @@ class StaffProfileUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StaffProfile
-        fields = ["role", "is_active"]
+        fields = [
+            "role", "is_active", "hire_date", "employment_status", "base_salary",
+            "address", "emergency_contact_name", "emergency_contact_phone",
+            "notes", "is_available_for_chat",
+        ]
+
+    def validate_base_salary(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError("Base salary cannot be negative.")
+        return value
 
 
 class StaffInviteSerializer(serializers.ModelSerializer):
@@ -112,7 +137,52 @@ class StaffInviteAcceptSerializer(serializers.Serializer):
 
 
 class StaffActivityLogSerializer(serializers.ModelSerializer):
+    staff_name = serializers.CharField(source="staff.get_full_name", read_only=True)
+    staff_phone = serializers.CharField(source="staff.phone_number", read_only=True)
+
     class Meta:
         model = StaffActivityLog
-        fields = ["id", "action", "description", "created_at"]
+        fields = ["id", "staff", "staff_name", "staff_phone", "action", "description", "created_at"]
         read_only_fields = fields
+
+
+class BusinessSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BusinessSettings
+        exclude = ["created_at", "updated_at"]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        for field in ("delivery_fee_flat", "free_delivery_threshold", "tax_rate_percent"):
+            value = attrs.get(field)
+            if value is not None and value < 0:
+                raise serializers.ValidationError({field: "This value cannot be negative."})
+        return attrs
+
+
+class PriceItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PriceItem
+        fields = "__all__"
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        if attrs.get("price", 0) < 0 or attrs.get("minimum_charge", 0) < 0:
+            raise serializers.ValidationError("Prices cannot be negative.")
+        if attrs.get("effective_until") and attrs.get("effective_from") and attrs["effective_until"] < attrs["effective_from"]:
+            raise serializers.ValidationError("Effective end must be after the start date.")
+        return attrs
+
+
+class SubscriptionPlanSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubscriptionPlanSetting
+        fields = "__all__"
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        for field in ("price", "kilos"):
+            value = attrs.get(field)
+            if value is not None and value < 0:
+                raise serializers.ValidationError({field: "This value cannot be negative."})
+        return attrs

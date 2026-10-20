@@ -14,6 +14,13 @@ export interface Schedule {
   delivery_time_slot: TimeSlot;
   delivery_status: ScheduleStatus;
   driver_notes: string;
+  driver: number | null;
+  pickup_completed_at: string | null;
+  delivery_completed_at: string | null;
+  proof_of_delivery: string | null;
+  failed_reason: string;
+  contact_phone: string;
+  address_override: string;
 }
 
 /** Payload for POST /schedule/ — mirrors ScheduleCreateSerializer. */
@@ -24,6 +31,9 @@ export interface CreateScheduleInput {
   delivery_date: string;
   delivery_time_slot: TimeSlot;
   driver_notes?: string;
+  driver?: number | null;
+  contact_phone?: string;
+  address_override?: string;
 }
 
 /** Payload for POST /schedule/{order_id}/reschedule/ — mirrors RescheduleSerializer.

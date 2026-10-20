@@ -16,12 +16,25 @@ class StaffPermission:
     FINANCE_MANAGE = "finance.manage"
     REFUNDS_MANAGE = "refunds.manage"
     STAFF_MANAGE = "staff.manage"
+    PAYMENTS_RECORD = "payments.record"
+    INVENTORY_LOG_USAGE = "inventory.log_usage"
+    ORDERS_CANCEL = "orders.cancel"
+    ORDERS_EDIT_ITEMS = "orders.edit_items"
+    LOYALTY_MANAGE = "loyalty.manage"
+    REPORTS_EXPORT = "reports.export"
+    SCHEDULE_MANAGE = "schedule.manage"
+    SUPPLIERS_MANAGE = "suppliers.manage"
+    AUDIT_VIEW = "audit.view"
+    CUSTOMERS_MANAGE = "customers.manage"
 
     ALL = (
         DASHBOARD_VIEW, ORDERS_VIEW, ORDERS_MANAGE, SALES_CREATE,
         PAYMENTS_VIEW, CHAT_MANAGE, CUSTOMERS_VIEW, INVENTORY_VIEW,
         INVENTORY_MANAGE, DISCOUNTS_MANAGE, FINANCE_VIEW,
-        FINANCE_MANAGE, REFUNDS_MANAGE, STAFF_MANAGE,
+        FINANCE_MANAGE, REFUNDS_MANAGE, STAFF_MANAGE, PAYMENTS_RECORD,
+        INVENTORY_LOG_USAGE, ORDERS_CANCEL, ORDERS_EDIT_ITEMS,
+        LOYALTY_MANAGE, REPORTS_EXPORT, SCHEDULE_MANAGE, SUPPLIERS_MANAGE,
+        AUDIT_VIEW, CUSTOMERS_MANAGE,
     )
 
 
@@ -32,13 +45,29 @@ ROLE_PERMISSIONS = {
         StaffPermission.PAYMENTS_VIEW, StaffPermission.CHAT_MANAGE,
         StaffPermission.CUSTOMERS_VIEW, StaffPermission.INVENTORY_VIEW,
         StaffPermission.INVENTORY_MANAGE, StaffPermission.DISCOUNTS_MANAGE,
-        StaffPermission.FINANCE_VIEW,
+        StaffPermission.FINANCE_VIEW, StaffPermission.PAYMENTS_RECORD,
+        StaffPermission.INVENTORY_LOG_USAGE, StaffPermission.ORDERS_CANCEL,
+        StaffPermission.ORDERS_EDIT_ITEMS, StaffPermission.LOYALTY_MANAGE,
+        StaffPermission.REPORTS_EXPORT, StaffPermission.SCHEDULE_MANAGE,
+        StaffPermission.SUPPLIERS_MANAGE, StaffPermission.AUDIT_VIEW,
+        StaffPermission.CUSTOMERS_MANAGE, StaffPermission.REFUNDS_MANAGE,
+        StaffPermission.FINANCE_MANAGE,
     },
     "ATTENDANT": {
         StaffPermission.DASHBOARD_VIEW, StaffPermission.ORDERS_VIEW,
         StaffPermission.ORDERS_MANAGE, StaffPermission.SALES_CREATE,
         StaffPermission.PAYMENTS_VIEW, StaffPermission.CHAT_MANAGE,
         StaffPermission.CUSTOMERS_VIEW, StaffPermission.INVENTORY_VIEW,
+        StaffPermission.INVENTORY_LOG_USAGE,
+    },
+    "CASHIER": {
+        StaffPermission.DASHBOARD_VIEW, StaffPermission.ORDERS_VIEW,
+        StaffPermission.SALES_CREATE, StaffPermission.PAYMENTS_VIEW,
+        StaffPermission.PAYMENTS_RECORD, StaffPermission.CHAT_MANAGE,
+        StaffPermission.CUSTOMERS_VIEW,
+    },
+    "DRIVER": {
+        StaffPermission.DASHBOARD_VIEW, StaffPermission.ORDERS_VIEW,
     },
 }
 

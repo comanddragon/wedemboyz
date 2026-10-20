@@ -1,0 +1,14 @@
+.env
+.venv
+__pycache__
+*.py[cod]
+*.sqlite3
+.git
+.idea
+.ruff_cache
+.wrangler
+node_modules
+media
+staticfiles
+backend.zip
+tests

@@ -42,18 +42,16 @@ export function MembershipCard({
 
   return (
     <Card
-      className={`flex min-h-32 items-center justify-between border-0 bg-gradient-to-br ${style.surface} p-6 shadow-card`}
+      className={`flex min-h-24 items-center justify-between border-0 bg-gradient-to-br ${style.surface} p-4 shadow-card sm:min-h-32 sm:p-6`}
     >
       <div className="flex items-center gap-3">
         <span
-          className={`flex h-12 w-12 items-center justify-center rounded-2xl ${style.bg} ${style.icon}`}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl sm:h-12 sm:w-12 sm:rounded-2xl ${style.bg} ${style.icon}`}
         >
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
         <div>
-          <p className="text-sm font-semibold text-ink">
-            {style.label} member
-          </p>
+          <p className="text-sm font-semibold text-ink">{style.label} member</p>
           <p className="mt-1 text-xs font-medium text-ink-muted">
             {pointsBalance} points balance
           </p>

@@ -4,7 +4,7 @@ CamPay's collect endpoint moves real money even against a sandbox/test
 MTN/Orange account, so manually testing the webhook flow against a real
 order's real total (often several thousand XAF) is expensive and slow to
 set up (you'd otherwise have to go hunt down or create an order priced at
-exactly the small amount you want to test with — see the WEDEMBOYZ dev
+exactly the small amount you want to test with — see the Wedemboyz Lavomatique dev
 notes on this). This middleware removes that friction: it intercepts
 POST /api/v1/payments/ (the payment-initiation endpoint,
 apps.payments.api.views.payment.PaymentListCreateView / url name

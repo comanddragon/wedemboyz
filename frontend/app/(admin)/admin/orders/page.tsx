@@ -20,13 +20,22 @@ import {
   Tr,
 } from "@/src/components/admin/Table";
 import { useSort } from "@/src/components/admin/useSort";
-import { Select, StatusBadge, orderStatusTone } from "@/src/components/ui";
-import { ordersApi } from "@/src/lib/api";
+import {
+  Select,
+  StatusBadge,
+  orderStatusTone,
+  paymentStatusTone,
+} from "@/src/components/ui";
+import { ordersApi, staffApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import { customerFullName, customerNumber } from "@/src/lib/utils";
-import type { OrderListItem, OrderStatus } from "@/src/types";
+import type {
+  OrderListItem,
+  OrderPaymentStatus,
+  OrderStatus,
+} from "@/src/types";
 
 const STATUS_OPTIONS: { value: OrderStatus | "ALL"; label: string }[] = [
   { value: "ALL", label: "All statuses" },
@@ -39,6 +48,19 @@ const STATUS_OPTIONS: { value: OrderStatus | "ALL"; label: string }[] = [
   { value: "CANCELLED", label: "Cancelled" },
 ];
 
+const PAYMENT_OPTIONS: { value: OrderPaymentStatus | "ALL"; label: string }[] = [
+  { value: "ALL", label: "All payment states" },
+  { value: "UNPAID", label: "Unpaid" },
+  { value: "PARTIALLY_PAID", label: "Partially paid" },
+  { value: "PAID", label: "Paid" },
+  { value: "OVERPAID", label: "Overpaid" },
+  { value: "NO_CHARGE", label: "No charge" },
+  { value: "WAIVED", label: "Waived" },
+  { value: "REFUNDED", label: "Refunded" },
+];
+
+const SOURCE_OPTIONS = ["ALL", "ONLINE", "WALK_IN", "PHONE", "STAFF"] as const;
+
 type SortKey =
   "id" | "customer" | "phone_number" | "created_at" | "total_amount" | "status";
 
@@ -47,10 +69,32 @@ export default function AdminOrdersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "ALL">("ALL");
+  const [paymentFilter, setPaymentFilter] = useState<
+    OrderPaymentStatus | "ALL"
+  >("ALL");
+  const [sourceFilter, setSourceFilter] = useState<(typeof SOURCE_OPTIONS)[number]>("ALL");
+
+  const staffQuery = useQuery({
+    queryKey: ["staff", "operations"],
+    queryFn: () => staffApi.listOperationalStaff(),
+  });
+  const staffNames = useMemo(
+    () => new Map(staffQuery.data?.map((profile) => [profile.user.id, `${profile.user.first_name} ${profile.user.last_name}`.trim()]) ?? []),
+    [staffQuery.data],
+  );
 
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.orders.list(page),
-    queryFn: () => ordersApi.listOrders(page),
+    queryKey: [
+      ...queryKeys.orders.list(page),
+      { search, statusFilter, paymentFilter, sourceFilter },
+    ],
+    queryFn: () =>
+      ordersApi.listOrders(page, {
+        search: search.trim() || undefined,
+        status: statusFilter === "ALL" ? undefined : statusFilter,
+        payment_status: paymentFilter === "ALL" ? undefined : paymentFilter,
+        source: sourceFilter === "ALL" ? undefined : sourceFilter,
+      }),
   });
 
   const filtered = useMemo(() => {
@@ -64,11 +108,9 @@ export default function AdminOrdersPage() {
         String(order.id).includes(term) ||
         name.includes(term) ||
         number.includes(term);
-      const matchesStatus =
-        statusFilter === "ALL" || order.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      return matchesSearch;
     });
-  }, [data, search, statusFilter]);
+  }, [data, search]);
 
   const { sorted, toggle, directionFor } = useSort<OrderListItem, SortKey>(
     filtered,
@@ -119,6 +161,32 @@ export default function AdminOrdersPage() {
             </option>
           ))}
         </Select>
+        <Select
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value as (typeof SOURCE_OPTIONS)[number])}
+          className="sm:w-40"
+          aria-label="Filter by order source"
+        >
+          {SOURCE_OPTIONS.map((source) => (
+            <option key={source} value={source}>
+              {source === "ALL" ? "All sources" : source.replace(/_/g, " ")}
+            </option>
+          ))}
+        </Select>
+        <Select
+          value={paymentFilter}
+          onChange={(e) =>
+            setPaymentFilter(e.target.value as OrderPaymentStatus | "ALL")
+          }
+          className="sm:w-52"
+          aria-label="Filter by payment status"
+        >
+          {PAYMENT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </Select>
         {data && (
           <p className="text-xs text-ink-muted sm:ml-auto">
             {filtered?.length ?? 0} of {data.results.length} on this page ·{" "}
@@ -141,19 +209,15 @@ export default function AdminOrdersPage() {
             direction={directionFor("id")}
             onSort={() => toggle("id")}
           />
+          <Th>Source</Th>
           <SortableTh
             label="Customer"
             active={directionFor("customer") !== null}
             direction={directionFor("customer")}
             onSort={() => toggle("customer")}
           />
-          <SortableTh
-            label="Phone Number"
-            active={directionFor("phone_number") !== null}
-            direction={directionFor("phone_number")}
-            onSort={() => toggle("phone_number")}
-          />
-          <Th>Items</Th>
+          <Th>Assigned</Th>
+          <Th>Load</Th>
           <SortableTh
             label="Placed"
             active={directionFor("created_at") !== null}
@@ -167,6 +231,7 @@ export default function AdminOrdersPage() {
             direction={directionFor("total_amount")}
             onSort={() => toggle("total_amount")}
           />
+          <Th>Payment</Th>
           <SortableTh
             label="Status"
             active={directionFor("status") !== null}
@@ -176,10 +241,10 @@ export default function AdminOrdersPage() {
           <Th className="w-8" />
         </THead>
         <TBody>
-          {isLoading && <TableSkeleton columns={7} />}
+          {isLoading && <TableSkeleton columns={10} />}
 
           {!isLoading && sorted && sorted.length === 0 && (
-            <TableEmptyRow colSpan={7}>
+            <TableEmptyRow colSpan={10}>
               {data && data.results.length === 0
                 ? "No orders yet."
                 : "No orders match your search or filter."}
@@ -192,26 +257,43 @@ export default function AdminOrdersPage() {
                 key={order.id}
                 onClick={() => router.push(`/admin/orders/${order.id}`)}
               >
-                <Td className="font-medium">#{order.id}</Td>
+                <Td className="font-medium">
+                  <p>{order.ticket_number ?? `#${order.id}`}</p>
+                  {order.is_express && <span className="text-[10px] font-semibold uppercase tracking-wide text-status-pending-text">Express</span>}
+                </Td>
+                <Td className="whitespace-nowrap text-xs text-ink-muted">
+                  {order.source.replace(/_/g, " ")}
+                </Td>
                 <Td>
                   {customerFullName(order.customer) ?? (
                     <span className="text-ink-muted">—</span>
                   )}
                 </Td>
-                <Td>
-                  {customerNumber(order.customer) ?? (
-                    <span className="text-ink-muted">—</span>
-                  )}
+                <Td className="text-xs text-ink-muted">
+                  <p>{order.assigned_to ? staffNames.get(order.assigned_to) ?? "Assigned" : "Unassigned"}</p>
+                  {order.driver && <p>Driver: {staffNames.get(order.driver) ?? "Assigned"}</p>}
                 </Td>
-
-                <Td className="text-ink-muted">
-                  {order.item_count} item{order.item_count === 1 ? "" : "s"}
+                <Td className="whitespace-nowrap text-ink-muted">
+                  {order.pieces_count} pc · {Number(order.weight_kg_total).toFixed(1)} kg
                 </Td>
                 <Td className="whitespace-nowrap text-ink-muted">
                   {new Date(order.created_at).toLocaleString()}
                 </Td>
                 <Td align="right" className="tabular-nums">
                   {formatCurrency(order.total_amount)}
+                </Td>
+                <Td>
+                  <div className="space-y-1">
+                    <StatusBadge
+                      label={order.payment_status}
+                      tone={paymentStatusTone(order.payment_status)}
+                    />
+                    {Number(order.balance_due) > 0 && (
+                      <p className="text-xs tabular-nums text-ink-muted">
+                        {formatCurrency(order.balance_due)} due
+                      </p>
+                    )}
+                  </div>
                 </Td>
                 <Td>
                   <StatusBadge

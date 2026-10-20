@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.db import models
+from django.db import models, transaction
+from rest_framework.exceptions import ValidationError
 from rest_framework import generics, permissions
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
@@ -67,13 +68,18 @@ class CreditAccountChargeView(APIView):
     permission_classes = [HasStaffPermission]
     required_staff_permission = StaffPermission.FINANCE_MANAGE
 
+    @transaction.atomic
     def post(self, request, user_id):
         user = get_object_or_404(User, pk=user_id)
-        account, _ = CreditAccount.objects.get_or_create(user=user)
+        account, _ = CreditAccount.objects.select_for_update().get_or_create(user=user)
 
         serializer = CreditTransactionInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        if account.credit_limit > 0 and account.balance + data["amount"] > account.credit_limit:
+            raise ValidationError(
+                f"This charge exceeds the customer's {account.credit_limit} credit limit."
+            )
 
         CreditTransaction.objects.create(
             credit_account=account,

@@ -23,7 +23,7 @@ import {
   Select,
   StatusBadge,
 } from "@/src/components/ui";
-import { chatApi } from "@/src/lib/api";
+import { chatApi, staffApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
 import type { ChatRoom, ChatRoomStatus } from "@/src/types";
@@ -52,10 +52,29 @@ export default function AdminChatPage() {
     queryFn: () => chatApi.listChatRooms(),
   });
 
+  const { data: staff } = useQuery({
+    queryKey: [...queryKeys.staff.roster, "chat-available"],
+    queryFn: () => staffApi.listChatAgents(),
+  });
+
   const closeMutation = useMutation({
     mutationFn: (roomId: number) => chatApi.closeChatRoom(roomId),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.rooms }),
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: ({
+      roomId,
+      agentId,
+    }: {
+      roomId: number;
+      agentId: number | null;
+    }) => chatApi.assignChatRoom(roomId, agentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.chat.rooms });
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.roster });
+    },
   });
 
   // Unassigned-and-open first, then open, then closed, most recent activity first within each group.
@@ -89,7 +108,8 @@ export default function AdminChatPage() {
         const matchesSearch =
           term === "" ||
           fullName.includes(term) ||
-          (r.order !== null && String(r.order).includes(term));
+          r.customer.phone_number.includes(term) ||
+          (r.order !== null && String(r.order.id).includes(term));
         return matchesFilter && matchesSearch;
       })
       .sort(
@@ -181,10 +201,37 @@ export default function AdminChatPage() {
                   </span>
                 </Td>
                 <Td className="text-ink-muted">
-                  {room.order ? `#${room.order}` : "—"}
+                  {room.order ? `#${room.order.id}` : "—"}
                 </Td>
-                <Td className="text-ink-muted">
-                  {room.agent === null ? "Unassigned" : `#${room.agent}`}
+                <Td className="min-w-44">
+                  <Select
+                    onClick={(event) => event.stopPropagation()}
+                    value={room.agent?.id ?? ""}
+                    disabled={
+                      assignMutation.isPending || room.status === "CLOSED"
+                    }
+                    onChange={(event) =>
+                      assignMutation.mutate({
+                        roomId: room.id,
+                        agentId: event.target.value
+                          ? Number(event.target.value)
+                          : null,
+                      })
+                    }
+                    aria-label={`Assign conversation with ${room.customer.first_name}`}
+                  >
+                    <option value="">Unassigned</option>
+                    {staff?.map((person) => {
+                      const name =
+                        `${person.user.first_name} ${person.user.last_name}`.trim() ||
+                        person.user.phone_number;
+                      return (
+                        <option key={person.user.id} value={person.user.id}>
+                          {name} · {person.open_chat_count} open
+                        </option>
+                      );
+                    })}
+                  </Select>
                 </Td>
                 <Td className="max-w-[220px] truncate text-ink-muted">
                   {room.last_message
@@ -217,7 +264,10 @@ export default function AdminChatPage() {
                           e.stopPropagation();
                           closeMutation.mutate(room.id);
                         }}
-                        aria-label={`Close conversation with customer #${room.customer}`}
+                        aria-label={`Close conversation with ${
+                          `${room.customer.first_name} ${room.customer.last_name}`.trim() ||
+                          room.customer.phone_number
+                        }`}
                       >
                         <X className="h-3.5 w-3.5" aria-hidden="true" />
                         Close

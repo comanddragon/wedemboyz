@@ -1,9 +1,9 @@
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
 
 from apps.orders.models import Order
 from apps.payments.models import Payment, PaymentMethod, generate_display_label
-from core.constants import PaymentGateway, PaymentStatus
+from core.constants import PaymentGateway, PaymentMethodType, PaymentStatus
 User = get_user_model()
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
@@ -70,6 +70,18 @@ class PaymentSerializer(serializers.ModelSerializer):
             "status",
             "paid_at",
             "failure_reason",
+            "payment_method_type",
+            "reference",
+            "received_by",
+            "received_at",
+            "payer_name",
+            "payer_phone",
+            "notes",
+            "tendered_amount",
+            "change_given",
+            "voided_at",
+            "voided_by",
+            "void_reason",
             "ussd_code",
             "created_at",
         ]
@@ -83,6 +95,40 @@ class PaymentSerializer(serializers.ModelSerializer):
         # Only set (transiently, not persisted) right after CamPay
         # initiation — see PaymentInitiateSerializer.create().
         return getattr(payment, "ussd_code", "")
+
+
+class ManualPaymentSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=10, decimal_places=0, min_value=1)
+    payment_method_type = serializers.ChoiceField(choices=PaymentMethodType.choices)
+    reference = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    received_at = serializers.DateTimeField(required=False)
+    payer_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    payer_phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    tendered_amount = serializers.DecimalField(
+        max_digits=10, decimal_places=0, min_value=0, required=False, allow_null=True
+    )
+    allow_overpayment = serializers.BooleanField(default=False, write_only=True)
+
+    def validate(self, attrs):
+        order = self.context["order"]
+        if order.payment_status in {"VOID", "WAIVED", "NO_CHARGE"}:
+            raise serializers.ValidationError("This order does not accept payments.")
+        if attrs["amount"] > order.balance_due and not attrs["allow_overpayment"]:
+            raise serializers.ValidationError(
+                {"amount": "Amount exceeds the balance due. Allow overpayment to continue."}
+            )
+        tendered = attrs.get("tendered_amount")
+        if attrs["payment_method_type"] == PaymentMethodType.CASH:
+            if tendered is not None and tendered < attrs["amount"]:
+                raise serializers.ValidationError(
+                    {"tendered_amount": "Tendered cash cannot be less than the payment."}
+                )
+        elif tendered is not None:
+            raise serializers.ValidationError(
+                {"tendered_amount": "Tendered amount is only used for cash payments."}
+            )
+        return attrs
 
 
 class PaymentInitiateSerializer(serializers.ModelSerializer):
@@ -155,7 +201,7 @@ class PaymentInitiateSerializer(serializers.ModelSerializer):
                 result = campay_gateway.initiate_collection(
                     amount=order.total_amount,
                     phone_number=phone_number,
-                    description=f"WEDEMBOYZ Lavomatique — Order #{order.pk}",
+                    description=f"Wedemboyz Lavomatique — Order #{order.pk}",
                     external_reference=f"order-{order.pk}",
                     user=order.user,
                 )

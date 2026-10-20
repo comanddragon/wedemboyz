@@ -1,6 +1,6 @@
 /**
  * Small-caps, letter-spaced label with diamond-bullet separators between
- * words — pulled directly from the WEDEMBOYZ logo's own tagline treatment
+ * words — pulled directly from the Wedemboyz Lavomatique logo's own tagline treatment
  * ("PROPRETÉ ◆ RAPIDITÉ ◆ QUALITÉ"), not a generic dashboard eyebrow style.
  * Pass words as separate strings; a diamond renders between each.
  */

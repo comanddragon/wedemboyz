@@ -19,6 +19,14 @@ export async function getSchedule(orderId: number): Promise<Schedule> {
   return unwrap<Schedule>(res);
 }
 
+export async function updateSchedule(
+  orderId: number,
+  input: Partial<Omit<Schedule, "order">>,
+): Promise<Schedule> {
+  const res = await apiClient.patch(`/schedule/${orderId}/`, input);
+  return unwrap<Schedule>(res);
+}
+
 /** POST /schedule/{order_id}/reschedule/ — partial update, at least one field required. */
 export async function reschedule(
   orderId: number,

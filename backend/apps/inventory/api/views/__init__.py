@@ -4,6 +4,15 @@ from .inventory import (
     InventoryItemListCreateView,
     InventoryItemTransactionListView,
     InventoryLowStockListView,
+    InventoryTransactionListView,
+    InventoryUsageCreateView,
+    InventoryValuationView,
+    MachineDetailView,
+    MachineListCreateView,
+    ServiceConsumptionDetailView,
+    ServiceConsumptionListCreateView,
+    SupplierDetailView,
+    SupplierListCreateView,
 )
 
 __all__ = [
@@ -12,4 +21,13 @@ __all__ = [
     "InventoryLowStockListView",
     "InventoryItemAdjustView",
     "InventoryItemTransactionListView",
+    "InventoryTransactionListView",
+    "InventoryUsageCreateView",
+    "InventoryValuationView",
+    "SupplierListCreateView",
+    "SupplierDetailView",
+    "ServiceConsumptionListCreateView",
+    "ServiceConsumptionDetailView",
+    "MachineListCreateView",
+    "MachineDetailView",
 ]

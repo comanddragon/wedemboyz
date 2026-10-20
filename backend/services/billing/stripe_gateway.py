@@ -71,7 +71,7 @@ def create_checkout_session(subscription, success_url: str, cancel_url: str):
                     "currency": "xaf",
                     "unit_amount": int(amount),
                     "product_data": {
-                        "name": f"WEDEMBOYZ Lavomatique — {subscription.get_plan_display()} (one-time)",
+                        "name": f"Wedemboyz Lavomatique — {subscription.get_plan_display()} (one-time)",
                     },
                 },
                 "quantity": 1,

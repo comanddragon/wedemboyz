@@ -3,15 +3,39 @@ Pricing logic lives here rather than on the Order/OrderItem models so it can be
 unit-tested without touching the DB, and so pricing rules can change without
 touching migrations.
 
-Source of truth for every figure below: the WEDEMBOYZ Lavomatique price
+Source of truth for every figure below: the Wedemboyz Lavomatique price
 flyers (NOUVEAUX PRIX / GRILLE DE PRIX / ABONNEMENTS MENSUELS), updated
 2026-07-17. Update this file (not the flyers) if prices change again.
 """
 
 from decimal import Decimal
+from django.db import models
 
 from core.constants import ServiceType
 from core.utils import round_money
+
+
+def _configured_price(service_type):
+    try:
+        from django.utils import timezone
+        from apps.staff.models import PriceItem
+
+        today = timezone.localdate()
+        return PriceItem.objects.filter(
+            service_type=service_type, is_active=True, effective_from__lte=today,
+        ).filter(
+            models.Q(effective_until__isnull=True) | models.Q(effective_until__gte=today)
+        ).order_by("-effective_from").first()
+    except Exception:
+        return None
+
+
+def _business_settings():
+    try:
+        from apps.staff.models import BusinessSettings
+        return BusinessSettings.load()
+    except Exception:
+        return None
 
 # --- Per-piece pressing/garment-care items ("NOUVEAUX PRIX" flyer) --------
 # Flat price per piece — weight_kg is still recorded on the OrderItem for
@@ -69,12 +93,26 @@ PLAN_KG_ALLOWANCE = {
 
 
 def price_for_subscription_plan(plan: str) -> Decimal:
+    try:
+        from apps.staff.models import SubscriptionPlanSetting
+        configured = SubscriptionPlanSetting.objects.filter(plan=plan, is_active=True).first()
+        if configured:
+            return configured.price
+    except Exception:
+        pass
     if plan not in PLAN_PRICE:
         raise ValueError(f"Unknown subscription plan: {plan}")
     return PLAN_PRICE[plan]
 
 
 def kg_allowance_for_plan(plan: str) -> Decimal:
+    try:
+        from apps.staff.models import SubscriptionPlanSetting
+        configured = SubscriptionPlanSetting.objects.filter(plan=plan, is_active=True).first()
+        if configured:
+            return configured.kilos
+    except Exception:
+        pass
     if plan not in PLAN_KG_ALLOWANCE:
         raise ValueError(f"Unknown subscription plan: {plan}")
     return PLAN_KG_ALLOWANCE[plan]
@@ -82,6 +120,12 @@ def kg_allowance_for_plan(plan: str) -> Decimal:
 
 def price_for_item(service_type: str, weight_kg: Decimal, quantity: int = 1) -> Decimal:
     """Unit price for a single OrderItem line (pre-quantity)."""
+    configured = _configured_price(service_type)
+    if configured:
+        if configured.unit_mode == "PIECE":
+            return round_money(configured.price)
+        return round_money(max(configured.price * Decimal(weight_kg), configured.minimum_charge))
+
     if service_type in PRICE_PER_PIECE:
         return round_money(PRICE_PER_PIECE[service_type])
 
@@ -94,6 +138,11 @@ def price_for_item(service_type: str, weight_kg: Decimal, quantity: int = 1) -> 
 
 
 def calculate_delivery_fee(subtotal: Decimal) -> Decimal:
+    configured = _business_settings()
+    if configured:
+        if configured.free_delivery_threshold is not None and subtotal >= configured.free_delivery_threshold:
+            return Decimal("0")
+        return configured.delivery_fee_flat
     return DELIVERY_FEE_FLAT
 
 
@@ -116,7 +165,7 @@ def price_order_items(items: list[dict]) -> Decimal:
     """
     total = Decimal("0")
     for item in items:
-        unit_price = price_for_item(item["service_type"], item["weight_kg"])
+        unit_price = price_for_item(item["service_type"], item.get("weight_kg") or Decimal("1"))
         total += unit_price * item.get("quantity", 1)
     return round_money(total)
 
@@ -127,5 +176,6 @@ def total_weight_kg(items: list[dict]) -> Decimal:
     it's included the same as grille items."""
     total = Decimal("0")
     for item in items:
-        total += Decimal(item["weight_kg"]) * item.get("quantity", 1)
+        if item.get("weight_kg") is not None:
+            total += Decimal(item["weight_kg"]) * item.get("quantity", 1)
     return total

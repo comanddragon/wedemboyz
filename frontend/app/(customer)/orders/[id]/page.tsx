@@ -99,9 +99,7 @@ export default function OrderDetailPage() {
         <ul className="mb-4 space-y-3">
           {order.items.map((item) => (
             <li key={item.id} className="flex items-start gap-2">
-              <span className="mt-0.5 text-navy">
-                <ServiceIcon type={item.service_type} />
-              </span>
+              {item.photo ? <img src={item.photo} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" /> : <span className="mt-0.5 text-navy"><ServiceIcon type={item.service_type} /></span>}
               <div className="flex-1 text-sm">
                 <p className="font-medium text-ink">
                   {item.label || serviceLabel(item.service_type)}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -11,10 +11,10 @@ import {
   type ChatComposerSubmission,
 } from "@/src/components/chat/ChatComposer";
 import { MessageAttachments } from "@/src/components/chat/MessageAttachments";
-import { StatusBadge } from "@/src/components/ui";
+import { Button, Select, StatusBadge } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useSocket } from "@/src/hooks/useSocket";
-import { chatApi } from "@/src/lib/api";
+import { chatApi, staffApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
 import { useChatStore } from "@/src/lib/stores/chat.store";
@@ -98,6 +98,27 @@ export default function AdminChatRoomPage() {
     enabled: Number.isFinite(roomId),
   });
 
+  const staffQuery = useQuery({
+    queryKey: [...queryKeys.staff.roster, "chat-available"],
+    queryFn: () => staffApi.listChatAgents(),
+  });
+
+  const roomActionMutation = useMutation({
+    mutationFn: async (
+      action: "claim" | "close" | "reopen" | number | null,
+    ) => {
+      if (action === "claim") return chatApi.claimChatRoom(roomId);
+      if (action === "close") return chatApi.closeChatRoom(roomId);
+      if (action === "reopen") return chatApi.reopenChatRoom(roomId);
+      return chatApi.assignChatRoom(roomId, action);
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(queryKeys.chat.room(roomId), updated);
+      queryClient.invalidateQueries({ queryKey: queryKeys.chat.rooms });
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.roster });
+    },
+  });
+
   // REST backfill of history on mount — live delivery is via the socket.
   const historyQuery = useQuery({
     queryKey: queryKeys.chat.messages(roomId, 1),
@@ -174,7 +195,7 @@ export default function AdminChatRoomPage() {
 
   return (
     <div className="mx-auto flex h-screen max-w-5xl flex-col">
-      <div className="flex items-center justify-between border-b border-crease px-6 py-4">
+      <div className="flex flex-col gap-3 border-b border-crease px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
         <div className="flex items-center gap-3">
           <Link
             href="/admin/chat"
@@ -186,19 +207,81 @@ export default function AdminChatRoomPage() {
             <p className="text-sm font-semibold text-navy">
               {customerName || `Conversation #${roomId}`}
             </p>
-            <p className="flex items-center gap-2 text-xs text-ink-muted">
-              {room?.order && <span>Order #{room.order.id}</span>}
+            <p className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+              {room?.order && (
+                <Link
+                  href={`/admin/orders/${room.order.id}`}
+                  className="inline-flex items-center gap-1 hover:text-navy"
+                >
+                  Order #{room.order.id}
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              )}
+              {room?.customer && <span>{room.customer.phone_number}</span>}
               <ConnectionPill status={status} />
             </p>
           </div>
         </div>
         {room && (
-          <StatusBadge
-            label={room.status}
-            tone={room.status === "OPEN" ? "ready" : "pending"}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={room.agent?.id ?? ""}
+              disabled={
+                roomActionMutation.isPending || room.status === "CLOSED"
+              }
+              onChange={(event) =>
+                roomActionMutation.mutate(
+                  event.target.value ? Number(event.target.value) : null,
+                )
+              }
+              className="w-44"
+              aria-label="Assigned staff member"
+            >
+              <option value="">Unassigned</option>
+              {staffQuery.data?.map((person) => {
+                const name =
+                  `${person.user.first_name} ${person.user.last_name}`.trim() ||
+                  person.user.phone_number;
+                return (
+                  <option key={person.user.id} value={person.user.id}>
+                    {name} · {person.open_chat_count}
+                  </option>
+                );
+              })}
+            </Select>
+            {room.status === "OPEN" && room.agent?.id !== user?.id && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => roomActionMutation.mutate("claim")}
+              >
+                Claim
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant={room.status === "OPEN" ? "ghost" : "secondary"}
+              onClick={() =>
+                roomActionMutation.mutate(
+                  room.status === "OPEN" ? "close" : "reopen",
+                )
+              }
+            >
+              {room.status === "OPEN" ? "Close" : "Reopen"}
+            </Button>
+            <StatusBadge
+              label={room.status}
+              tone={room.status === "OPEN" ? "ready" : "pending"}
+            />
+          </div>
         )}
       </div>
+
+      {roomActionMutation.isError && (
+        <p className="border-b border-crease bg-status-cancelled-bg px-6 py-2 text-xs text-status-cancelled-text">
+          {getApiErrorMessage(roomActionMutation.error)}
+        </p>
+      )}
 
       {roomQuery.isError && (
         <p className="border-b border-crease bg-status-cancelled-bg px-6 py-2 text-xs text-status-cancelled-text">

@@ -1,15 +1,30 @@
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
 
 from apps.chat.models import ChatRoom, Message, MessageAttachment
 from apps.orders.api.serializers import OrderDetailSerializer
+from apps.staff.models import StaffProfile
+from apps.staff.permissions import StaffPermission, has_staff_permission
+
 User = get_user_model()
 
 class ChatCustomerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name"]
+        fields = ["id", "first_name", "last_name", "phone_number"]
+
+
+class ChatAgentSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "name", "phone_number"]
+        read_only_fields = fields
+
+    def get_name(self, obj):
+        return obj.get_full_name() or obj.phone_number
 
 class MessageAttachmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -48,6 +63,8 @@ class ChatRoomSerializer(serializers.ModelSerializer):
     unread_count = serializers.SerializerMethodField()
     order = OrderDetailSerializer()
     customer = ChatCustomerSerializer(read_only=True)
+    agent = ChatAgentSerializer(read_only=True)
+    assigned_by = ChatAgentSerializer(read_only=True)
 
     class Meta:
         model = ChatRoom
@@ -55,8 +72,11 @@ class ChatRoomSerializer(serializers.ModelSerializer):
             "id",
             "customer",
             "agent",
+            "assigned_by",
+            "assigned_at",
             "order",
             "status",
+            "closed_at",
             "last_message",
             "unread_count",
             "created_at",
@@ -66,7 +86,10 @@ class ChatRoomSerializer(serializers.ModelSerializer):
             "id",
             "customer",
             "agent",
+            "assigned_by",
+            "assigned_at",
             "status",
+            "closed_at",
             "last_message",
             "unread_count",
             "created_at",
@@ -80,6 +103,24 @@ class ChatRoomSerializer(serializers.ModelSerializer):
     def get_unread_count(self, obj):
         user = self.context["request"].user
         return obj.messages.filter(read_at__isnull=True).exclude(sender=user).count()
+
+
+class ChatRoomAssignmentSerializer(serializers.Serializer):
+    agent_id = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate_agent_id(self, value):
+        if value is None:
+            return value
+        try:
+            profile = StaffProfile.objects.select_related("user").get(user_id=value)
+        except StaffProfile.DoesNotExist:
+            raise serializers.ValidationError("Select an active staff member.")
+        if not profile.can_receive_chats:
+            raise serializers.ValidationError("This staff member is not available for chat.")
+        if not has_staff_permission(profile.user, StaffPermission.CHAT_MANAGE):
+            raise serializers.ValidationError("This staff role cannot manage chats.")
+        self.agent = profile.user
+        return value
 
 
 class ChatRoomCreateSerializer(serializers.ModelSerializer):

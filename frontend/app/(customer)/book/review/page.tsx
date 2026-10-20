@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 
 import { WizardSteps } from "@/src/components/booking/WizardSteps";
@@ -54,9 +55,7 @@ export default function BookReviewPage() {
                 key={item.clientId}
                 className="flex items-center gap-2 text-sm"
               >
-                <span className="text-navy">
-                  <ServiceIcon type={item.service_type} />
-                </span>
+                {item.photoPreviewUrl ? <Image src={item.photoPreviewUrl} alt="" width={40} height={40} unoptimized className="h-10 w-10 shrink-0 rounded-lg object-cover" /> : <span className="text-navy"><ServiceIcon type={item.service_type} /></span>}
                 <span>
                   {item.label || serviceLabel(item.service_type)} —{" "}
                   {item.weight_kg}kg x{item.quantity ?? 1}

@@ -8,6 +8,7 @@ import type {
   Paginated,
   Payment,
   PaymentMethod,
+  RecordPaymentInput,
   Refund,
   Subscription,
   SubscriptionCheckoutInput,
@@ -67,6 +68,35 @@ export async function getPayment(paymentId: number): Promise<Payment> {
   return unwrap<Payment>(res);
 }
 
+export async function listOrderPayments(orderId: number): Promise<Payment[]> {
+  const res = await apiClient.get(`/orders/${orderId}/payments/`);
+  return unwrap<Payment[]>(res);
+}
+
+export async function recordOrderPayment(
+  orderId: number,
+  input: RecordPaymentInput,
+): Promise<Payment> {
+  const res = await apiClient.post(`/orders/${orderId}/payments/`, input);
+  return unwrap<Payment>(res);
+}
+
+export async function markOrderPaid(
+  orderId: number,
+  input: Omit<RecordPaymentInput, "amount">,
+): Promise<Payment> {
+  const res = await apiClient.post(`/orders/${orderId}/mark-paid/`, input);
+  return unwrap<Payment>(res);
+}
+
+export async function voidPayment(
+  paymentId: number,
+  reason: string,
+): Promise<Payment> {
+  const res = await apiClient.post(`/payments/${paymentId}/void/`, { reason });
+  return unwrap<Payment>(res);
+}
+
 // --- Invoices ------------------------------------------------------------------
 
 /** GET /invoices/ */
@@ -95,6 +125,21 @@ export async function requestRefund(input: CreateRefundInput): Promise<Refund> {
   return unwrap<Refund>(res);
 }
 
+export async function approveRefund(refundId: number): Promise<Refund> {
+  const res = await apiClient.post(`/refunds/${refundId}/approve/`);
+  return unwrap<Refund>(res);
+}
+
+export async function rejectRefund(refundId: number): Promise<Refund> {
+  const res = await apiClient.post(`/refunds/${refundId}/reject/`);
+  return unwrap<Refund>(res);
+}
+
+export async function processRefund(refundId: number): Promise<Refund> {
+  const res = await apiClient.post(`/refunds/${refundId}/process/`);
+  return unwrap<Refund>(res);
+}
+
 // --- Subscriptions -----------------------------------------------------------
 
 /** GET /subscriptions/ — unpaginated on the backend (see
@@ -105,6 +150,19 @@ export async function listSubscriptions(): Promise<Subscription[]> {
   const res = await apiClient.get("/subscriptions/");
   const data = unwrap<Subscription[] | { results: Subscription[] }>(res);
   return Array.isArray(data) ? data : data.results;
+}
+
+export async function listAdminSubscriptions(params: { page?: number; status?: string; search?: string } = {}): Promise<import("@/src/types").Paginated<Subscription>> {
+  const res = await apiClient.get("/subscriptions/admin/", { params });
+  return unwrap<import("@/src/types").Paginated<Subscription>>(res);
+}
+
+export async function manageSubscription(
+  subscriptionId: number,
+  input: { action: "activate" | "renew" | "pause" | "resume" | "cancel" | "adjust_kilos"; kilos?: number },
+): Promise<Subscription> {
+  const res = await apiClient.post(`/subscriptions/admin/${subscriptionId}/action/`, input);
+  return unwrap<Subscription>(res);
 }
 
 /** GET /subscriptions/{id}/ */

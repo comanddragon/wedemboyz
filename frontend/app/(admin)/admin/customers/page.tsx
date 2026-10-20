@@ -19,7 +19,7 @@ import {
   THead,
   Tr,
 } from "@/src/components/admin/Table";
-import { StatusBadge } from "@/src/components/ui";
+import { Select, StatusBadge } from "@/src/components/ui";
 import { customersApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
@@ -54,6 +54,9 @@ export default function AdminCustomersPage() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [direction, setDirection] = useState<"asc" | "desc">("asc");
+  const [tier, setTier] = useState<"" | "BRONZE" | "SILVER" | "GOLD">("");
+  const [hasCredit, setHasCredit] = useState<"" | "true" | "false">("");
+  const [source, setSource] = useState<"" | "ONLINE" | "WALK_IN" | "REFERRAL" | "OTHER">("");
 
   // Debounce the search box before it hits the server — this list is
   // searched server-side (unlike /admin/orders, which filters page 1
@@ -83,6 +86,9 @@ export default function AdminCustomersPage() {
     page,
     search: search || undefined,
     ordering,
+    tier: tier || undefined,
+    has_credit: hasCredit ? hasCredit === "true" : undefined,
+    source: source || undefined,
   };
 
   const { data, isLoading, error } = useQuery({
@@ -107,6 +113,9 @@ export default function AdminCustomersPage() {
           className="sm:max-w-xs"
           aria-label="Search customers"
         />
+        <Select value={tier} onChange={(event) => { setTier(event.target.value as typeof tier); setPage(1); }} className="sm:w-36" aria-label="Filter customers by tier"><option value="">All tiers</option><option value="BRONZE">Bronze</option><option value="SILVER">Silver</option><option value="GOLD">Gold</option></Select>
+        <Select value={hasCredit} onChange={(event) => { setHasCredit(event.target.value as typeof hasCredit); setPage(1); }} className="sm:w-40" aria-label="Filter customers by balance"><option value="">Any balance</option><option value="true">Owes money</option><option value="false">No balance</option></Select>
+        <Select value={source} onChange={(event) => { setSource(event.target.value as typeof source); setPage(1); }} className="sm:w-40" aria-label="Filter customers by source"><option value="">All sources</option><option value="ONLINE">Online</option><option value="WALK_IN">Walk-in</option><option value="REFERRAL">Referral</option><option value="OTHER">Other</option></Select>
         {data && (
           <p className="text-xs text-ink-muted sm:ml-auto">
             {data.results.length} of {data.count} total

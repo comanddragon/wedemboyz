@@ -1,4 +1,5 @@
 from .room import (
+    ChatRoomAssignmentSerializer,
     ChatRoomCreateSerializer,
     ChatRoomSerializer,
     MessageAttachmentSerializer,
@@ -7,6 +8,7 @@ from .room import (
 )
 
 __all__ = [
+    "ChatRoomAssignmentSerializer",
     "ChatRoomSerializer",
     "ChatRoomCreateSerializer",
     "MessageSerializer",

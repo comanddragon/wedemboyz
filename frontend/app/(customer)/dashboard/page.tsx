@@ -125,34 +125,32 @@ export default function DashboardPage() {
   const displayName = user?.first_name || user?.phone_number || "there";
 
   return (
-    <main className="mx-auto max-w-[1540px] px-4 pb-8 pt-7 sm:px-7 lg:px-10 lg:pb-12 lg:pt-10">
-      <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+    <main className="mx-auto max-w-[1540px] px-3.5 pb-6 pt-4 sm:px-7 sm:pb-8 sm:pt-8 lg:px-10 lg:pb-12 lg:pt-10">
+      <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center sm:gap-5">
         <div>
-          <p className="mb-3">
-            <span className="inline-flex items-center gap-2 rounded-full bg-gold-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-gold-600 ring-1 ring-gold/20">
-              <span className="h-1.5 w-1.5 rounded-full bg-gold" />
-              My laundry
-            </span>
-          </p>
-          <h1 className="font-display text-[2rem] font-light leading-[1.1] tracking-[-0.035em] text-ink sm:text-[2.6rem]">
+          <h1 className="font-display text-[1.7rem] font-light leading-[1.05] tracking-[-0.03em] text-ink sm:text-[2.6rem]">
             Welcome back,{" "}
-            <span className="bg-gradient-to-r from-gold-600 to-gold bg-clip-text text-transparent">
-              {displayName}
-            </span>
+            <span className="font-medium text-gold-600">{displayName}</span>
           </h1>
-          <p className="mt-3 text-[0.9375rem] leading-relaxed text-ink-muted">
+          <p className="mt-1.5 text-[0.8rem] leading-snug text-ink-muted sm:mt-3 sm:text-[0.9375rem] sm:leading-relaxed">
             Your orders, next pickup, payments and rewards at a glance.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/chat">
-            <Button variant="secondary">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <Link href="/chat" className="contents sm:block">
+            <Button
+              variant="secondary"
+              className="min-h-12 w-full sm:min-h-0 sm:w-auto"
+            >
               <MessageCircle className="h-4 w-4" />
               Get help
             </Button>
           </Link>
-          <Link href="/book">
-            <Button variant="gold">
+          <Link href="/book" className="contents sm:block">
+            <Button
+              variant="gold"
+              className="min-h-12 w-full sm:min-h-0 sm:w-auto"
+            >
               Book a pickup <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -160,7 +158,7 @@ export default function DashboardPage() {
       </header>
 
       <section
-        className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className="mt-4 grid grid-cols-2 gap-2 sm:mt-8 sm:gap-4 xl:grid-cols-4"
         aria-label="Account summary"
       >
         <KpiTile
@@ -193,9 +191,9 @@ export default function DashboardPage() {
         />
       </section>
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.8fr)]">
-        <section className="hero-navy relative overflow-hidden rounded-[22px] text-white shadow-lift">
-          <div className="grid min-h-64 gap-6 p-6 sm:grid-cols-[1fr_auto] sm:p-8">
+      <div className="mt-3 grid gap-3 sm:mt-5 sm:gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.8fr)]">
+        <section className="hero-navy relative overflow-hidden rounded-2xl text-white shadow-lift sm:rounded-[22px]">
+          <div className="grid gap-3 p-4 sm:min-h-64 sm:grid-cols-[1fr_auto] sm:gap-6 sm:p-8">
             <div className="flex flex-col justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gold">
@@ -203,10 +201,10 @@ export default function DashboardPage() {
                 </p>
                 {nextEvent ? (
                   <>
-                    <h2 className="mt-3 font-display text-2xl font-semibold">
+                    <h2 className="mt-1.5 max-w-[75%] font-display text-lg font-semibold sm:mt-3 sm:max-w-none sm:text-2xl">
                       Your {nextEvent.kind} is coming up
                     </h2>
-                    <p className="mt-2 max-w-lg text-sm leading-6 text-white/65">
+                    <p className="mt-1.5 max-w-[78%] text-xs leading-5 text-white/65 sm:mt-2 sm:max-w-lg sm:text-sm sm:leading-6">
                       Order #{nextEvent.orderId} is scheduled for{" "}
                       {new Date(
                         `${nextEvent.date}T00:00:00`,
@@ -222,10 +220,10 @@ export default function DashboardPage() {
                   </>
                 ) : (
                   <>
-                    <h2 className="mt-3 font-display text-2xl font-semibold">
+                    <h2 className="mt-1.5 max-w-[75%] font-display text-lg font-semibold sm:mt-3 sm:max-w-none sm:text-2xl">
                       No pickup is currently scheduled
                     </h2>
-                    <p className="mt-2 max-w-lg text-sm leading-6 text-white/65">
+                    <p className="mt-1.5 max-w-[78%] text-xs leading-5 text-white/65 sm:mt-2 sm:max-w-lg sm:text-sm sm:leading-6">
                       When you book or staff confirm a schedule, the next
                       important date will appear here.
                     </p>
@@ -234,32 +232,32 @@ export default function DashboardPage() {
               </div>
               <Link
                 href={nextEvent ? `/orders/${nextEvent.orderId}` : "/book"}
-                className="mt-6 inline-flex w-fit items-center gap-2 text-sm font-semibold text-gold hover:text-white"
+                className="mt-3 inline-flex w-fit items-center gap-2 text-xs font-semibold text-gold hover:text-white sm:mt-6 sm:text-sm"
               >
                 {nextEvent ? "View order details" : "Schedule a pickup"}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-            <div className="grid h-28 w-28 place-items-center self-center rounded-3xl bg-gradient-to-br from-gold/25 to-white/5 text-gold ring-1 ring-gold/30 backdrop-blur sm:h-36 sm:w-36">
-              <Truck className="h-14 w-14 sm:h-16 sm:w-16" strokeWidth={1.5} />
+            <div className="absolute right-4 top-10 grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-gold/25 to-white/5 text-gold ring-1 ring-gold/30 backdrop-blur sm:static sm:h-36 sm:w-36 sm:self-center sm:rounded-3xl">
+              <Truck className="h-8 w-8 sm:h-16 sm:w-16" strokeWidth={1.5} />
             </div>
           </div>
           <div className="grid grid-cols-2 divide-x divide-white/10 border-t border-white/10 bg-white/[0.05]">
-            <div className="p-4 sm:px-6">
+            <div className="px-4 py-2.5 sm:p-4 sm:px-6">
               <p className="flex items-center gap-1.5 text-xs text-white/55">
                 <span className="h-1.5 w-1.5 rounded-full bg-turquoise" />
                 Open orders
               </p>
-              <p className="mt-1 font-display text-xl font-semibold">
+              <p className="mt-0.5 font-display text-base font-semibold sm:mt-1 sm:text-xl">
                 {activeOrders.length}
               </p>
             </div>
-            <div className="p-4 sm:px-6">
+            <div className="px-4 py-2.5 sm:p-4 sm:px-6">
               <p className="flex items-center gap-1.5 text-xs text-white/55">
                 <span className="h-1.5 w-1.5 rounded-full bg-gold" />
                 Current plan
               </p>
-              <p className="mt-1 truncate font-display text-xl font-semibold">
+              <p className="mt-0.5 truncate font-display text-base font-semibold sm:mt-1 sm:text-xl">
                 {subscription
                   ? PLAN_LABELS[subscription.plan]
                   : "Pay as you go"}
@@ -268,10 +266,10 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
           {subscription ? (
             <Link href="/subscription">
-              <Card className="relative overflow-hidden rounded-[22px] border-0 bg-gradient-to-br from-turquoise-50 via-white to-white text-navy shadow-card transition-all hover:-translate-y-0.5">
+              <Card className="relative overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-turquoise-50 via-white to-white p-4 text-navy shadow-card transition-all hover:-translate-y-0.5 sm:rounded-[22px] sm:p-5">
                 <div className="flex items-start justify-between">
                   <span className="grid h-10 w-10 place-items-center rounded-xl bg-turquoise-50 text-turquoise-600 ring-1 ring-turquoise/20">
                     <Repeat className="h-5 w-5" />
@@ -280,7 +278,7 @@ export default function DashboardPage() {
                     {subscription.status.toLowerCase()}
                   </span>
                 </div>
-                <h2 className="mt-6 font-display text-xl font-semibold">
+                <h2 className="mt-3 font-display text-base font-semibold sm:mt-6 sm:text-xl">
                   {PLAN_LABELS[subscription.plan]}
                 </h2>
                 <p className="mt-1 text-sm text-ink-muted">
@@ -293,11 +291,11 @@ export default function DashboardPage() {
               </Card>
             </Link>
           ) : (
-            <Card className="card-gold rounded-[22px] border-0 text-navy shadow-btn-gold">
+            <Card className="card-gold rounded-2xl border-0 p-4 text-navy shadow-btn-gold sm:rounded-[22px] sm:p-5">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/40">
                 <Sparkles className="h-5 w-5" />
               </span>
-              <h2 className="mt-4 font-display text-xl font-semibold">
+              <h2 className="mt-2 font-display text-base font-semibold sm:mt-4 sm:text-xl">
                 Laundry plans
               </h2>
               <p className="mt-1 text-sm text-navy/70">
@@ -305,7 +303,7 @@ export default function DashboardPage() {
               </p>
               <Link
                 href="/subscription"
-                className="mt-4 inline-flex items-center gap-1 text-sm font-semibold"
+                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold sm:mt-4 sm:text-sm"
               >
                 Explore plans <ArrowRight className="h-4 w-4" />
               </Link>
@@ -322,17 +320,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <section className="mt-5 overflow-hidden rounded-[22px] border-0 bg-white shadow-card">
-        <div className="flex items-center justify-between gap-3 border-b border-crease bg-gradient-to-r from-dashboard-blue-50/70 to-transparent px-6 py-5">
+      <section className="mt-3 overflow-hidden rounded-2xl border-0 bg-white shadow-card sm:mt-5 sm:rounded-[22px]">
+        <div className="flex items-center justify-between gap-2 border-b border-crease bg-gradient-to-r from-dashboard-blue-50/70 to-transparent px-4 py-3 sm:gap-3 sm:px-6 sm:py-5">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-dashboard-blue-50 text-dashboard-blue">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-dashboard-blue-50 text-dashboard-blue sm:h-10 sm:w-10 sm:rounded-xl">
               <PackageCheck className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="font-display text-lg font-medium text-ink">
+              <h2 className="font-display text-base font-medium text-ink sm:text-lg">
                 Recent orders
               </h2>
-              <p className="mt-0.5 text-sm text-ink-muted">
+              <p className="mt-0.5 hidden text-sm text-ink-muted sm:block">
                 Status and value of your latest laundry requests
               </p>
             </div>
@@ -358,7 +356,7 @@ export default function DashboardPage() {
               <Link
                 key={order.id}
                 href={`/orders/${order.id}`}
-                className="grid gap-3 px-5 py-4 transition-colors hover:bg-gold-50/50 sm:grid-cols-[1fr_auto_auto] sm:items-center"
+                className="grid grid-cols-[1fr_auto] items-center gap-1.5 px-4 py-3 transition-colors hover:bg-gold-50/50 sm:grid-cols-[1fr_auto_auto] sm:gap-3 sm:px-5 sm:py-4"
               >
                 <div>
                   <p className="text-sm font-semibold text-navy">

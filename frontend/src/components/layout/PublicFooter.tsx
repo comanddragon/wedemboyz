@@ -32,11 +32,11 @@ export function PublicFooter() {
         <div>
           <Link
             href="/"
-            aria-label="WEDEMBOYZ"
+            aria-label="Wedemboyz Lavomatique"
             className="flex items-center font-display text-base font-bold tracking-tight text-navy"
           >
             <LogoMark />
-            WEDEMBOYZ
+            Wedemboyz Lavomatique
           </Link>
 
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
@@ -94,7 +94,7 @@ export function PublicFooter() {
 
       <div className="mx-auto mt-12 flex max-w-7xl flex-col gap-3 border-t border-crease pt-6 text-xs text-ink-muted sm:flex-row sm:items-center sm:justify-between">
         <span>
-          &copy; {new Date().getFullYear()} WEDEMBOYZ Lavomatique. All rights
+          &copy; {new Date().getFullYear()} Wedemboyz Lavomatique. All rights
           reserved.
         </span>
         <span>Cash · MTN Mobile Money · Orange Money</span>

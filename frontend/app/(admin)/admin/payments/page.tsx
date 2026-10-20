@@ -20,22 +20,22 @@ import {
   Tr,
 } from "@/src/components/admin/Table";
 import { Tabs } from "@/src/components/admin/Tabs";
+import { PaymentMethodIcon } from "@/src/components/payments/PaymentMethodIcon";
 import { useSort } from "@/src/components/admin/useSort";
 import { Select, StatusBadge, paymentStatusTone } from "@/src/components/ui";
 import { paymentsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
-import type { Payment, PaymentGateway, PaymentStatus } from "@/src/types";
+import type { Payment, PaymentMethodType, PaymentStatus } from "@/src/types";
 import { customerFullName, customerNumber } from "@/src/lib/utils";
 
-const GATEWAY_LABELS: Record<PaymentGateway, string> = {
-  STRIPE: "Card",
-  PAYPAL: "PayPal",
+const METHOD_LABELS: Record<PaymentMethodType, string> = {
   MTN_MOMO: "MTN Mobile Money",
   ORANGE_MONEY: "Orange Money",
   CASH: "Cash",
-  CREDIT: "Credit (pay later)",
+  BANK_TRANSFER: "Bank transfer",
+  OTHER: "Other",
 };
 
 const STATUS_OPTIONS: { value: PaymentStatus | "ALL"; label: string }[] = [
@@ -112,7 +112,7 @@ export default function AdminPaymentsPage() {
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
         title="Payments"
-        description="Every payment attempt across all customers."
+        description="Manual ledger of money received from customers."
       />
 
       <Tabs
@@ -242,11 +242,9 @@ export default function AdminPaymentsPage() {
                 </Td>
 
                 <Td className="text-ink-muted">
-                  {GATEWAY_LABELS[payment.gateway]}
-                  {payment.failure_reason && (
-                    <span className="block text-xs text-status-cancelled-text">
-                      {payment.failure_reason}
-                    </span>
+                  <span className="flex items-center gap-2"><PaymentMethodIcon method={payment.payment_method_type} className="h-8 w-10" />{METHOD_LABELS[payment.payment_method_type]}</span>
+                  {payment.reference && (
+                    <span className="block text-xs">{payment.reference}</span>
                   )}
                 </Td>
                 <Td align="right" className="tabular-nums">
@@ -259,7 +257,7 @@ export default function AdminPaymentsPage() {
                   />
                 </Td>
                 <Td className="whitespace-nowrap text-ink-muted">
-                  {new Date(payment.created_at).toLocaleDateString()}
+                  {new Date(payment.received_at).toLocaleDateString()}
                 </Td>
                 <Td>
                   <ChevronRight

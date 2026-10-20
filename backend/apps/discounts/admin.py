@@ -3,6 +3,7 @@ from django.contrib import admin
 from .models import (
     DiscountCampaign,
     LoyaltyRule,
+    LoyaltyTierConfig,
     LoyaltyTransaction,
     PromoCode,
     PromoUsage,
@@ -26,6 +27,11 @@ class PromoUsageAdmin(admin.ModelAdmin):
 @admin.register(LoyaltyRule)
 class LoyaltyRuleAdmin(admin.ModelAdmin):
     list_display = ["name", "points_per_currency_unit", "min_spend", "is_active"]
+
+
+@admin.register(LoyaltyTierConfig)
+class LoyaltyTierConfigAdmin(admin.ModelAdmin):
+    list_display = ["tier", "minimum_lifetime_points", "discount_percent", "bonus_points_percent", "priority_service", "is_active"]
 
 
 @admin.register(StampCardConfig)

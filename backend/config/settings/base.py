@@ -181,6 +181,9 @@ SPECTACULAR_SETTINGS = {
 # CORS
 # ---------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="http://localhost:3000", cast=Csv())
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS", default="http://localhost:3000", cast=Csv()
+)
 # django-cors-headers' default allowlist doesn't include this header.
 # ngrok's free tier serves a "click to visit" interstitial to browser
 # requests unless this header is present, so the frontend sends it on

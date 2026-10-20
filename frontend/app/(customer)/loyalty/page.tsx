@@ -212,7 +212,7 @@ export default function LoyaltyPage() {
             </div>
             <p className="mt-4 text-xs text-ink-muted">
               Earn points with every order — your tier and perks grow the more
-              you use WEDEMBOYZ.
+              you use Wedemboyz Lavomatique.
             </p>
           </Card>
 

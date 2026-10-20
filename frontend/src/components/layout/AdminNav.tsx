@@ -2,7 +2,9 @@
 
 import {
   BarChart3,
+  Award,
   Banknote,
+  Calculator,
   Boxes,
   CreditCard,
   LayoutDashboard,
@@ -14,6 +16,10 @@ import {
   Users,
   UserCog,
   Wallet,
+  ReceiptText,
+  BadgePercent,
+  ScrollText,
+  Settings,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -103,10 +109,34 @@ const GROUPS: {
         permission: "discounts.manage",
       },
       {
+        href: "/admin/loyalty",
+        label: "Loyalty",
+        icon: Award,
+        permission: "loyalty.manage",
+      },
+      {
+        href: "/admin/subscriptions",
+        label: "Subscriptions",
+        icon: BadgePercent,
+        permission: "finance.manage",
+      },
+      {
         href: "/admin/analytics",
         label: "Analytics",
         icon: BarChart3,
         permission: "finance.view",
+      },
+      {
+        href: "/admin/expenses",
+        label: "Expenses",
+        icon: ReceiptText,
+        permission: "finance.manage",
+      },
+      {
+        href: "/admin/cash-register",
+        label: "Cash close",
+        icon: Calculator,
+        permission: "finance.manage",
       },
       {
         href: "/admin/staff",
@@ -119,6 +149,18 @@ const GROUPS: {
         label: "Payroll",
         icon: Banknote,
         permission: "staff.manage",
+      },
+      {
+        href: "/admin/settings",
+        label: "Settings",
+        icon: Settings,
+        permission: "finance.manage",
+      },
+      {
+        href: "/admin/audit",
+        label: "Audit log",
+        icon: ScrollText,
+        permission: "audit.view",
       },
     ],
   },
@@ -141,7 +183,7 @@ export function AdminNav() {
       <div className="flex h-20 items-center gap-3 border-b border-crease px-5">
         <Link
           href="/"
-          aria-label="WEDEMBOYZ — back to home page"
+          aria-label="Wedemboyz Lavomatique — back to home page"
           className="flex min-w-0 items-center gap-3"
         >
           <Image
@@ -154,7 +196,7 @@ export function AdminNav() {
           />
           <div className="min-w-0">
             <p className="font-display text-base font-semibold tracking-tight">
-              WEDEMBOYZ
+              Wedemboyz Lavomatique
             </p>
             <p className="text-xs text-ink-muted">Operations console</p>
           </div>

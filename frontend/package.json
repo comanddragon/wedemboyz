@@ -10,6 +10,9 @@
     "dev": "bun --bun next dev",
     "build": "bun --bun next build",
     "start": "bun --bun next start",
+    "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "tsc": "bun x tsc --noEmit",
     "lint": "bun --bun eslint ."
   },
@@ -18,6 +21,7 @@
     "@fontsource/outfit": "^5.3.0",
     "@fontsource/space-grotesk": "^5.3.0",
     "@hookform/resolvers": "^5.9.1",
+    "@opennextjs/cloudflare": "latest",
     "@stripe/react-stripe-js": "^7.0.0",
     "@tanstack/react-query": "^5.104.2",
     "@tanstack/react-query-devtools": "^5.104.2",
@@ -27,7 +31,7 @@
     "date-fns": "^4.4.0",
     "framer-motion": "^14.2.0",
     "lucide-react": "^1.56.0",
-    "next": "16.4.0",
+    "next": "16.4.1",
     "next-themes": "^0.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -44,13 +48,14 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "eslint": "^10.12.0",
-    "eslint-config-next": "16.4.0",
+    "eslint-config-next": "16.4.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "postcss": "^8.5.30",
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4.3.3",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "wrangler": "latest"
   }
 }

@@ -10,6 +10,7 @@ INTERNAL_JOBS_SECRET = config("INTERNAL_JOBS_SECRET")
 # ---------------------------------------------------------------------------
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 60 * 60 * 24 * 7  # 1 week, ramp up once confirmed stable
@@ -26,9 +27,14 @@ CORS_ALLOW_ALL_ORIGINS = False
 AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY")
 AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME")
-AWS_S3_REGION_NAME = config("AWS_S3_REGION_NAME", default="eu-west-1")
-AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+AWS_S3_REGION_NAME = config("AWS_S3_REGION_NAME", default="auto")
+# Cloudflare R2 exposes an S3-compatible API at
+# https://<account-id>.r2.cloudflarestorage.com. Media should be served from
+# the bucket's public/custom domain instead of the authenticated API endpoint.
+AWS_S3_ENDPOINT_URL = config("AWS_S3_ENDPOINT_URL", default=None)
+AWS_S3_CUSTOM_DOMAIN = config("AWS_S3_CUSTOM_DOMAIN")
 AWS_DEFAULT_ACL = None
+AWS_QUERYSTRING_AUTH = False
 AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
 
 STORAGES = {
@@ -41,6 +47,9 @@ STORAGES = {
 }
 
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+
+# Managed PostgreSQL providers normally require TLS for public connections.
+DATABASES["default"]["OPTIONS"]["sslmode"] = config("DB_SSLMODE", default="require")  # noqa: F405
 
 # Whitenoise serves Django's own static files without needing S3/CDN for those.
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405

@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 import type { OrderItemInput, ServiceType } from "@/src/types";
 
-interface DraftItem extends OrderItemInput {
+export interface DraftItem extends OrderItemInput {
   /** Client-only id for list rendering/removal — never sent to the API. */
   clientId: string;
 }
@@ -97,11 +97,18 @@ export const useBookingStore = create<BookingState>()((set) => ({
     })),
 
   removeItem: (clientId) =>
-    set((state) => ({
-      items: state.items.filter((item) => item.clientId !== clientId),
-    })),
+    set((state) => {
+      const removed = state.items.find((item) => item.clientId === clientId);
+      if (removed?.photoPreviewUrl) URL.revokeObjectURL(removed.photoPreviewUrl);
+      return { items: state.items.filter((item) => item.clientId !== clientId) };
+    }),
 
-  reset: () => set(initialState),
+  reset: () => set((state) => {
+    state.items.forEach((item) => {
+      if (item.photoPreviewUrl) URL.revokeObjectURL(item.photoPreviewUrl);
+    });
+    return initialState;
+  }),
 }));
 
 /**

@@ -36,6 +36,13 @@ class PromoCodeSerializer(serializers.ModelSerializer):
     def validate_code(self, value):
         return value.upper()
 
+    def validate(self, attrs):
+        discount_type = attrs.get("discount_type", getattr(self.instance, "discount_type", None))
+        value = attrs.get("value", getattr(self.instance, "value", None))
+        if discount_type == "FIXED" and value is not None and value != value.to_integral_value():
+            raise serializers.ValidationError({"value": "Fixed XAF discounts must be whole francs."})
+        return attrs
+
 
 class PromoValidateSerializer(serializers.Serializer):
     """Used by PromoValidateView to preview a discount before checkout,
@@ -81,3 +88,10 @@ class DiscountCampaignSerializer(serializers.ModelSerializer):
             "is_active",
         ]
         read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        discount_type = attrs.get("discount_type", getattr(self.instance, "discount_type", None))
+        value = attrs.get("value", getattr(self.instance, "value", None))
+        if discount_type == "FIXED" and value is not None and value != value.to_integral_value():
+            raise serializers.ValidationError({"value": "Fixed XAF discounts must be whole francs."})
+        return attrs

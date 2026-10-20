@@ -15,6 +15,8 @@ import type {
   RevenueAnalyticsResult,
   PayrollEntry,
   PayrollEntryInput,
+  PayrollGenerationResult,
+  CashRegisterDay,
 } from "@/src/types";
 
 // --- Payroll --------------------------------------------------------------------
@@ -39,6 +41,43 @@ export async function updatePayrollEntry(
 ): Promise<PayrollEntry> {
   const res = await apiClient.patch(`/finance/payroll/${id}/`, input);
   return unwrap<PayrollEntry>(res);
+}
+
+export async function generatePayroll(period: string): Promise<PayrollGenerationResult> {
+  const res = await apiClient.post("/finance/payroll/generate/", { period });
+  return unwrap<PayrollGenerationResult>(res);
+}
+
+function downloadBlob(data: Blob, filename: string) {
+  const url = URL.createObjectURL(data);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function exportPayroll(period?: string): Promise<void> {
+  const response = await apiClient.get("/finance/payroll/export/", { params: { period }, responseType: "blob" });
+  downloadBlob(response.data, `wedemboyz-payroll-${period ?? "all"}.csv`);
+}
+
+export async function listCashRegisterDays(page = 1): Promise<Paginated<CashRegisterDay>> {
+  const res = await apiClient.get("/finance/cash-register/", { params: { page } });
+  return unwrap<Paginated<CashRegisterDay>>(res);
+}
+
+export async function openCashRegister(input: { date: string; opening_float: number; notes?: string }): Promise<CashRegisterDay> {
+  const res = await apiClient.post("/finance/cash-register/", input);
+  return unwrap<CashRegisterDay>(res);
+}
+
+export async function closeCashRegister(
+  id: number,
+  input: { counted_cash: number; cash_expenses?: number; notes?: string },
+): Promise<CashRegisterDay> {
+  const res = await apiClient.post(`/finance/cash-register/${id}/close/`, input);
+  return unwrap<CashRegisterDay>(res);
 }
 
 // --- Expenses --------------------------------------------------------------------
@@ -75,6 +114,11 @@ export async function updateExpense(
 /** DELETE /api/v1/finance/expenses/{id}/ */
 export async function deleteExpense(expenseId: number): Promise<void> {
   await apiClient.delete(`/finance/expenses/${expenseId}/`);
+}
+
+export async function exportExpenses(params: ListExpensesParams = {}): Promise<void> {
+  const response = await apiClient.get("/finance/expenses/export/", { params, responseType: "blob" });
+  downloadBlob(response.data, "wedemboyz-expenses.csv");
 }
 
 // --- Analytics -------------------------------------------------------------------

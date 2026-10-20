@@ -35,12 +35,16 @@ import type { StaffInvite, StaffProfile, StaffRole } from "@/src/types";
 const ROLE_LABELS: Record<StaffRole, string> = {
   MANAGER: "Manager",
   ATTENDANT: "Attendant",
+  CASHIER: "Cashier",
+  DRIVER: "Driver",
 };
 
 const ROLE_FILTER_OPTIONS: { value: StaffRole | "ALL"; label: string }[] = [
   { value: "ALL", label: "All roles" },
   { value: "MANAGER", label: "Manager" },
   { value: "ATTENDANT", label: "Attendant" },
+  { value: "CASHIER", label: "Cashier" },
+  { value: "DRIVER", label: "Driver" },
 ];
 
 type RosterSortKey = "name" | "phone_number" | "role" | "joined_at";
@@ -80,6 +84,12 @@ export default function AdminStaffPage() {
 
   const revokeMutation = useMutation({
     mutationFn: (inviteId: number) => staffApi.revokeStaffInvite(inviteId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.invites }),
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: (inviteId: number) => staffApi.resendStaffInvite(inviteId),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.staff.invites }),
   });
@@ -227,6 +237,7 @@ export default function AdminStaffPage() {
                 direction={rosterDirectionFor("role")}
                 onSort={() => toggleRoster("role")}
               />
+              <Th>Chats</Th>
               <Th>Status</Th>
               <SortableTh
                 label="Joined"
@@ -237,9 +248,9 @@ export default function AdminStaffPage() {
               <Th className="w-8" />
             </THead>
             <TBody>
-              {rosterLoading && <TableSkeleton columns={6} />}
+              {rosterLoading && <TableSkeleton columns={7} />}
               {!rosterLoading && sortedRoster && sortedRoster.length === 0 && (
-                <TableEmptyRow colSpan={6}>
+                <TableEmptyRow colSpan={7}>
                   {roster && roster.results.length === 0
                     ? "No staff yet."
                     : "No staff match your search or filter."}
@@ -260,6 +271,11 @@ export default function AdminStaffPage() {
                         label={ROLE_LABELS[staff.role]}
                         tone={staffRoleTone(staff.role)}
                       />
+                    </Td>
+                    <Td className="text-ink-muted">
+                      {staff.is_available_for_chat
+                        ? `${staff.open_chat_count} open`
+                        : "Unavailable"}
                     </Td>
                     <Td>
                       {staff.is_active ? (
@@ -364,16 +380,28 @@ export default function AdminStaffPage() {
                       {new Date(invite.expires_at).toLocaleDateString()}
                     </Td>
                     <Td>
-                      {invite.status === "PENDING" && (
-                        <Button
-                          variant="danger"
-                          className="px-2.5 py-1 text-xs"
-                          disabled={revokeMutation.isPending}
-                          onClick={() => revokeMutation.mutate(invite.id)}
-                        >
-                          Revoke
-                        </Button>
-                      )}
+                      <div className="flex justify-end gap-1">
+                        {invite.status !== "ACCEPTED" && (
+                          <Button
+                            variant="ghost"
+                            className="px-2.5 py-1 text-xs"
+                            disabled={resendMutation.isPending}
+                            onClick={() => resendMutation.mutate(invite.id)}
+                          >
+                            Resend
+                          </Button>
+                        )}
+                        {invite.status === "PENDING" && (
+                          <Button
+                            variant="danger"
+                            className="px-2.5 py-1 text-xs"
+                            disabled={revokeMutation.isPending}
+                            onClick={() => revokeMutation.mutate(invite.id)}
+                          >
+                            Revoke
+                          </Button>
+                        )}
+                      </div>
                     </Td>
                   </Tr>
                 ))}

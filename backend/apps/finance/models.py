@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from core.constants import Currency
 from core.models import TimeStampedModel
@@ -63,6 +64,34 @@ class PayrollEntry(TimeStampedModel):
 
     def __str__(self):
         return f"{self.employee} — {self.pay_period:%B %Y} — {self.amount} {self.currency}"
+
+
+class CashRegisterDay(TimeStampedModel):
+    class Status(models.TextChoices):
+        OPEN = "OPEN", "Open"
+        CLOSED = "CLOSED", "Closed"
+
+    date = models.DateField(unique=True, default=timezone.localdate)
+    opening_float = models.DecimalField(max_digits=10, decimal_places=0, default=0)
+    cash_expenses = models.DecimalField(max_digits=10, decimal_places=0, default=0)
+    counted_cash = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    notes = models.TextField(blank=True)
+    opened_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="cash_register_days_opened",
+    )
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="cash_register_days_closed",
+    )
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"Cash register {self.date} — {self.status}"
 
 
 class CreditAccount(TimeStampedModel):

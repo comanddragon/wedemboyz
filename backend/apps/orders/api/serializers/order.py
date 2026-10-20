@@ -4,7 +4,12 @@ from django.contrib.auth import get_user_model
 from django.db import models, transaction
 from rest_framework import serializers
 
-from apps.orders.models import Order, OrderItem, OrderStatusHistory
+from apps.orders.models import (
+    Order,
+    OrderItem,
+    OrderPaymentHistory,
+    OrderStatusHistory,
+)
 from core.constants import ServiceType
 from services import pricing
 
@@ -18,15 +23,57 @@ class OrderItemInputSerializer(serializers.Serializer):
     service_type = serializers.ChoiceField(choices=ServiceType.choices)
     label = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
     description = serializers.CharField(required=False, allow_blank=True, default="")
-    weight_kg = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=Decimal("0.1"))
+    weight_kg = serializers.DecimalField(
+        max_digits=5, decimal_places=2, min_value=Decimal("0.1"), required=False, allow_null=True
+    )
     quantity = serializers.IntegerField(min_value=1, default=1)
+
+    def validate(self, attrs):
+        if attrs["service_type"].startswith("LAVAGE_") and not attrs.get("weight_kg"):
+            raise serializers.ValidationError({"weight_kg": "Weight is required for per-kilogram services."})
+        return attrs
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
-        fields = ["id", "service_type", "label", "description", "weight_kg", "quantity", "unit_price", "subtotal"]
+        fields = [
+            "id", "service_type", "label", "description", "status",
+            "condition_notes", "stain_notes", "photo", "weight_kg", "quantity",
+            "unit_price", "subtotal",
+        ]
         read_only_fields = fields
+
+
+class OrderItemWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = [
+            "service_type", "label", "description", "status", "condition_notes",
+            "stain_notes", "weight_kg", "quantity", "unit_price",
+        ]
+
+    def validate(self, attrs):
+        service_type = attrs.get("service_type", getattr(self.instance, "service_type", ""))
+        weight = attrs.get("weight_kg", getattr(self.instance, "weight_kg", None))
+        if service_type.startswith("LAVAGE_") and not weight:
+            raise serializers.ValidationError({"weight_kg": "Weight is required for this service."})
+        return attrs
+
+    def create(self, validated_data):
+        order = self.context["order"]
+        if "unit_price" not in validated_data:
+            validated_data["unit_price"] = pricing.price_for_item(
+                validated_data["service_type"], validated_data.get("weight_kg") or Decimal("1")
+            )
+        item = OrderItem.objects.create(order=order, **validated_data)
+        order.recalculate_total()
+        return item
+
+    def update(self, instance, validated_data):
+        item = super().update(instance, validated_data)
+        item.order.recalculate_total()
+        return item
 
 
 class OrderStatusHistorySerializer(serializers.ModelSerializer):
@@ -35,6 +82,23 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderStatusHistory
         fields = ["id", "status", "note", "changed_by", "created_at"]
+        read_only_fields = fields
+
+
+class OrderPaymentHistorySerializer(serializers.ModelSerializer):
+    changed_by = serializers.StringRelatedField()
+
+    class Meta:
+        model = OrderPaymentHistory
+        fields = [
+            "id",
+            "from_status",
+            "to_status",
+            "amount",
+            "reason",
+            "changed_by",
+            "created_at",
+        ]
         read_only_fields = fields
 
 
@@ -55,18 +119,32 @@ class OrderListSerializer(serializers.ModelSerializer):
     item_count = serializers.IntegerField(source="items.count", read_only=True)
     customer = OrderCustomerSerializer(source="user", read_only=True)
     has_schedule = serializers.SerializerMethodField()
+    balance_due = serializers.DecimalField(max_digits=10, decimal_places=0, read_only=True)
 
     class Meta:
         model = Order
         fields = [
             "id",
             "status",
+            "source",
+            "priority",
+            "is_express",
+            "ticket_number",
+            "tag_number",
+            "assigned_to",
+            "driver",
             "subtotal",
             "discount_amount",
             "delivery_fee",
             "total_amount",
+            "payment_status",
+            "amount_paid",
+            "balance_due",
+            "payment_due_date",
             "currency",
             "item_count",
+            "pieces_count",
+            "weight_kg_total",
             "customer",
             "has_schedule",
             "created_at",
@@ -82,6 +160,8 @@ class OrderDetailSerializer(serializers.ModelSerializer):
     status_history = OrderStatusHistorySerializer(many=True, read_only=True)
     has_schedule = serializers.SerializerMethodField()
     customer = OrderCustomerSerializer(source="user", read_only=True)
+    balance_due = serializers.DecimalField(max_digits=10, decimal_places=0, read_only=True)
+    payment_history = OrderPaymentHistorySerializer(many=True, read_only=True)
 
     class Meta:
         model = Order
@@ -93,15 +173,40 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "pickup_address",
             "delivery_address",
             "notes",
+            "internal_notes",
+            "source",
+            "created_by",
+            "assigned_to",
+            "driver",
+            "cancelled_at",
+            "cancelled_by",
+            "cancel_reason",
+            "ready_at",
+            "delivered_at",
+            "expected_ready_at",
+            "ticket_number",
+            "tag_number",
+            "priority",
+            "is_express",
+            "pieces_count",
+            "weight_kg_total",
             "subtotal",
             "discount_amount",
             "delivery_fee",
             "total_amount",
+            "payment_status",
+            "amount_paid",
+            "balance_due",
+            "paid_at",
+            "payment_due_date",
+            "payment_waived_reason",
             "currency",
             "items",
             "status_history",
+            "payment_history",
             "has_schedule",
             "subscription",
+            "discount_campaign",
             "created_at",
             "updated_at",
         ]
@@ -113,21 +218,52 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "user",
             "customer",
             "status",
+            "source",
+            "created_by",
             "subtotal",
             "discount_amount",
             "delivery_fee",
             "total_amount",
+            "payment_status",
+            "amount_paid",
+            "balance_due",
+            "paid_at",
+            "payment_due_date",
+            "payment_waived_reason",
+            "cancelled_at",
+            "cancelled_by",
+            "ready_at",
+            "delivered_at",
+            "ticket_number",
+            "pieces_count",
+            "weight_kg_total",
             "currency",
             "items",
             "status_history",
+            "payment_history",
             "has_schedule",
             "subscription",
+            "discount_campaign",
             "created_at",
             "updated_at",
         ]
 
     def get_has_schedule(self, obj):
         return hasattr(obj, "schedule")
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if request:
+            from apps.staff.permissions import StaffPermission, has_staff_permission
+
+        if request and not has_staff_permission(request.user, StaffPermission.ORDERS_MANAGE):
+            allowed = {"pickup_address", "delivery_address", "notes"}
+            forbidden = set(attrs) - allowed
+            if forbidden:
+                raise serializers.ValidationError(
+                    "Customers can only update addresses and order notes."
+                )
+        return attrs
 
 
 class OrderCreateSerializer(serializers.ModelSerializer):
@@ -157,9 +293,10 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             "total_amount",
             "currency",
             "subscription",
+            "discount_campaign",
         ]
         read_only_fields = [
-            "id", "subtotal", "discount_amount", "delivery_fee", "total_amount", "currency", "subscription",
+            "id", "subtotal", "discount_amount", "delivery_fee", "total_amount", "currency", "subscription", "discount_campaign",
         ]
 
     def validate_items(self, value):
@@ -197,6 +334,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 
         discount_amount = Decimal("0")
         subscription = None
+        campaign = None
 
         if promo:
             if promo.min_order_amount and subtotal < promo.min_order_amount:
@@ -216,12 +354,20 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             if subscription:
                 discount_amount = subtotal + delivery_fee  # pickup is fully covered by the plan
 
+        if not promo and not subscription:
+            from services.campaigns import active_campaign_for
+            campaign = active_campaign_for(user)
+            if campaign:
+                discount_amount = pricing.apply_discount(subtotal, campaign.discount_type, campaign.value)
+
         order = Order.objects.create(
             user=user,
             pickup_address=validated_data["pickup_address"],
             delivery_address=validated_data["delivery_address"],
             notes=validated_data.get("notes", ""),
+            source=Order.Source.ONLINE,
             subscription=subscription,
+            discount_campaign=campaign,
             subtotal=subtotal,
             discount_amount=discount_amount,
             delivery_fee=delivery_fee,
@@ -229,13 +375,15 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         )
 
         for item in items_data:
-            unit_price = pricing.price_for_item(item["service_type"], item["weight_kg"])
+            unit_price = pricing.price_for_item(
+                item["service_type"], item.get("weight_kg") or Decimal("1")
+            )
             OrderItem.objects.create(
                 order=order,
                 service_type=item["service_type"],
                 label=item.get("label", ""),
                 description=item.get("description", ""),
-                weight_kg=item["weight_kg"],
+                weight_kg=item.get("weight_kg"),
                 quantity=item.get("quantity", 1),
                 unit_price=unit_price,
                 # OrderItem.save() derives subtotal = unit_price * quantity.

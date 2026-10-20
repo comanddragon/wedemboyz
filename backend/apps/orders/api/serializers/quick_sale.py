@@ -6,7 +6,14 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.orders.models import Order, OrderItem
-from core.constants import OrderStatus, PaymentGateway, PaymentStatus, ServiceType
+from apps.users.models import phone_validator
+from core.constants import (
+    OrderStatus,
+    PaymentGateway,
+    PaymentMethodType,
+    PaymentStatus,
+    ServiceType,
+)
 from services import pricing
 
 User = get_user_model()
@@ -38,12 +45,12 @@ class StaffQuickSaleSerializer(serializers.Serializer):
     """POST /api/v1/orders/quick-sale/ — staff-side walk-in sale: name,
     phone, items, price, payment method, paid-now/on-credit, in one form."""
 
-    customer_phone = serializers.CharField(max_length=15)
+    customer_phone = serializers.CharField(max_length=15, validators=[phone_validator])
     customer_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
     items = QuickSaleItemInputSerializer(many=True)
-    payment_method = serializers.ChoiceField(choices=PaymentGateway.choices)
+    payment_method = serializers.ChoiceField(choices=PaymentMethodType.choices)
     paid_now = serializers.BooleanField(
-        default=True, help_text="False (or payment_method=CREDIT) records the sale on the customer's credit tab."
+        default=True, help_text="False leaves the order unpaid."
     )
     delivery_fee = serializers.DecimalField(max_digits=10, decimal_places=0, required=False, default=Decimal("0"))
     notes = serializers.CharField(required=False, allow_blank=True, default="")
@@ -52,11 +59,6 @@ class StaffQuickSaleSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError("At least one item is required.")
         return value
-
-    def validate(self, attrs):
-        if attrs["payment_method"] == PaymentGateway.CREDIT:
-            attrs["paid_now"] = False
-        return attrs
 
     @transaction.atomic
     def create(self, validated_data):
@@ -67,11 +69,17 @@ class StaffQuickSaleSerializer(serializers.Serializer):
 
         customer, created = User.objects.get_or_create(
             phone_number=phone,
-            defaults={"first_name": first_name or "Walk-in", "last_name": last_name},
+            defaults={"first_name": first_name or "Walk-in", "last_name": last_name, "is_walk_in": True},
         )
         if created:
             customer.set_unusable_password()
             customer.save(update_fields=["password"])
+            profile = customer.profile
+            profile.source = "WALK_IN"
+            profile.save(update_fields=["source"])
+
+        if getattr(customer.profile, "is_blocked", False):
+            raise serializers.ValidationError({"customer_phone": "This customer account is blocked."})
 
         order = Order.objects.create(
             user=customer,
@@ -79,6 +87,8 @@ class StaffQuickSaleSerializer(serializers.Serializer):
             pickup_address="In-store",
             delivery_address="In-store",
             notes=validated_data.get("notes", ""),
+            source=Order.Source.WALK_IN,
+            created_by=staff_user,
             delivery_fee=validated_data.get("delivery_fee", Decimal("0")),
         )
 
@@ -101,27 +111,26 @@ class StaffQuickSaleSerializer(serializers.Serializer):
         payment_method = validated_data["payment_method"]
         paid_now = validated_data["paid_now"]
 
-        if paid_now and payment_method != PaymentGateway.CREDIT:
+        if paid_now:
             from apps.payments.models import Payment
+            from services.order_payments import recompute_payment_status
 
-            Payment.objects.create(
+            payment = Payment.objects.create(
                 order=order,
-                gateway=payment_method,
+                gateway=PaymentGateway.CASH,
+                payment_method_type=payment_method,
                 amount=order.total_amount,
                 status=PaymentStatus.SUCCEEDED,
                 paid_at=timezone.now(),
+                received_at=timezone.now(),
+                received_by=staff_user,
             )
-        else:
-            from apps.finance.models import CreditAccount, CreditTransaction
+            recompute_payment_status(
+                order,
+                changed_by=staff_user,
+                reason=f"Quick-sale payment #{payment.pk}",
+            )
 
-            account, _ = CreditAccount.objects.get_or_create(user=customer)
-            CreditTransaction.objects.create(
-                credit_account=account,
-                transaction_type=CreditTransaction.TransactionType.CHARGE,
-                amount=order.total_amount,
-                order=order,
-                note=f"Walk-in quick sale — Order #{order.pk}",
-                created_by=staff_user,
-            )
+        order.refresh_from_db()
 
         return order

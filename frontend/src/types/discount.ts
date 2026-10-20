@@ -123,3 +123,30 @@ export interface RedeemPointsInput {
   points: number;
   note?: string;
 }
+
+export interface LoyaltyRule {
+  id: number;
+  name: string;
+  points_per_currency_unit: string;
+  min_spend: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface LoyaltyTierConfig {
+  id: number;
+  tier: LoyaltyTier;
+  minimum_lifetime_points: number;
+  discount_percent: string;
+  bonus_points_percent: string;
+  priority_service: boolean;
+  is_active: boolean;
+}
+
+export interface StampCardConfig {
+  id: number;
+  points_per_stamp: number;
+  stamps_required: number;
+  is_active: boolean;
+  created_at: string;
+}

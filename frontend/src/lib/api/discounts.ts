@@ -12,6 +12,9 @@ import type {
   PromoValidationResult,
   RedeemPointsInput,
   ValidatePromoInput,
+  LoyaltyRule,
+  LoyaltyTierConfig,
+  StampCardConfig,
 } from "@/src/types";
 
 // --- Promo codes (customer-redeemable, staff-managed) -----------------------------
@@ -140,4 +143,49 @@ export async function redeemLoyaltyPoints(
 export async function redeemStampCard(): Promise<LoyaltyTransaction> {
   const res = await apiClient.post("/loyalty/stamp-card/redeem/");
   return unwrap<LoyaltyTransaction>(res);
+}
+
+export async function listLoyaltyRules(): Promise<Paginated<LoyaltyRule>> {
+  const res = await apiClient.get("/loyalty/admin/rules/");
+  return unwrap<Paginated<LoyaltyRule>>(res);
+}
+
+export async function createLoyaltyRule(input: Omit<LoyaltyRule, "id" | "created_at">): Promise<LoyaltyRule> {
+  const res = await apiClient.post("/loyalty/admin/rules/", input);
+  return unwrap<LoyaltyRule>(res);
+}
+
+export async function updateLoyaltyRule(id: number, input: Partial<LoyaltyRule>): Promise<LoyaltyRule> {
+  const res = await apiClient.patch(`/loyalty/admin/rules/${id}/`, input);
+  return unwrap<LoyaltyRule>(res);
+}
+
+export async function listLoyaltyTiers(): Promise<LoyaltyTierConfig[]> {
+  const res = await apiClient.get("/loyalty/admin/tiers/");
+  return unwrap<LoyaltyTierConfig[]>(res);
+}
+
+export async function updateLoyaltyTier(id: number, input: Partial<LoyaltyTierConfig>): Promise<LoyaltyTierConfig> {
+  const res = await apiClient.patch(`/loyalty/admin/tiers/${id}/`, input);
+  return unwrap<LoyaltyTierConfig>(res);
+}
+
+export async function listStampCardConfigs(): Promise<Paginated<StampCardConfig>> {
+  const res = await apiClient.get("/loyalty/admin/stamp-card-config/");
+  return unwrap<Paginated<StampCardConfig>>(res);
+}
+
+export async function createStampCardConfig(input: Omit<StampCardConfig, "id" | "created_at">): Promise<StampCardConfig> {
+  const res = await apiClient.post("/loyalty/admin/stamp-card-config/", input);
+  return unwrap<StampCardConfig>(res);
+}
+
+export async function adjustCustomerLoyalty(userId: number, points: number, reason: string): Promise<LoyaltyTransaction> {
+  const res = await apiClient.post(`/loyalty/admin/customers/${userId}/adjust/`, { points, reason });
+  return unwrap<LoyaltyTransaction>(res);
+}
+
+export async function listCustomerLoyaltyTransactions(userId: number, page = 1): Promise<Paginated<LoyaltyTransaction>> {
+  const res = await apiClient.get(`/loyalty/admin/customers/${userId}/transactions/`, { params: { page } });
+  return unwrap<Paginated<LoyaltyTransaction>>(res);
 }

@@ -89,6 +89,21 @@ class LoyaltyRule(TimeStampedModel):
         return self.name
 
 
+class LoyaltyTierConfig(TimeStampedModel):
+    tier = models.CharField(max_length=10, choices=[("BRONZE", "Bronze"), ("SILVER", "Silver"), ("GOLD", "Gold")], unique=True)
+    minimum_lifetime_points = models.PositiveIntegerField(default=0)
+    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    bonus_points_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    priority_service = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["minimum_lifetime_points"]
+
+    def __str__(self):
+        return f"{self.tier} from {self.minimum_lifetime_points} points"
+
+
 class LoyaltyTransaction(TimeStampedModel):
     class TransactionType(models.TextChoices):
         EARN = "EARN", "Earned"

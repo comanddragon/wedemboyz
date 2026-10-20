@@ -1,6 +1,7 @@
 import type {
   ChatRoomStatus,
   OrderStatus,
+  OrderPaymentStatus,
   PaymentStatus,
   RefundStatus,
   StaffInviteStatus,
@@ -63,14 +64,23 @@ export function orderStatusTone(status: OrderStatus): StatusTone {
   }
 }
 
-export function paymentStatusTone(status: PaymentStatus): StatusTone {
+export function paymentStatusTone(
+  status: PaymentStatus | OrderPaymentStatus,
+): StatusTone {
   switch (status) {
     case "PENDING":
       return "pending";
     case "SUCCEEDED":
+    case "PAID":
+    case "NO_CHARGE":
       return "ready";
     case "FAILED":
+    case "UNPAID":
+    case "VOID":
       return "cancelled";
+    case "PARTIALLY_PAID":
+    case "OVERPAID":
+    case "WAIVED":
     case "REFUNDED":
     case "PARTIALLY_REFUNDED":
       return "progress";
@@ -104,6 +114,10 @@ export function staffRoleTone(role: StaffRole): StatusTone {
     case "MANAGER":
       return "progress";
     case "ATTENDANT":
+      return "pending";
+    case "CASHIER":
+      return "ready";
+    case "DRIVER":
       return "pending";
     default:
       return "pending";

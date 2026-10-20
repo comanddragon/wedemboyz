@@ -1,4 +1,4 @@
-# WEDEMBOYZ — Site Design System
+# Wedemboyz Lavomatique — Site Design System
 
 This is the source of truth for design and copy decisions across the entire site — Hero, About, Services, Pricing, Booking, FAQ, and anything added later. Read this before building or editing any page.
 
@@ -6,7 +6,7 @@ This is the source of truth for design and copy decisions across the entire site
 
 ## Brand
 
-**WEDEMBOYZ** is a pickup-and-delivery laundry service in Yaoundé, Cameroon: book a pickup, they wash/iron/dry-clean, and deliver it back. No storefront visit required.
+**Wedemboyz Lavomatique** is a pickup-and-delivery laundry service in Yaoundé, Cameroon: book a pickup, they wash/iron/dry-clean, and deliver it back. No storefront visit required.
 
 **Personality:** Friendly, local, warm, and full of energy — the neighborhood laundry spot everyone's happy to see, not a startup. Plain language, no jargon, no upsell pressure — but delivered with genuine enthusiasm, not flat simplicity. Confident about being straightforward: the price is the price, the process is the process, said once, clearly, with a smile.
 
@@ -16,7 +16,7 @@ The site should feel **alive**: color, motion, and small delightful moments that
 
 ## Users
 
-Customers in Yaoundé comparing WEDEMBOYZ against doing laundry themselves or using an informal option. Before booking, they need to quickly trust that:
+Customers in Yaoundé comparing Wedemboyz Lavomatique against doing laundry themselves or using an informal option. Before booking, they need to quickly trust that:
 - the price is fair and clearly stated in XAF, no hidden totals
 - the service is legit and reliable (real people, real pickup times, real delivery)
 - paying by cash, MTN Mobile Money, or Orange Money will be simple
@@ -47,7 +47,7 @@ The site's visual identity is built around the idea of freshly folded, cared-for
 **Expand from here into a fuller, energetic palette:**
 - Treat navy/gold as the frame, and bring in a wider, vibrant supporting palette inspired by fresh laundry and sunshine — think warm coral, soft turquoise, sunny yellow, clean white, a touch of clothesline-green. Each service type (Wash & Fold, Wash & Iron, Dry Clean, Iron Only) can carry its own accent color for quick visual recognition across the site.
 - Color should do wayfinding work — the same service always reads in the same color, everywhere it appears (pricing, booking, service icons).
-- Avoid the two failure modes on either end: don't collapse into flat corporate SaaS blue/gray minimalism, and don't wash out the navy/gold identity with rainbow noise. Vibrant but still clearly WEDEMBOYZ.
+- Avoid the two failure modes on either end: don't collapse into flat corporate SaaS blue/gray minimalism, and don't wash out the navy/gold identity with rainbow noise. Vibrant but still clearly Wedemboyz Lavomatique.
 
 ---
 

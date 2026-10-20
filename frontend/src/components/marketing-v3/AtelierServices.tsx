@@ -103,15 +103,15 @@ export function AtelierServices() {
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <section className="border-t border-[var(--at-line)] bg-[var(--at-panel)] px-6 py-24 md:py-28">
+    <section className="border-t border-[var(--at-line)] bg-[var(--at-panel)] px-4 py-14 sm:px-6 sm:py-20 md:py-28">
       <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col items-start justify-between gap-10 md:flex-row md:items-end">
+        <div className="flex flex-col items-start justify-between gap-6 sm:gap-10 md:flex-row md:items-end">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end md:max-w-2xl">
             <Reveal className="max-w-xl">
               <span className="at-display text-xs font-semibold uppercase tracking-[0.24em] text-[var(--at-brass-bright)]">
                 The service lines
               </span>
-              <h2 className="at-display mt-3 text-3xl font-bold leading-tight text-[var(--at-ivory)] md:text-4xl">
+              <h2 className="at-display mt-2 text-2xl font-bold leading-tight text-[var(--at-ivory)] sm:mt-3 sm:text-3xl md:text-4xl">
                 Flat-priced by the piece, or by the kilo.
               </h2>
             </Reveal>
@@ -119,7 +119,7 @@ export function AtelierServices() {
             {/* Second entry in the "Plate" device introduced in the hero —
                 reused once, deliberately, rather than scattered everywhere. */}
             <Reveal delay={0.15} className="shrink-0">
-              <figure className="w-24 sm:w-28">
+              <figure className="hidden w-24 sm:block sm:w-28">
                 <div className="overflow-hidden rounded-sm border border-[var(--at-line-strong)] bg-[var(--at-ink)] p-1 shadow-pop">
                   <div className="relative aspect-[4/5] overflow-hidden rounded-[2px]">
                     <Image
@@ -150,36 +150,39 @@ export function AtelierServices() {
           </Reveal>
         </div>
 
-        <div className="mt-14 grid grid-cols-1 divide-y divide-[var(--at-line)] border-y border-[var(--at-line)] md:grid-cols-2 md:divide-x md:divide-y-0">
+        <div className="mt-8 grid grid-cols-1 divide-y divide-[var(--at-line)] border-y border-[var(--at-line)] sm:mt-14 md:grid-cols-2 md:divide-x md:divide-y-0">
           {SERVICES.map((service, i) => {
             const Icon = service.icon;
             return (
               <Reveal key={service.type} delay={i * 0.08}>
                 <motion.div
-                  className="group relative flex h-full flex-col justify-between p-8 md:p-10"
+                  className="group relative grid h-full grid-cols-[auto_1fr_auto] items-center gap-3 py-4 sm:flex sm:flex-col sm:items-stretch sm:justify-between sm:p-8 md:p-10"
                   whileHover={
                     shouldReduceMotion
                       ? undefined
-                      : { backgroundColor: "color-mix(in srgb, var(--color-gold) 6%, transparent)" }
+                      : {
+                          backgroundColor:
+                            "color-mix(in srgb, var(--color-gold) 6%, transparent)",
+                        }
                   }
                   transition={{ duration: 0.3 }}
                 >
-                  <div className="flex items-start justify-between">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--at-line-strong)] text-[var(--at-brass-bright)] transition-colors group-hover:border-[var(--at-brass)]">
+                  <div className="contents sm:flex sm:items-start sm:justify-between">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--at-line-strong)] text-[var(--at-brass-bright)] transition-colors group-hover:border-[var(--at-brass)] sm:h-11 sm:w-11">
                       <Icon className="h-5 w-5" aria-hidden="true" />
                     </span>
-                    <span className="at-serif-num text-xl font-bold text-[var(--at-ivory)]">
+                    <span className="at-serif-num order-3 text-right text-sm font-bold text-[var(--at-ivory)] sm:order-none sm:text-xl">
                       {service.price.toLocaleString()}
                       <span className="ml-1 text-xs font-medium text-[var(--at-slate)]">
                         {service.perKg ? "XAF/kg" : "XAF"}
                       </span>
                     </span>
                   </div>
-                  <div className="mt-8">
-                    <h3 className="at-display text-xl font-bold text-[var(--at-ivory)]">
+                  <div className="min-w-0 sm:mt-8">
+                    <h3 className="at-display truncate text-sm font-bold text-[var(--at-ivory)] sm:text-xl">
                       {service.label}
                     </h3>
-                    <p className="mt-2.5 max-w-md text-sm leading-relaxed text-[var(--at-slate)]">
+                    <p className="mt-1 line-clamp-2 max-w-md text-xs leading-4 text-[var(--at-slate)] sm:mt-2.5 sm:text-sm sm:leading-relaxed">
                       {service.description}
                     </p>
                   </div>

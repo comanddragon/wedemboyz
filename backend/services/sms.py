@@ -17,6 +17,19 @@ class SMSSendError(Exception):
     pass
 
 
+def _business_copy(template_key: str, fallback: str, **context) -> str:
+    """Resolve admin-managed copy without making notifications depend on settings setup."""
+    try:
+        from apps.staff.models import BusinessSettings
+
+        business = BusinessSettings.load()
+        template = business.notification_templates.get(template_key) or fallback
+        return template.format(business_name=business.business_name, **context)
+    except Exception:
+        logger.warning("Invalid notification template %s; using the default", template_key)
+        return fallback.format(business_name="Wedemboyz Lavomatique", **context)
+
+
 def _send_via_africastalking(phone_number: str, message: str) -> dict:
     import africastalking
 
@@ -61,19 +74,33 @@ def send_sms(phone_number: str, message: str) -> bool:
 # to translate to French later for Bamenda's Francophone customers.
 
 def order_confirmed_message(order) -> str:
-    return (
-        f"WEDEMBOYZ: Your order #{order.pk} is confirmed. "
-        f"Pickup scheduled — we'll text you when the driver is on the way."
+    return _business_copy(
+        "order_confirmed",
+        "{business_name}: Your order #{order_id} is confirmed. Pickup scheduled — we'll text you when the driver is on the way.",
+        order_id=order.pk,
     )
 
 
 def order_ready_message(order) -> str:
-    return f"WEDEMBOYZ: Order #{order.pk} is ready for delivery."
+    return _business_copy(
+        "order_ready",
+        "{business_name}: Order #{order_id} is ready for delivery.",
+        order_id=order.pk,
+    )
 
 
 def order_out_for_delivery_message(order) -> str:
-    return f"WEDEMBOYZ: Your laundry (Order #{order.pk}) is out for delivery."
+    return _business_copy(
+        "order_out_for_delivery",
+        "{business_name}: Your laundry (Order #{order_id}) is out for delivery.",
+        order_id=order.pk,
+    )
 
 
 def payment_received_message(payment) -> str:
-    return f"WEDEMBOYZ: Payment of {payment.amount} {payment.currency} received. Merci!"
+    return _business_copy(
+        "payment_received",
+        "{business_name}: Payment of {amount} {currency} received. Merci!",
+        amount=payment.amount,
+        currency=payment.currency,
+    )

@@ -4,6 +4,7 @@ import type {
   CustomerListItem,
   ListCustomersParams,
   Paginated,
+  CustomerInput,
 } from "@/src/types";
 
 /** GET /api/v1/users/customers/ — staff-only customer directory ("fiche
@@ -20,5 +21,15 @@ export async function listCustomers(
  * recent order history, and credit ledger. */
 export async function getCustomer(customerId: number): Promise<CustomerDetail> {
   const res = await apiClient.get(`/users/customers/${customerId}/`);
+  return unwrap<CustomerDetail>(res);
+}
+
+export async function createCustomer(input: CustomerInput): Promise<CustomerDetail> {
+  const res = await apiClient.post("/users/customers/", input);
+  return unwrap<CustomerDetail>(res);
+}
+
+export async function updateCustomer(customerId: number, input: CustomerInput): Promise<CustomerDetail> {
+  const res = await apiClient.patch(`/users/customers/${customerId}/`, input);
   return unwrap<CustomerDetail>(res);
 }

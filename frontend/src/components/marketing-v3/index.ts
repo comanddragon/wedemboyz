@@ -6,4 +6,3 @@ export * from "./AtelierValue";
 export * from "./AtelierTrust";
 export * from "./AtelierCta";
 export * from "./Reveal";
-export * from "./GarmentMark";

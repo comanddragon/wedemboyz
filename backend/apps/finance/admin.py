@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CreditAccount, CreditTransaction, Expense, PayrollEntry
+from .models import CashRegisterDay, CreditAccount, CreditTransaction, Expense, PayrollEntry
 
 
 @admin.register(Expense)
@@ -15,6 +15,12 @@ class PayrollEntryAdmin(admin.ModelAdmin):
     list_display = ["employee", "pay_period", "amount", "status", "paid_on"]
     list_filter = ["status", "pay_period"]
     search_fields = ["employee__first_name", "employee__last_name", "employee__phone_number"]
+
+
+@admin.register(CashRegisterDay)
+class CashRegisterDayAdmin(admin.ModelAdmin):
+    list_display = ["date", "status", "opening_float", "counted_cash", "closed_by"]
+    list_filter = ["status"]
 
 
 @admin.register(CreditAccount)

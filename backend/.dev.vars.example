@@ -1,0 +1,22 @@
+# Copy to .dev.vars for `bun run dev:cloudflare`. Never commit real values.
+DJANGO_SECRET_KEY=replace-with-a-long-random-value
+INTERNAL_JOBS_SECRET=replace-with-a-different-long-random-value
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+CSRF_TRUSTED_ORIGINS=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
+
+DB_NAME=wedemboyz
+DB_USER=postgres
+DB_PASSWORD=replace-me
+DB_HOST=host.docker.internal
+DB_PORT=5432
+DB_SSLMODE=disable
+REDIS_URL=redis://host.docker.internal:6379/0
+
+AWS_ACCESS_KEY_ID=replace-with-r2-access-key-id
+AWS_SECRET_ACCESS_KEY=replace-with-r2-secret-access-key
+AWS_STORAGE_BUCKET_NAME=wedemboyz-media
+AWS_S3_REGION_NAME=auto
+AWS_S3_ENDPOINT_URL=https://ACCOUNT_ID.r2.cloudflarestorage.com
+AWS_S3_CUSTOM_DOMAIN=media.example.com

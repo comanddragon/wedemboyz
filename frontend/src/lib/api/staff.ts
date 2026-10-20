@@ -7,6 +7,10 @@ import type {
   StaffActivityLogEntry,
   StaffInvite,
   StaffProfile,
+  StaffAssignmentOption,
+  BusinessSettings,
+  PriceItem,
+  SubscriptionPlanSetting,
   UpdateStaffProfileInput,
 } from "@/src/types";
 
@@ -16,6 +20,18 @@ import type {
 export async function listStaff(): Promise<Paginated<StaffProfile>> {
   const res = await apiClient.get("/staff/");
   return unwrap<Paginated<StaffProfile>>(res);
+}
+
+export async function listChatAgents(): Promise<StaffProfile[]> {
+  const res = await apiClient.get("/staff/chat-agents/");
+  return unwrap<StaffProfile[]>(res);
+}
+
+export async function listOperationalStaff(
+  role?: string,
+): Promise<StaffAssignmentOption[]> {
+  const res = await apiClient.get("/staff/operations/", { params: { role } });
+  return unwrap<StaffAssignmentOption[]>(res);
 }
 
 /** GET /api/v1/staff/{id}/ */
@@ -68,6 +84,13 @@ export async function revokeStaffInvite(
   return unwrap<StaffInvite>(res);
 }
 
+export async function resendStaffInvite(
+  inviteId: number,
+): Promise<StaffInvite> {
+  const res = await apiClient.post(`/staff/invites/${inviteId}/resend/`);
+  return unwrap<StaffInvite>(res);
+}
+
 /** POST /api/v1/staff/invites/accept/ — public (AllowAny); the invite token
  * itself is the credential. Call this unauthenticated, e.g. from an
  * `/invite/accept?token=...` page, not through the authed `apiClient`
@@ -77,4 +100,67 @@ export async function acceptStaffInvite(
 ): Promise<AcceptStaffInviteResult> {
   const res = await apiClient.post("/staff/invites/accept/", input);
   return unwrap<AcceptStaffInviteResult>(res);
+}
+
+// --- Business configuration ---------------------------------------------------
+
+export async function getBusinessSettings(): Promise<BusinessSettings> {
+  const res = await apiClient.get("/staff/settings/");
+  return unwrap<BusinessSettings>(res);
+}
+
+export async function updateBusinessSettings(
+  input: Partial<Omit<BusinessSettings, "id">>,
+): Promise<BusinessSettings> {
+  const res = await apiClient.patch("/staff/settings/", input);
+  return unwrap<BusinessSettings>(res);
+}
+
+export async function listPriceItems(page = 1): Promise<Paginated<PriceItem>> {
+  const res = await apiClient.get("/staff/settings/prices/", { params: { page } });
+  return unwrap<Paginated<PriceItem>>(res);
+}
+
+export async function createPriceItem(
+  input: Omit<PriceItem, "id" | "created_at" | "updated_at">,
+): Promise<PriceItem> {
+  const res = await apiClient.post("/staff/settings/prices/", input);
+  return unwrap<PriceItem>(res);
+}
+
+export async function updatePriceItem(
+  id: number,
+  input: Partial<PriceItem>,
+): Promise<PriceItem> {
+  const res = await apiClient.patch(`/staff/settings/prices/${id}/`, input);
+  return unwrap<PriceItem>(res);
+}
+
+export async function listSubscriptionPlanSettings(): Promise<SubscriptionPlanSetting[]> {
+  const res = await apiClient.get("/staff/settings/plans/");
+  return unwrap<SubscriptionPlanSetting[]>(res);
+}
+
+export async function createSubscriptionPlanSetting(
+  input: Omit<SubscriptionPlanSetting, "id" | "created_at" | "updated_at">,
+): Promise<SubscriptionPlanSetting> {
+  const res = await apiClient.post("/staff/settings/plans/", input);
+  return unwrap<SubscriptionPlanSetting>(res);
+}
+
+export async function updateSubscriptionPlanSetting(
+  id: number,
+  input: Partial<SubscriptionPlanSetting>,
+): Promise<SubscriptionPlanSetting> {
+  const res = await apiClient.patch(`/staff/settings/plans/${id}/`, input);
+  return unwrap<SubscriptionPlanSetting>(res);
+}
+
+export async function listAuditLog(params: {
+  page?: number;
+  search?: string;
+  action?: string;
+} = {}): Promise<Paginated<StaffActivityLogEntry>> {
+  const res = await apiClient.get("/staff/audit/", { params });
+  return unwrap<Paginated<StaffActivityLogEntry>>(res);
 }

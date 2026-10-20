@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 from core.models import TimeStampedModel
 
@@ -35,6 +36,16 @@ class PickupDeliverySchedule(TimeStampedModel):
     )
 
     driver_notes = models.TextField(blank=True)
+    driver = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="delivery_schedules",
+    )
+    pickup_completed_at = models.DateTimeField(null=True, blank=True)
+    delivery_completed_at = models.DateTimeField(null=True, blank=True)
+    proof_of_delivery = models.ImageField(upload_to="orders/proof/%Y/%m/", null=True, blank=True)
+    failed_reason = models.CharField(max_length=255, blank=True)
+    contact_phone = models.CharField(max_length=20, blank=True)
+    address_override = models.CharField(max_length=255, blank=True)
 
     class Meta:
         ordering = ["pickup_date"]

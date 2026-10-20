@@ -8,11 +8,27 @@ import type {
   QuickSaleResult,
   UpdateOrderInput,
   UpdateOrderStatusInput,
+  UpdateOrderItemInput,
+  OrderItem,
 } from "@/src/types";
 
 /** GET /orders/ — the current user's orders (staff see all). */
-export async function listOrders(page = 1): Promise<Paginated<OrderListItem>> {
-  const res = await apiClient.get("/orders/", { params: { page } });
+export async function listOrders(
+  page = 1,
+  filters: {
+    status?: string;
+    payment_status?: string;
+    source?: string;
+    assigned_to?: number;
+    driver?: number;
+    date_from?: string;
+    date_to?: string;
+    ordering?: string;
+    search?: string;
+    overdue?: boolean;
+  } = {},
+): Promise<Paginated<OrderListItem>> {
+  const res = await apiClient.get("/orders/", { params: { page, ...filters } });
   return unwrap<Paginated<OrderListItem>>(res);
 }
 
@@ -20,7 +36,22 @@ export async function listOrders(page = 1): Promise<Paginated<OrderListItem>> {
 export async function createOrder(
   input: CreateOrderInput,
 ): Promise<OrderDetail> {
-  const res = await apiClient.post("/orders/", input);
+  const photos = input.items.some((item) => item.photo);
+  if (!photos) {
+    const res = await apiClient.post("/orders/", input);
+    return unwrap<OrderDetail>(res);
+  }
+
+  const form = new FormData();
+  form.append("pickup_address", input.pickup_address);
+  form.append("delivery_address", input.delivery_address);
+  form.append("notes", input.notes ?? "");
+  if (input.promo_code) form.append("promo_code", input.promo_code);
+  form.append("items", JSON.stringify(input.items.map(({ photo: _photo, photoPreviewUrl: _preview, ...item }) => item)));
+  input.items.forEach((item, index) => {
+    if (item.photo) form.append(`item_photo_${index}`, item.photo);
+  });
+  const res = await apiClient.post("/orders/", form);
   return unwrap<OrderDetail>(res);
 }
 
@@ -66,4 +97,37 @@ export async function createQuickSale(
 ): Promise<QuickSaleResult> {
   const res = await apiClient.post("/orders/quick-sale/", input);
   return unwrap<QuickSaleResult>(res);
+}
+
+export async function waiveOrderBalance(
+  orderId: number,
+  reason: string,
+): Promise<OrderDetail> {
+  const res = await apiClient.post(`/orders/${orderId}/waive/`, { reason });
+  return unwrap<OrderDetail>(res);
+}
+
+export async function assignOrder(
+  orderId: number,
+  input: { assigned_to: number | null; driver: number | null },
+): Promise<OrderDetail> {
+  const res = await apiClient.post(`/orders/${orderId}/assign/`, input);
+  return unwrap<OrderDetail>(res);
+}
+
+export async function updateOrderItem(
+  orderId: number,
+  itemId: number,
+  input: UpdateOrderItemInput,
+): Promise<OrderItem> {
+  const res = await apiClient.patch(`/orders/${orderId}/items/${itemId}/`, input);
+  return unwrap<OrderItem>(res);
+}
+
+export async function deleteOrderItem(
+  orderId: number,
+  itemId: number,
+): Promise<OrderDetail> {
+  const res = await apiClient.delete(`/orders/${orderId}/items/${itemId}/`);
+  return unwrap<OrderDetail>(res);
 }

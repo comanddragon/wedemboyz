@@ -5,8 +5,6 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
-import { GarmentMark } from "./GarmentMark";
-
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function AtelierHero() {
@@ -19,50 +17,55 @@ export function AtelierHero() {
   });
 
   return (
-    <section className="relative overflow-hidden border-b border-[var(--at-line)] px-6 pb-24 pt-14 md:pt-20">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_color-mix(in_srgb,var(--color-gold)_16%,transparent),transparent_55%)]"
+    <section className="relative overflow-hidden border-b border-[var(--at-line)] px-4 pb-10 pt-7 sm:px-6 sm:pb-20 sm:pt-14 md:min-h-[700px] md:pb-24 md:pt-20">
+      <Image
+        src="/images/pricing-laundromat-interior.jpg"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-center"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_color-mix(in_srgb,var(--color-navy-600)_72%,transparent),transparent_52%)]"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(6,13,28,0.98)_0%,rgba(6,13,28,0.94)_43%,rgba(6,13,28,0.42)_72%,rgba(6,13,28,0.28)_100%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,rgba(6,13,28,0.82)_0%,transparent_55%)] md:hidden"
       />
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--at-line-strong)] to-transparent"
       />
 
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-16 md:grid-cols-[1.08fr_0.92fr]">
-        <div>
-          <motion.div {...stagger(0)} className="flex items-center gap-3">
-            <span className="h-px w-10 bg-[var(--at-brass)]" />
-            <span className="at-display text-xs font-medium uppercase tracking-[0.28em] text-[var(--at-brass-bright)]">
-              Établi à Yaoundé — Est. 2021
-            </span>
-          </motion.div>
-
+      <div className="relative mx-auto flex max-w-7xl items-center md:min-h-[540px]">
+        <div className="max-w-2xl">
           <motion.h1
-            {...stagger(1)}
-            className="at-display mt-7 max-w-xl text-[2.6rem] font-bold leading-[1.06] tracking-tight text-[var(--at-ivory)] sm:text-6xl"
+            {...stagger(0)}
+            className="at-display max-w-xl text-[clamp(2.15rem,10vw,4rem)] font-bold leading-[0.98] tracking-[-0.035em] text-[var(--at-ivory)]"
           >
-            Garment care, <span className="at-shimmer-text">handled like an art</span>.
+            Garment care,{" "}
+            <span className="at-shimmer-text">handled like an art</span>.
           </motion.h1>
 
           <motion.p
-            {...stagger(2)}
-            className="mt-6 max-w-md text-lg leading-relaxed text-[var(--at-slate)]"
+            {...stagger(1)}
+            className="mt-4 max-w-md text-[0.84rem] leading-6 text-[var(--at-slate)] sm:mt-6 sm:text-lg sm:leading-relaxed"
           >
-            WEDEMBOYZ collects, cleans, and presses your wardrobe with the
-            discipline of a proper atelier — then returns it to your door.
-            No storefront queue, no counter clerk guessing your fabric. Just a
+            Wedemboyz Lavomatique collects, cleans, and presses your wardrobe with the
+            discipline of a proper atelier — then returns it to your door. No
+            storefront queue, no counter clerk guessing your fabric. Just a
             precise, accountable process, city-wide.
           </motion.p>
 
-          <motion.div {...stagger(3)} className="mt-10 flex flex-wrap items-center gap-4">
+          <motion.div
+            {...stagger(2)}
+            className="mt-5 grid grid-cols-2 gap-2 sm:mt-10 sm:flex sm:flex-wrap sm:items-center sm:gap-4"
+          >
             <Link
               href="/book"
-              className="at-focus at-btn-primary group inline-flex items-center gap-2 rounded-sm px-7 py-3.5 text-sm font-semibold uppercase tracking-wider transition-colors"
+              className="at-focus at-btn-primary group inline-flex min-h-11 items-center justify-center gap-1.5 rounded-sm px-3 py-2.5 text-[0.68rem] font-semibold uppercase tracking-wide transition-colors sm:min-h-12 sm:gap-2 sm:px-7 sm:py-3.5 sm:text-sm sm:tracking-wider"
             >
               Schedule a pickup
               <ArrowRight
@@ -72,15 +75,15 @@ export function AtelierHero() {
             </Link>
             <Link
               href="/pricing"
-              className="at-focus inline-flex items-center gap-2 rounded-sm border border-[var(--at-line-strong)] px-7 py-3.5 text-sm font-semibold uppercase tracking-wider text-[var(--at-ivory)] transition-colors hover:border-[var(--at-brass)] hover:text-[var(--at-brass-bright)]"
+              className="at-focus inline-flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-[var(--at-line-strong)] px-3 py-2.5 text-[0.68rem] font-semibold uppercase tracking-wide text-[var(--at-ivory)] transition-colors hover:border-[var(--at-brass)] hover:text-[var(--at-brass-bright)] sm:min-h-12 sm:gap-2 sm:px-7 sm:py-3.5 sm:text-sm sm:tracking-wider"
             >
               View the tariff
             </Link>
           </motion.div>
 
           <motion.dl
-            {...stagger(4)}
-            className="mt-16 grid max-w-lg grid-cols-3 gap-6 border-t border-[var(--at-line)] pt-8"
+            {...stagger(3)}
+            className="mt-7 grid max-w-lg grid-cols-3 gap-2 border-t border-[var(--at-line)] pt-4 sm:mt-16 sm:gap-6 sm:pt-8"
           >
             {[
               ["12,000+", "Garments returned"],
@@ -89,52 +92,17 @@ export function AtelierHero() {
             ].map(([value, label]) => (
               <div key={label}>
                 <dt className="sr-only">{label}</dt>
-                <dd className="at-serif-num text-2xl font-bold text-[var(--at-ivory)]">
+                <dd className="at-serif-num text-base font-bold text-[var(--at-ivory)] sm:text-2xl">
                   {value}
                 </dd>
-                <dd className="mt-1 text-xs leading-snug text-[var(--at-slate)]">{label}</dd>
+                <dd className="mt-1 text-[0.7rem] leading-snug text-[var(--at-slate)] sm:text-xs">
+                  {label}
+                </dd>
               </div>
             ))}
           </motion.dl>
         </div>
 
-        <motion.div
-          initial={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.94 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.1, ease: EASE, delay: 0.25 }}
-          className="relative mx-auto w-full max-w-md"
-        >
-          <GarmentMark className="w-full" />
-
-          {/* A single "specimen plate" from the actual pressing floor — a
-              quiet supporting note, deliberately small and captioned like a
-              ledger clipping, so it never competes with GarmentMark for
-              attention. */}
-          <motion.figure
-            initial={shouldReduceMotion ? undefined : { opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: EASE, delay: 0.65 }}
-            className="absolute bottom-2 left-0 w-[38%] max-w-[168px] sm:bottom-4 sm:left-2"
-          >
-            <div className="overflow-hidden rounded-sm border border-[var(--at-line-strong)] bg-[var(--at-panel)] p-1 shadow-pop">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[2px]">
-                <Image
-                  src="/images/hero-bagged-shirts.jpg"
-                  alt="Pressed shirts sheathed and racked at the WEDEMBOYZ pressing floor"
-                  fill
-                  sizes="(max-width: 640px) 40vw, 168px"
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <figcaption
-              className="mt-1.5 text-[10px] uppercase tracking-[0.16em] text-[var(--at-slate)]"
-              style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-            >
-              Plate 04 — the pressing floor
-            </figcaption>
-          </motion.figure>
-        </motion.div>
       </div>
     </section>
   );

@@ -20,14 +20,26 @@ import { Card, Select, StatusBadge, staffRoleTone } from "@/src/components/ui";
 import { staffApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
-import type { StaffRole } from "@/src/types";
+import type {
+  EmploymentStatus,
+  StaffRole,
+  UpdateStaffProfileInput,
+} from "@/src/types";
 
 const ROLE_LABELS: Record<StaffRole, string> = {
   MANAGER: "Manager",
   ATTENDANT: "Attendant",
+  CASHIER: "Cashier",
+  DRIVER: "Driver",
 };
 
-const ROLE_OPTIONS: StaffRole[] = ["ATTENDANT", "MANAGER"];
+const ROLE_OPTIONS: StaffRole[] = ["ATTENDANT", "CASHIER", "DRIVER", "MANAGER"];
+const EMPLOYMENT_OPTIONS: EmploymentStatus[] = [
+  "ACTIVE",
+  "ON_LEAVE",
+  "SUSPENDED",
+  "TERMINATED",
+];
 
 export default function AdminStaffDetailPage() {
   const params = useParams<{ id: string }>();
@@ -50,7 +62,7 @@ export default function AdminStaffDetailPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (input: { role?: StaffRole; is_active?: boolean }) =>
+    mutationFn: (input: UpdateStaffProfileInput) =>
       staffApi.updateStaffProfile(staffProfileId, input),
     onSuccess: (updated) => {
       setSaveError(null);
@@ -118,7 +130,7 @@ export default function AdminStaffDetailPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <Card>
           <h2 className="font-display mb-3 text-sm font-medium text-ink">
             Contact
@@ -187,7 +199,142 @@ export default function AdminStaffDetailPage() {
             </p>
           </div>
         </Card>
+
+        <Card>
+          <h2 className="font-display mb-3 text-sm font-medium text-ink">
+            Operations
+          </h2>
+          <div className="space-y-3">
+            <div>
+              <label
+                className="mb-1 block text-xs font-medium text-ink-muted"
+                htmlFor="employment-status"
+              >
+                Employment status
+              </label>
+              <Select
+                id="employment-status"
+                value={staff.employment_status}
+                disabled={updateMutation.isPending}
+                onChange={(event) =>
+                  updateMutation.mutate({
+                    employment_status: event.target.value as EmploymentStatus,
+                  })
+                }
+              >
+                {EMPLOYMENT_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    {value.replaceAll("_", " ")}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <label className="flex items-center justify-between gap-3 rounded-xl bg-mist px-3 py-2.5 text-sm text-ink">
+              <span>
+                <span className="block font-medium">Available for chat</span>
+                <span className="block text-xs text-ink-muted">
+                  {staff.open_chat_count} open assignment
+                  {staff.open_chat_count === 1 ? "" : "s"}
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={staff.is_available_for_chat}
+                disabled={updateMutation.isPending}
+                onChange={(event) =>
+                  updateMutation.mutate({
+                    is_available_for_chat: event.target.checked,
+                  })
+                }
+              />
+            </label>
+            <p className="text-xs text-ink-muted">
+              Last login:{" "}
+              {staff.user.last_login
+                ? new Date(staff.user.last_login).toLocaleString()
+                : "Never"}
+            </p>
+          </div>
+        </Card>
       </div>
+
+      <Card className="mt-3">
+        <h2 className="font-display mb-3 text-sm font-medium text-ink">
+          Employment details
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="text-xs font-medium text-ink-muted">
+            Hire date
+            <input
+              type="date"
+              className="ui-control mt-1"
+              defaultValue={staff.hire_date ?? ""}
+              onBlur={(event) =>
+                updateMutation.mutate({ hire_date: event.target.value || null })
+              }
+            />
+          </label>
+          <label className="text-xs font-medium text-ink-muted">
+            Base salary (XAF)
+            <input
+              type="number"
+              min="0"
+              className="ui-control mt-1"
+              defaultValue={staff.base_salary ?? ""}
+              onBlur={(event) =>
+                updateMutation.mutate({
+                  base_salary: event.target.value || null,
+                })
+              }
+            />
+          </label>
+          <label className="text-xs font-medium text-ink-muted sm:col-span-2">
+            Address
+            <input
+              className="ui-control mt-1"
+              defaultValue={staff.address}
+              onBlur={(event) =>
+                updateMutation.mutate({ address: event.target.value })
+              }
+            />
+          </label>
+          <label className="text-xs font-medium text-ink-muted">
+            Emergency contact
+            <input
+              className="ui-control mt-1"
+              defaultValue={staff.emergency_contact_name}
+              onBlur={(event) =>
+                updateMutation.mutate({
+                  emergency_contact_name: event.target.value,
+                })
+              }
+            />
+          </label>
+          <label className="text-xs font-medium text-ink-muted">
+            Emergency phone
+            <input
+              type="tel"
+              className="ui-control mt-1"
+              defaultValue={staff.emergency_contact_phone}
+              onBlur={(event) =>
+                updateMutation.mutate({
+                  emergency_contact_phone: event.target.value,
+                })
+              }
+            />
+          </label>
+          <label className="text-xs font-medium text-ink-muted sm:col-span-2">
+            Internal notes
+            <textarea
+              className="ui-control mt-1 min-h-20"
+              defaultValue={staff.notes}
+              onBlur={(event) =>
+                updateMutation.mutate({ notes: event.target.value })
+              }
+            />
+          </label>
+        </div>
+      </Card>
 
       <h2 className="font-display mb-3 mt-8 text-sm font-medium text-ink">
         Activity

@@ -1,0 +1,44 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "wedemboyz-api",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-10-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    {
+      "pattern": "api.wedemboyz.ntsemancho.online",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "RUN_MIGRATIONS": "true"
+  },
+  "containers": [
+    {
+      "class_name": "DjangoApi",
+      "scheduling_policy": "durable_object",
+      "images": {
+        "base": {
+          "dockerfile": "./Dockerfile"
+        }
+      }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "BACKEND",
+        "class_name": "DjangoApi"
+      }
+    ]
+  },
+  "exports": {
+    "DjangoApi": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  }
+}

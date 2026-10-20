@@ -36,6 +36,24 @@ export type OrderStatus =
 /** Mirrors core.constants.PaymentStatus */
 export type PaymentStatus = "PENDING" | "SUCCEEDED" | "FAILED" | "REFUNDED" | "PARTIALLY_REFUNDED";
 
+export type OrderPaymentStatus =
+  | "UNPAID"
+  | "PARTIALLY_PAID"
+  | "PAID"
+  | "OVERPAID"
+  | "PARTIALLY_REFUNDED"
+  | "REFUNDED"
+  | "WAIVED"
+  | "NO_CHARGE"
+  | "VOID";
+
+export type PaymentMethodType =
+  | "CASH"
+  | "MTN_MOMO"
+  | "ORANGE_MONEY"
+  | "BANK_TRANSFER"
+  | "OTHER";
+
 /** Mirrors core.constants.PaymentGateway. `CREDIT` ("Pay Later / Store
  * Credit") was added alongside the quick-sale/POS endpoint — see
  * QuickSaleInput in types/order.ts and finance's CreditAccount. */

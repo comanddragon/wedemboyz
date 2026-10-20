@@ -98,7 +98,7 @@ export function ContactSplit() {
         {/* Map — left on desktop, below the contact panel on mobile (order-2) */}
         <div className="relative order-2 h-[340px] sm:h-[420px] lg:order-1 lg:h-auto">
           <iframe
-            title="WEDEMBOYZ Lavomatique — Entrée Simbock, Yaoundé"
+            title="Wedemboyz Lavomatique — Entrée Simbock, Yaoundé"
             src={BUSINESS.mapEmbedSrc}
             loading="lazy"
             className="absolute inset-0 h-full w-full border-0 grayscale-[10%]"

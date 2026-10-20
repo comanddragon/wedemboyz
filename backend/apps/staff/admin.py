@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from .models import StaffActivityLog, StaffInvite, StaffProfile
+from .models import (
+    BusinessSettings,
+    PriceItem,
+    StaffActivityLog,
+    StaffInvite,
+    StaffProfile,
+    SubscriptionPlanSetting,
+)
 
 
 @admin.register(StaffProfile)
@@ -22,3 +29,8 @@ class StaffActivityLogAdmin(admin.ModelAdmin):
     list_display = ["staff", "action", "description", "created_at"]
     list_filter = ["action"]
     search_fields = ["staff__phone_number"]
+
+
+admin.site.register(BusinessSettings)
+admin.site.register(PriceItem)
+admin.site.register(SubscriptionPlanSetting)

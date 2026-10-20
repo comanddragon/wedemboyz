@@ -4,8 +4,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   CircleCheck,
   CircleOff,
-  CreditCard,
-  Smartphone,
   Star,
 } from "lucide-react";
 import Link from "next/link";
@@ -13,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { WizardSteps } from "@/src/components/booking/WizardSteps";
+import { PaymentMethodIcon } from "@/src/components/payments/PaymentMethodIcon";
 import { Button, Card, Field, Input, Select } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useBooking } from "@/src/hooks/useBooking";
@@ -161,12 +160,14 @@ export default function BookConfirmPage() {
         delivery_address: booking.deliveryAddress,
         notes: booking.notes,
         items: booking.items.map(
-          ({ service_type, label, description, weight_kg, quantity }) => ({
+          ({ service_type, label, description, weight_kg, quantity, photo, photoPreviewUrl }) => ({
             service_type,
             label,
             description,
             weight_kg,
             quantity,
+            photo,
+            photoPreviewUrl,
           }),
         ),
         promo_code: booking.promoCode ?? undefined,
@@ -238,11 +239,9 @@ export default function BookConfirmPage() {
                 checked={isSelected({ type: "CASH" })}
                 onChange={() => setSelection({ type: "CASH" })}
               />
-              <CircleCheck
-                className="h-4 w-4 text-status-ready-text"
-                aria-hidden="true"
-              />
-              {GATEWAY_LABELS.CASH}
+              <PaymentMethodIcon method="CASH" />
+              <span className="flex-1">{GATEWAY_LABELS.CASH}</span>
+              {isSelected({ type: "CASH" }) ? <CircleCheck className="h-4 w-4 text-status-ready-text" aria-hidden="true" /> : null}
             </label>
 
             {isLoadingMethods && <SavedMethodsSkeleton />}
@@ -264,9 +263,7 @@ export default function BookConfirmPage() {
                     setSelection({ type: "method", methodId: method.id })
                   }
                 />
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy">
-                  <CreditCard className="h-4 w-4" aria-hidden="true" />
-                </span>
+                <PaymentMethodIcon method={method.gateway} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium text-ink">
                     {method.display_label}
@@ -298,9 +295,7 @@ export default function BookConfirmPage() {
                   checked={isSelected({ type: "account" })}
                   onChange={() => setSelection({ type: "account" })}
                 />
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy">
-                  <Smartphone className="h-4 w-4" aria-hidden="true" />
-                </span>
+                <PaymentMethodIcon method={operator} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium text-ink">
                     My account number ({maskPhoneNumber(user.phone_number)})
@@ -345,6 +340,7 @@ export default function BookConfirmPage() {
 
             <label className="flex cursor-not-allowed items-center gap-2 rounded-xl border border-crease px-3.5 py-2.5 text-sm transition-all duration-200 hover:border-navy/40 hover:bg-steam/60 text-ink-muted">
               <input type="radio" name="payment-selection" disabled />
+              <PaymentMethodIcon method="STRIPE" />
               <CircleOff className="h-4 w-4" aria-hidden="true" />
               {GATEWAY_LABELS.STRIPE} — not wired up yet
             </label>
@@ -355,6 +351,7 @@ export default function BookConfirmPage() {
           {(effectiveSelection.type === "account" ||
             effectiveSelection.type === "custom") && (
             <div className="mt-3 max-w-xs">
+              <PaymentMethodIcon method={operator} className="mb-2" />
               <Field
                 label="Network"
                 hint="CamPay auto-detects your operator — pick the closest match."

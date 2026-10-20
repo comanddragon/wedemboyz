@@ -4,8 +4,11 @@ import type {
   InventoryItem,
   InventoryItemInput,
   InventoryTransaction,
+  InventoryUsageInput,
+  InventoryValuation,
   ListInventoryItemsParams,
   Paginated,
+  Supplier,
 } from "@/src/types";
 
 /** GET /api/v1/inventory/items/?category=&search= */
@@ -68,5 +71,30 @@ export async function listInventoryItemTransactions(
   itemId: number,
 ): Promise<Paginated<InventoryTransaction>> {
   const res = await apiClient.get(`/inventory/items/${itemId}/transactions/`);
+  return unwrap<Paginated<InventoryTransaction>>(res);
+}
+
+export async function listSuppliers(): Promise<Supplier[]> {
+  const res = await apiClient.get("/inventory/suppliers/", { params: { page_size: 100 } });
+  const data = unwrap<Supplier[] | Paginated<Supplier>>(res);
+  return Array.isArray(data) ? data : data.results;
+}
+
+export async function logInventoryUsage(
+  input: InventoryUsageInput,
+): Promise<InventoryTransaction[]> {
+  const res = await apiClient.post("/inventory/usage/", input);
+  return unwrap<InventoryTransaction[]>(res);
+}
+
+export async function getInventoryValuation(): Promise<InventoryValuation> {
+  const res = await apiClient.get("/inventory/valuation/");
+  return unwrap<InventoryValuation>(res);
+}
+
+export async function listInventoryTransactions(
+  params: { page?: number; type?: string; date_from?: string; date_to?: string } = {},
+): Promise<Paginated<InventoryTransaction>> {
+  const res = await apiClient.get("/inventory/transactions/", { params });
   return unwrap<Paginated<InventoryTransaction>>(res);
 }

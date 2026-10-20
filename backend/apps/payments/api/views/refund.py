@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from apps.payments.api.serializers import RefundRequestSerializer, RefundSerializer
 from apps.payments.models import Refund
-from core.constants import PaymentStatus
+from apps.staff.models import log_activity
 from apps.staff.permissions import HasStaffPermission, StaffPermission, has_staff_permission
 
 
@@ -60,6 +60,11 @@ class RefundDecisionView(APIView):
         refund.processed_by = request.user
         refund.processed_at = timezone.now()
         refund.save(update_fields=["status", "processed_by", "processed_at"])
+        log_activity(
+            request.user,
+            f"refund.{decision}d",
+            f"{decision.title()}d refund #{refund.pk}",
+        )
         return Response(RefundSerializer(refund).data)
 
 
@@ -72,17 +77,31 @@ class RefundProcessView(APIView):
     required_staff_permission = StaffPermission.REFUNDS_MANAGE
 
     def post(self, request, pk):
-        refund = get_object_or_404(Refund, pk=pk)
+        refund = get_object_or_404(
+            Refund.objects.select_related("payment", "payment__order"), pk=pk
+        )
         if refund.status != Refund.Status.APPROVED:
             raise ValidationError("Only approved refunds can be processed.")
 
         refund.status = Refund.Status.PROCESSED
-        refund.save(update_fields=["status"])
+        refund.processed_by = request.user
+        refund.processed_at = timezone.now()
+        refund.save(update_fields=["status", "processed_by", "processed_at"])
 
         payment = refund.payment
-        payment.status = (
-            PaymentStatus.PARTIALLY_REFUNDED if refund.amount < payment.amount else PaymentStatus.REFUNDED
+
+        if payment.order_id:
+            from services.order_payments import recompute_payment_status
+
+            recompute_payment_status(
+                payment.order,
+                changed_by=request.user,
+                reason=f"Processed refund #{refund.pk}",
+            )
+        log_activity(
+            request.user,
+            "refund.processed",
+            f"Processed refund #{refund.pk} for payment #{payment.pk}",
         )
-        payment.save(update_fields=["status"])
 
         return Response(RefundSerializer(refund).data)

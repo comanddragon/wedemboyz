@@ -112,7 +112,7 @@ function PreferencesPanel() {
         How we reach you
       </h2>
       <p className="mb-4 text-xs text-ink-muted">
-        Choose which channels WEDEMBOYZ can use to notify you.
+        Choose which channels Wedemboyz Lavomatique can use to notify you.
       </p>
       <div className="divide-y divide-crease">
         {PREFERENCE_FIELDS.map((field) => {

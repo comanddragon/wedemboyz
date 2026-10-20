@@ -1,4 +1,3 @@
-from django.db.models import F
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -12,10 +11,6 @@ def on_inventory_transaction_created(sender, instance, created, **kwargs):
     item at/below its low-stock threshold."""
     if not created:
         return
-
-    InventoryItem.objects.filter(pk=instance.item_id).update(
-        quantity=F("quantity") + instance.quantity_change
-    )
 
     item = InventoryItem.objects.get(pk=instance.item_id)
     if item.is_low_stock:

@@ -19,6 +19,13 @@ class ScheduleSerializer(serializers.ModelSerializer):
             "delivery_time_slot",
             "delivery_status",
             "driver_notes",
+            "driver",
+            "pickup_completed_at",
+            "delivery_completed_at",
+            "proof_of_delivery",
+            "failed_reason",
+            "contact_phone",
+            "address_override",
         ]
         read_only_fields = ["order", "pickup_status", "delivery_status"]
 
@@ -28,11 +35,17 @@ class ScheduleCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PickupDeliverySchedule
-        fields = ["order", "pickup_date", "pickup_time_slot", "delivery_date", "delivery_time_slot", "driver_notes"]
+        fields = [
+            "order", "pickup_date", "pickup_time_slot", "delivery_date",
+            "delivery_time_slot", "driver_notes", "driver", "contact_phone",
+            "address_override",
+        ]
 
     def validate_order(self, order):
         user = self.context["request"].user
-        if order.user_id != user.id and not user.is_staff:
+        from apps.staff.permissions import StaffPermission, has_staff_permission
+
+        if order.user_id != user.id and not has_staff_permission(user, StaffPermission.SCHEDULE_MANAGE):
             raise serializers.ValidationError("You do not own this order.")
         if hasattr(order, "schedule"):
             raise serializers.ValidationError("This order already has a schedule.")

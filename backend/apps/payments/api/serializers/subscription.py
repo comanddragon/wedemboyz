@@ -24,6 +24,25 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class AdminSubscriptionSerializer(SubscriptionSerializer):
+    customer_name = serializers.CharField(source="user.get_full_name", read_only=True)
+    customer_phone = serializers.CharField(source="user.phone_number", read_only=True)
+
+    class Meta(SubscriptionSerializer.Meta):
+        fields = SubscriptionSerializer.Meta.fields + ["user", "customer_name", "customer_phone"]
+        read_only_fields = fields
+
+
+class SubscriptionAdminActionSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=["activate", "renew", "pause", "resume", "cancel", "adjust_kilos"])
+    kilos = serializers.DecimalField(max_digits=6, decimal_places=2, min_value=0, required=False)
+
+    def validate(self, attrs):
+        if attrs["action"] == "adjust_kilos" and "kilos" not in attrs:
+            raise serializers.ValidationError({"kilos": "Kilos are required for this action."})
+        return attrs
+
+
 class SubscriptionCreateSerializer(serializers.ModelSerializer):
     """POST /api/v1/subscriptions/ — creates a PENDING subscription with no
     pickups granted yet and no gateway attached. It only becomes ACTIVE (and

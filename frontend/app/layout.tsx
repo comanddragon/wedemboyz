@@ -5,7 +5,7 @@ import { Providers } from "@/src/components/providers/Providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "WEDEMBOYZ Lavomatique",
+  title: "Wedemboyz Lavomatique",
   description: "Laundry pickup and delivery for Yaounde.",
 };
 

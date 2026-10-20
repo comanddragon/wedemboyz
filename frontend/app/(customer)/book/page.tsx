@@ -1,8 +1,9 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { Camera, ImagePlus, Trash2, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { WizardSteps } from "@/src/components/booking/WizardSteps";
 import {
@@ -44,6 +45,37 @@ export default function BookServicesPage() {
   const [description, setDescription] = useState("");
   const [weightKg, setWeightKg] = useState("1");
   const [quantity, setQuantity] = useState("1");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState("");
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  function clearPhoto() {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhoto(null);
+    setPhotoPreview(null);
+    setPhotoError("");
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  }
+
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Choose a JPG, PNG, or WebP image.");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoError("Photo must be 5 MB or smaller.");
+      e.target.value = "";
+      return;
+    }
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoError("");
+  }
 
   function handleAddItem(e: React.FormEvent) {
     e.preventDefault();
@@ -53,11 +85,17 @@ export default function BookServicesPage() {
       description,
       weight_kg: Number(weightKg),
       quantity: Number(quantity) || 1,
+      photo: photo ?? undefined,
+      photoPreviewUrl: photoPreview ?? undefined,
     });
     setLabel("");
     setDescription("");
     setWeightKg("1");
     setQuantity("1");
+    setPhoto(null);
+    setPhotoPreview(null);
+    setPhotoError("");
+    if (photoInputRef.current) photoInputRef.current.value = "";
   }
 
   return (
@@ -103,6 +141,29 @@ export default function BookServicesPage() {
               />
             </Field>
 
+            <div className="mb-4">
+              <p className="mb-1.5 font-display text-[0.8125rem] font-medium text-ink">
+                Item photo <span className="font-normal text-ink-muted">(optional)</span>
+              </p>
+              {photoPreview ? (
+                <div className="flex items-center gap-3 rounded-xl border border-crease bg-steam/40 p-2">
+                  <Image src={photoPreview} alt="Selected item preview" width={64} height={64} unoptimized className="h-16 w-16 rounded-lg object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-ink">{photo?.name}</p>
+                    <p className="mt-0.5 text-[11px] text-ink-muted">Ready to attach</p>
+                  </div>
+                  <button type="button" onClick={clearPhoto} className="grid h-8 w-8 place-items-center rounded-full text-ink-muted hover:bg-white hover:text-status-cancelled-text" aria-label="Remove selected photo"><X className="h-4 w-4" /></button>
+                </div>
+              ) : (
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-crease px-3 py-3 text-xs font-medium text-ink-muted transition-colors hover:border-navy/40 hover:bg-steam/50 hover:text-navy focus-within:ring-4 focus-within:ring-gold/30">
+                  <ImagePlus className="h-4 w-4" aria-hidden="true" />
+                  Add photo or use camera
+                  <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={handlePhotoChange} className="sr-only" />
+                </label>
+              )}
+              {photoError ? <p className="mt-1.5 text-xs text-status-cancelled-text">{photoError}</p> : <p className="mt-1.5 flex items-center gap-1 text-[11px] text-ink-muted"><Camera className="h-3 w-3" aria-hidden="true" />Show stains or special-care details · max 5 MB</p>}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <Field label="Weight (kg)">
                 <Input
@@ -140,9 +201,7 @@ export default function BookServicesPage() {
             {items.map((item) => (
               <li key={item.clientId}>
                 <Card className="flex items-start gap-3 p-4">
-                  <span className="mt-0.5 text-navy">
-                    <ServiceIcon type={item.service_type} />
-                  </span>
+                  {item.photoPreviewUrl ? <Image src={item.photoPreviewUrl} alt="" width={48} height={48} unoptimized className="h-12 w-12 shrink-0 rounded-lg object-cover" /> : <span className="mt-0.5 text-navy"><ServiceIcon type={item.service_type} /></span>}
                   <div className="flex-1">
                     <p className="text-sm font-medium text-ink">
                       {item.label || serviceLabel(item.service_type)}

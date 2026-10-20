@@ -23,6 +23,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_phone_verified = models.BooleanField(default=False)
+    is_walk_in = models.BooleanField(default=False)
 
     USERNAME_FIELD = "phone_number"
     REQUIRED_FIELDS = []  # phone_number + password is all createsuperuser needs
@@ -57,6 +58,28 @@ class UserProfile(TimeStampedModel):
     preferred_language = models.CharField(
         max_length=2, choices=LANGUAGE_CHOICES, default="en"
     )
+    notes = models.TextField(blank=True)
+    tags = models.JSONField(default=list, blank=True)
+    source = models.CharField(
+        max_length=20,
+        choices=[("ONLINE", "Online"), ("WALK_IN", "Walk-in"), ("REFERRAL", "Referral"), ("OTHER", "Other")],
+        default="ONLINE",
+    )
+    referred_by = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="referred_customers",
+    )
+    is_blocked = models.BooleanField(default=False)
+    blocked_reason = models.TextField(blank=True)
+    marketing_opt_in = models.BooleanField(default=False)
+    whatsapp_number = models.CharField(max_length=15, blank=True)
+    secondary_phone = models.CharField(max_length=15, blank=True)
+    gender = models.CharField(
+        max_length=20,
+        choices=[("FEMALE", "Female"), ("MALE", "Male"), ("OTHER", "Other"), ("PREFER_NOT", "Prefer not to say")],
+        blank=True,
+    )
+    default_pickup_address = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         return f"Profile<{self.user}>"

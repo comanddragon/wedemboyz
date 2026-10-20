@@ -2,6 +2,7 @@ import type {
   Currency,
   PaymentGateway,
   PaymentStatus,
+  PaymentMethodType,
   SubscriptionGateway,
 } from "./enums";
 import { OrderCustomerSummary } from "@/src/types/order";
@@ -41,12 +42,36 @@ export interface Payment {
   status: PaymentStatus;
   paid_at: string | null;
   failure_reason: string;
+  payment_method_type: PaymentMethodType;
+  reference: string;
+  received_by: number | null;
+  received_at: string;
+  payer_name: string;
+  payer_phone: string;
+  notes: string;
+  tendered_amount: string | null;
+  change_given: string;
+  voided_at: string | null;
+  voided_by: number | null;
+  void_reason: string;
   /** Only set (transiently) right after a MTN_MOMO/ORANGE_MONEY collection
    * request — the code to dial to confirm the payment on the customer's
    * phone. Empty string otherwise; not persisted server-side. */
   ussd_code: string;
   created_at: string;
   customer?: OrderCustomerSummary;
+}
+
+export interface RecordPaymentInput {
+  amount: string;
+  payment_method_type: PaymentMethodType;
+  reference?: string;
+  received_at?: string;
+  payer_name?: string;
+  payer_phone?: string;
+  notes?: string;
+  tendered_amount?: string | null;
+  allow_overpayment?: boolean;
 }
 
 /** Payload for POST /payments/ — mirrors PaymentInitiateSerializer.
@@ -115,6 +140,9 @@ export interface Subscription {
   start_date: string;
   end_date: string;
   created_at: string;
+  user?: number;
+  customer_name?: string;
+  customer_phone?: string;
 }
 
 /** Payload for POST /subscriptions/ — start_date/end_date are computed

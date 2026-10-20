@@ -21,6 +21,7 @@ import { InventoryItemForm } from "@/src/components/inventory/InventoryItemForm"
 import { Button, Card, StatusBadge } from "@/src/components/ui";
 import { inventoryApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import type { InventoryCategory, InventoryChangeType } from "@/src/types";
 
@@ -29,6 +30,12 @@ const CATEGORY_LABELS: Record<InventoryCategory, string> = {
   SOFTENER: "Softener",
   PACKAGING: "Packaging",
   EQUIPMENT: "Equipment",
+  STAIN_REMOVER: "Stain remover",
+  BLEACH: "Bleach",
+  HANGERS: "Hangers",
+  BAGS: "Bags",
+  MACHINE_PARTS: "Machine parts",
+  CLEANING: "Cleaning supplies",
   OTHER: "Other",
 };
 
@@ -36,6 +43,11 @@ const CHANGE_TYPE_LABELS: Record<InventoryChangeType, string> = {
   RESTOCK: "Restock",
   USAGE: "Usage",
   ADJUSTMENT: "Correction",
+  WASTE: "Waste",
+  DAMAGED: "Damaged",
+  RETURN_TO_SUPPLIER: "Supplier return",
+  TRANSFER: "Transfer",
+  OPENING_STOCK: "Opening stock",
 };
 
 export default function AdminInventoryDetailPage() {
@@ -71,7 +83,7 @@ export default function AdminInventoryDetailPage() {
   });
 
   function handleDelete() {
-    if (window.confirm(`Delete "${item?.name}"? This can't be undone.`)) {
+    if (window.confirm(`Archive "${item?.name}"? Its transaction history will remain available.`)) {
       deleteMutation.mutate();
     }
   }
@@ -153,6 +165,24 @@ export default function AdminInventoryDetailPage() {
             {item.notes}
           </p>
         )}
+        <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-crease pt-4 text-xs sm:grid-cols-4">
+          <div>
+            <dt className="text-ink-muted">Average cost</dt>
+            <dd className="mt-1 font-semibold tabular-nums text-ink">{formatCurrency(item.average_cost)}</dd>
+          </div>
+          <div>
+            <dt className="text-ink-muted">Stock value</dt>
+            <dd className="mt-1 font-semibold tabular-nums text-ink">{formatCurrency(item.stock_value)}</dd>
+          </div>
+          <div>
+            <dt className="text-ink-muted">Supplier</dt>
+            <dd className="mt-1 font-medium text-ink">{item.supplier_detail?.name ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-ink-muted">Location</dt>
+            <dd className="mt-1 font-medium text-ink">{item.storage_location || "—"}</dd>
+          </div>
+        </dl>
       </Card>
 
       {showAdjustForm && (
@@ -175,7 +205,7 @@ export default function AdminInventoryDetailPage() {
           disabled={deleteMutation.isPending}
         >
           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-          {deleteMutation.isPending ? "Deleting…" : "Delete item"}
+          {deleteMutation.isPending ? "Archiving…" : "Archive item"}
         </Button>
       </div>
 
@@ -229,7 +259,7 @@ export default function AdminInventoryDetailPage() {
                     {tx.reason || <span>—</span>}
                   </Td>
                   <Td className="text-ink-muted">
-                    {tx.created_by || <span>—</span>}
+                    {tx.created_by?.name || <span>—</span>}
                   </Td>
                   <Td
                     align="right"

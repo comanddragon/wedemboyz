@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Mail, MapPin, Phone } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Coins, Mail, MapPin, Phone, Save } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -14,8 +14,8 @@ import {
   THead,
   Tr,
 } from "@/src/components/admin/Table";
-import { Card, StatusBadge, orderStatusTone } from "@/src/components/ui";
-import { customersApi } from "@/src/lib/api";
+import { Button, Card, Field, Input, Select, StatusBadge, Textarea, orderStatusTone } from "@/src/components/ui";
+import { customersApi, discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
@@ -35,6 +35,7 @@ const CREDIT_TX_LABEL: Record<string, string> = {
 export default function AdminCustomerDetailPage() {
   const params = useParams<{ id: string }>();
   const customerId = Number(params.id);
+  const queryClient = useQueryClient();
 
   const {
     data: customer,
@@ -43,6 +44,15 @@ export default function AdminCustomerDetailPage() {
   } = useQuery({
     queryKey: queryKeys.customers.detail(customerId),
     queryFn: () => customersApi.getCustomer(customerId),
+  });
+
+  const updateCustomer = useMutation({
+    mutationFn: (input: Parameters<typeof customersApi.updateCustomer>[1]) => customersApi.updateCustomer(customerId, input),
+    onSuccess: (updated) => queryClient.setQueryData(queryKeys.customers.detail(customerId), updated),
+  });
+  const adjustPoints = useMutation({
+    mutationFn: (input: { points: number; reason: string }) => discountsApi.adjustCustomerLoyalty(customerId, input.points, input.reason),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.customers.detail(customerId) }),
   });
 
   if (isLoading) {
@@ -168,6 +178,57 @@ export default function AdminCustomerDetailPage() {
               {formatCurrency(customer.credit_balance)}
             </dd>
           </dl>
+        </Card>
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <Card>
+          <h2 className="mb-3 text-sm font-semibold text-navy">Customer record</h2>
+          <form key={`${customer.id}-${customer.notes}-${customer.tags.join("-")}`} className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => {
+            event.preventDefault(); const data = new FormData(event.currentTarget);
+            updateCustomer.mutate({
+              first_name: String(data.get("first_name") ?? ""), last_name: String(data.get("last_name") ?? ""),
+              email: String(data.get("email") ?? "") || null, secondary_phone: String(data.get("secondary_phone") ?? ""),
+              whatsapp_number: String(data.get("whatsapp_number") ?? ""), source: String(data.get("source")) as typeof customer.source,
+              default_pickup_address: String(data.get("default_pickup_address") ?? ""), notes: String(data.get("notes") ?? ""),
+              tags: String(data.get("tags") ?? "").split(",").map((tag) => tag.trim()).filter(Boolean),
+              marketing_opt_in: data.get("marketing_opt_in") === "on",
+            });
+          }}>
+            <Field label="First name" htmlFor="customer-first"><Input id="customer-first" name="first_name" defaultValue={customer.first_name} /></Field>
+            <Field label="Last name" htmlFor="customer-last"><Input id="customer-last" name="last_name" defaultValue={customer.last_name} /></Field>
+            <Field label="Email" htmlFor="customer-email"><Input id="customer-email" name="email" type="email" defaultValue={customer.email ?? ""} /></Field>
+            <Field label="Secondary phone" htmlFor="customer-secondary"><Input id="customer-secondary" name="secondary_phone" defaultValue={customer.secondary_phone} /></Field>
+            <Field label="WhatsApp" htmlFor="customer-whatsapp"><Input id="customer-whatsapp" name="whatsapp_number" defaultValue={customer.whatsapp_number} /></Field>
+            <Field label="Source" htmlFor="customer-source"><Select id="customer-source" name="source" defaultValue={customer.source}>{["ONLINE", "WALK_IN", "REFERRAL", "OTHER"].map((source) => <option key={source}>{source.replace(/_/g, " ")}</option>)}</Select></Field>
+            <Field label="Default pickup address" htmlFor="customer-pickup"><Input id="customer-pickup" name="default_pickup_address" defaultValue={customer.default_pickup_address} /></Field>
+            <Field label="Tags" htmlFor="customer-tags" hint="Comma-separated"><Input id="customer-tags" name="tags" defaultValue={customer.tags.join(", ")} /></Field>
+            <div className="sm:col-span-2"><Field label="Staff notes" htmlFor="customer-notes"><Textarea id="customer-notes" name="notes" rows={2} defaultValue={customer.notes} /></Field></div>
+            <label className="flex items-center gap-2 text-sm text-ink"><input type="checkbox" name="marketing_opt_in" defaultChecked={customer.marketing_opt_in} /> Marketing opt-in</label>
+            <div className="flex justify-end"><Button size="sm" type="submit" disabled={updateCustomer.isPending}><Save className="h-3.5 w-3.5" /> Save customer</Button></div>
+          </form>
+          {updateCustomer.error ? <p className="mt-2 text-xs text-status-cancelled-text">{getApiErrorMessage(updateCustomer.error)}</p> : null}
+        </Card>
+
+        <Card>
+          <h2 className="mb-3 text-sm font-semibold text-navy">Account controls</h2>
+          <Button size="sm" variant={customer.is_blocked ? "secondary" : "danger"} onClick={() => {
+            const reason = customer.is_blocked ? "" : window.prompt("Why is this customer being blocked?")?.trim();
+            if (!customer.is_blocked && !reason) return;
+            updateCustomer.mutate({ is_blocked: !customer.is_blocked, blocked_reason: reason ?? "" });
+          }}>{customer.is_blocked ? "Unblock customer" : "Block customer"}</Button>
+          {customer.is_blocked ? <p className="mt-2 text-xs text-status-cancelled-text">{customer.blocked_reason || "No reason recorded."}</p> : null}
+          <form className="mt-5 border-t border-crease pt-4" onSubmit={(event) => {
+            event.preventDefault(); const data = new FormData(event.currentTarget);
+            adjustPoints.mutate({ points: Number(data.get("points")), reason: String(data.get("reason")) });
+            event.currentTarget.reset();
+          }}>
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-navy"><Coins className="h-4 w-4" /> Adjust loyalty</p>
+            <Field label="Points (+ or −)" htmlFor="loyalty-points"><Input id="loyalty-points" name="points" type="number" required /></Field>
+            <Field label="Reason" htmlFor="loyalty-reason"><Input id="loyalty-reason" name="reason" required /></Field>
+            <Button size="sm" type="submit" disabled={adjustPoints.isPending}>Apply adjustment</Button>
+          </form>
+          {adjustPoints.error ? <p className="mt-2 text-xs text-status-cancelled-text">{getApiErrorMessage(adjustPoints.error)}</p> : null}
         </Card>
       </div>
 

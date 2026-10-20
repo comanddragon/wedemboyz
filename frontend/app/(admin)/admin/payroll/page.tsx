@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banknote, CheckCircle2, Plus, Users } from "lucide-react";
+import { Banknote, CheckCircle2, Download, Plus, Sparkles, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
@@ -97,6 +97,11 @@ export default function PayrollPage() {
     },
   });
 
+  const generatePayroll = useMutation({
+    mutationFn: () => financeApi.generatePayroll(period),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["finance", "payroll"] }),
+  });
+
   const valid =
     Boolean(employee) &&
     Number(amount) > 0 &&
@@ -108,13 +113,19 @@ export default function PayrollPage() {
       <AdminPageHeader
         title="Payroll"
         description="Manage monthly staff salaries and payment status."
-        action={
-          <Button variant="gold" onClick={() => setShowForm((value) => !value)}>
-            <Plus className="h-4 w-4" />
-            Add salary entry
+        action={<div className="flex flex-wrap gap-2">
+          <Button variant="ghost" onClick={() => financeApi.exportPayroll(period)}><Download className="h-4 w-4" /> Export</Button>
+          <Button variant="secondary" onClick={() => generatePayroll.mutate()} disabled={generatePayroll.isPending}>
+            <Sparkles className="h-4 w-4" /> Generate month
           </Button>
-        }
+          <Button variant="gold" onClick={() => setShowForm((value) => !value)}>
+            <Plus className="h-4 w-4" /> Add salary entry
+          </Button>
+        </div>}
       />
+
+      {generatePayroll.data ? <p className="mb-4 text-sm text-ink-muted">Generated {generatePayroll.data.created_count} entr{generatePayroll.data.created_count === 1 ? "y" : "ies"}; {generatePayroll.data.skipped_count} already existed.</p> : null}
+      {generatePayroll.error ? <p className="mb-4 text-sm text-status-cancelled-text">{getApiErrorMessage(generatePayroll.error)}</p> : null}
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard

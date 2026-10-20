@@ -1,7 +1,9 @@
 from django.conf import settings
+from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 
-from core.constants import Currency, PaymentGateway, PaymentStatus
+from core.constants import Currency, PaymentGateway, PaymentMethodType, PaymentStatus
 from core.models import TimeStampedModel
 
 
@@ -81,10 +83,53 @@ class Payment(TimeStampedModel):
     )
     paid_at = models.DateTimeField(null=True, blank=True)
     failure_reason = models.CharField(max_length=255, blank=True)
+    payment_method_type = models.CharField(
+        max_length=20,
+        choices=PaymentMethodType.choices,
+        default=PaymentMethodType.OTHER,
+        db_index=True,
+    )
+    reference = models.CharField(max_length=100, blank=True, db_index=True)
+    received_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments_received",
+    )
+    received_at = models.DateTimeField(default=timezone.now, db_index=True)
+    payer_name = models.CharField(max_length=150, blank=True)
+    payer_phone = models.CharField(max_length=20, blank=True)
+    notes = models.TextField(blank=True)
+    tendered_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=0,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+    )
+    change_given = models.DecimalField(
+        max_digits=10,
+        decimal_places=0,
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
+    voided_at = models.DateTimeField(null=True, blank=True)
+    voided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments_voided",
+    )
+    void_reason = models.TextField(blank=True)
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["gateway", "gateway_reference"])]
+        indexes = [
+            models.Index(fields=["gateway", "gateway_reference"]),
+            models.Index(fields=["payment_method_type", "received_at"]),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=(

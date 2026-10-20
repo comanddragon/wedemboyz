@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ChevronRight, Package, Plus } from "lucide-react";
+import { AlertTriangle, ChevronRight, Package, Plus, ScrollText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -20,10 +20,12 @@ import {
 } from "@/src/components/admin/Table";
 import { useSort } from "@/src/components/admin/useSort";
 import { InventoryItemForm } from "@/src/components/inventory/InventoryItemForm";
+import { InventoryUsageForm } from "@/src/components/inventory/InventoryUsageForm";
 import { Button, Card, Select, StatusBadge } from "@/src/components/ui";
 import { inventoryApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
+import { formatCurrency } from "@/src/lib/constants";
 import type { InventoryCategory, InventoryItem } from "@/src/types";
 
 const CATEGORY_LABELS: Record<InventoryCategory, string> = {
@@ -31,6 +33,12 @@ const CATEGORY_LABELS: Record<InventoryCategory, string> = {
   SOFTENER: "Softener",
   PACKAGING: "Packaging",
   EQUIPMENT: "Equipment",
+  STAIN_REMOVER: "Stain remover",
+  BLEACH: "Bleach",
+  HANGERS: "Hangers",
+  BAGS: "Bags",
+  MACHINE_PARTS: "Machine parts",
+  CLEANING: "Cleaning supplies",
   OTHER: "Other",
 };
 
@@ -44,7 +52,7 @@ const CATEGORY_FILTER_OPTIONS: {
   ),
 ];
 
-type SortKey = "name" | "category" | "quantity" | "updated_at";
+type SortKey = "name" | "category" | "quantity" | "average_cost" | "updated_at";
 
 export default function AdminInventoryPage() {
   const router = useRouter();
@@ -53,9 +61,12 @@ export default function AdminInventoryPage() {
     InventoryCategory | "ALL"
   >("ALL");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showUsageForm, setShowUsageForm] = useState(false);
 
   const listParams = {
     category: categoryFilter === "ALL" ? undefined : categoryFilter,
+    search: search.trim() || undefined,
+    is_active: true,
   };
   const {
     data: items,
@@ -71,12 +82,15 @@ export default function AdminInventoryPage() {
     queryFn: () => inventoryApi.listLowStockItems(),
   });
 
+  const { data: valuation } = useQuery({
+    queryKey: ["inventory", "valuation"],
+    queryFn: inventoryApi.getInventoryValuation,
+  });
+
   const filtered = useMemo(() => {
     if (!items) return undefined;
-    const term = search.trim().toLowerCase();
-    if (term === "") return items.results;
-    return items.results.filter((i) => i.name.toLowerCase().includes(term));
-  }, [items, search]);
+    return items.results;
+  }, [items]);
 
   const { sorted, toggle, directionFor } = useSort<InventoryItem, SortKey>(
     filtered,
@@ -88,6 +102,8 @@ export default function AdminInventoryPage() {
           return row.category;
         case "quantity":
           return Number(row.quantity);
+        case "average_cost":
+          return Number(row.average_cost);
         case "updated_at":
           return row.updated_at;
       }
@@ -98,14 +114,29 @@ export default function AdminInventoryPage() {
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
         title="Inventory"
-        description="Stock levels for supplies and equipment."
+        description="Supplies, costs, usage, and reorder decisions in one ledger."
         action={
-          <Button variant="gold" onClick={() => setShowAddForm((v) => !v)}>
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Add item
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setShowUsageForm((v) => !v)}>
+              <ScrollText className="h-4 w-4" aria-hidden="true" />
+              Log usage
+            </Button>
+            <Button variant="gold" onClick={() => setShowAddForm((v) => !v)}>
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add item
+            </Button>
+          </div>
         }
       />
+
+      {valuation && (
+        <div className="mb-5 flex items-baseline justify-between border-y border-crease py-3">
+          <p className="text-sm text-ink-muted">Current stock valuation</p>
+          <p className="text-lg font-semibold tabular-nums text-navy">
+            {formatCurrency(valuation.total_value)}
+          </p>
+        </div>
+      )}
 
       {!lowStockLoading && lowStock && lowStock.results.length > 0 && (
         <Card className="mb-6 border-status-cancelled-text/30 bg-status-cancelled-bg">
@@ -129,6 +160,12 @@ export default function AdminInventoryPage() {
       {showAddForm && (
         <div className="mb-6">
           <InventoryItemForm onDone={() => setShowAddForm(false)} />
+        </div>
+      )}
+
+      {showUsageForm && items && (
+        <div className="mb-6">
+          <InventoryUsageForm items={items.results} onDone={() => setShowUsageForm(false)} />
         </div>
       )}
 
@@ -188,6 +225,15 @@ export default function AdminInventoryPage() {
             direction={directionFor("quantity")}
             onSort={() => toggle("quantity")}
           />
+          <SortableTh
+            label="Average cost"
+            align="right"
+            active={directionFor("average_cost") !== null}
+            direction={directionFor("average_cost")}
+            onSort={() => toggle("average_cost")}
+          />
+          <Th align="right">Stock value</Th>
+          <Th>Supplier</Th>
           <Th>Status</Th>
           <SortableTh
             label="Updated"
@@ -198,9 +244,9 @@ export default function AdminInventoryPage() {
           <Th className="w-8" />
         </THead>
         <TBody>
-          {isLoading && <TableSkeleton columns={6} />}
+          {isLoading && <TableSkeleton columns={9} />}
           {!isLoading && sorted && sorted.length === 0 && (
-            <TableEmptyRow colSpan={6}>
+            <TableEmptyRow colSpan={9}>
               {items && items.results.length === 0
                 ? "No inventory items yet."
                 : "No items match your search or filter."}
@@ -224,6 +270,15 @@ export default function AdminInventoryPage() {
                 </Td>
                 <Td align="right" className="tabular-nums">
                   {item.quantity} {item.unit}
+                </Td>
+                <Td align="right" className="tabular-nums text-ink-muted">
+                  {formatCurrency(item.average_cost)}
+                </Td>
+                <Td align="right" className="tabular-nums font-medium">
+                  {formatCurrency(item.stock_value)}
+                </Td>
+                <Td className="text-ink-muted">
+                  {item.supplier_detail?.name ?? "—"}
                 </Td>
                 <Td>
                   {item.is_low_stock ? (

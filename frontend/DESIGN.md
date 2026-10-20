@@ -2,7 +2,7 @@
 
 ## Direction
 
-The admin and customer workspaces use a **laundry operations atelier** direction: a generous white working surface on a quiet gray canvas, compact horizontal navigation, dense but calm information layouts, and one warm gold signal color drawn from the WEDEMBOYZ flyer.
+The admin and customer workspaces use a **laundry operations atelier** direction: a generous white working surface on a quiet gray canvas, compact horizontal navigation, dense but calm information layouts, and one warm gold signal color drawn from the Wedemboyz Lavomatique flyer.
 
 ## Color roles
 
