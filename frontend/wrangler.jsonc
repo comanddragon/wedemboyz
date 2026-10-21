@@ -1,16 +1,23 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "wedemboyz-lavomatique",
+  "account_id": "63ad8f7a09a0e810e0b56974d94ba483",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-20",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "upload_source_maps": true,
   "routes": [
     {
-      "pattern": "wedemboyz.ntsemancho.online",
+      "pattern": "wedemboyz-lavomatique.ntsemancho.online",
       "custom_domain": true
     }
   ],
+  "vars": {
+    "NEXT_PUBLIC_API_BASE_URL": "https://api-wedemboyz.ntsemancho.online/api/v1",
+    "NEXT_PUBLIC_WS_BASE_URL": "wss://api-wedemboyz.ntsemancho.online"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
