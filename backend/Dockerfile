@@ -15,7 +15,7 @@ COPY requirements/runtime.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY . /app
-RUN chmod +x /app/cloudflare-entrypoint.sh \
+RUN chmod +x /app/docker-entrypoint.sh \
     && addgroup --system django \
     && adduser --system --ingroup django django \
     && chown -R django:django /app
@@ -23,4 +23,4 @@ RUN chmod +x /app/cloudflare-entrypoint.sh \
 USER django
 EXPOSE 8080
 
-ENTRYPOINT ["/app/cloudflare-entrypoint.sh"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
