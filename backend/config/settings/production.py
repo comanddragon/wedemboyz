@@ -5,6 +5,11 @@ from .base import *  # noqa: F401,F403
 DEBUG = False
 INTERNAL_JOBS_SECRET = config("INTERNAL_JOBS_SECRET")
 
+# Production must never silently fall back to the local development Redis
+# instance from base.py. Channels and WebSockets depend on this service.
+REDIS_URL = config("REDIS_URL")
+CHANNEL_LAYERS["default"]["CONFIG"]["hosts"] = [REDIS_URL]  # noqa: F405
+
 # ---------------------------------------------------------------------------
 # Security
 # ---------------------------------------------------------------------------
@@ -20,6 +25,18 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
 CORS_ALLOW_ALL_ORIGINS = False
+
+# ---------------------------------------------------------------------------
+# Email (Resend SMTP)
+# ---------------------------------------------------------------------------
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.resend.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "resend"
+EMAIL_HOST_PASSWORD = config("RESEND_API_KEY")
+DEFAULT_FROM_EMAIL = config("RESEND_FROM")
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # ---------------------------------------------------------------------------
 # Static & media via S3
@@ -48,8 +65,32 @@ STORAGES = {
 
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
 
-# Managed PostgreSQL providers normally require TLS for public connections.
-DATABASES["default"]["OPTIONS"]["sslmode"] = config("DB_SSLMODE", default="require")  # noqa: F405
+# ---------------------------------------------------------------------------
+# Database (Neon) — configured from a single DB_URL connection string
+# ---------------------------------------------------------------------------
+from urllib.parse import parse_qsl, unquote, urlparse  # noqa: E402
+
+_db_url = urlparse(config("DB_URL"))
+if _db_url.scheme not in ("postgres", "postgresql"):
+    raise ValueError("DB_URL must be a postgres:// or postgresql:// URL")
+
+DATABASES["default"].update(  # noqa: F405
+    {
+        "NAME": _db_url.path.lstrip("/"),
+        "USER": unquote(_db_url.username or ""),
+        "PASSWORD": unquote(_db_url.password or ""),
+        "HOST": _db_url.hostname,
+        "PORT": str(_db_url.port or 5432),
+        "CONN_MAX_AGE": config("DB_CONN_MAX_AGE", default=60, cast=int),
+    }
+)
+# Neon requires TLS; honour options from the URL (e.g. sslmode, channel_binding).
+DATABASES["default"]["OPTIONS"].update(  # noqa: F405
+    {"sslmode": "require", **dict(parse_qsl(_db_url.query))}
+)
+# Neon's pooled (-pooler) endpoint runs PgBouncer in transaction mode, which
+# does not support server-side cursors.
+DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True  # noqa: F405
 
 # Whitenoise serves Django's own static files without needing S3/CDN for those.
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
