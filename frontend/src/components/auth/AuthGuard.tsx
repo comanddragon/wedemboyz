@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import React from "react";
 import { GuardLoading } from "@/src/components/auth/GuardLoading";
@@ -13,21 +13,30 @@ import { useAuthStore } from "@/src/lib/stores/auth.store";
  * protection has to happen here instead, after the store has hydrated.
  *
  * Wrap (customer)/layout.tsx's children in this.
+ *
+ * The booking wizard (/book/...) is open to visitors: they get a guest
+ * session the moment they start (see lib/guest-session.ts), so nothing
+ * further down needs to special-case "not signed in".
  */
+const PUBLIC_PREFIXES = ["/book"];
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isPublic = PUBLIC_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
   const accessToken = useAuthStore((state) => state.accessToken);
   const isHydrated = useAuthStore((state) => state.isHydrated);
 
   useEffect(() => {
-    if (isHydrated && !accessToken) {
+    if (isHydrated && !accessToken && !isPublic) {
       router.replace("/login");
     }
-  }, [isHydrated, accessToken, router]);
+  }, [isHydrated, accessToken, isPublic, router]);
 
   // Render nothing until hydration finishes, to avoid a flash of protected
   // content for a user who turns out to be logged out.
-  if (!isHydrated || !accessToken) return <GuardLoading />;
+  if (!isHydrated || (!accessToken && !isPublic)) return <GuardLoading />;
 
   return <>{children}</>;
 }

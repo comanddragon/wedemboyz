@@ -20,6 +20,12 @@ class ProfileSerializer(serializers.ModelSerializer):
     address_line = serializers.CharField(source="profile.address_line", required=False, allow_blank=True)
     city = serializers.CharField(source="profile.city", required=False)
     date_of_birth = serializers.DateField(source="profile.date_of_birth", required=False, allow_null=True)
+    # Where the shop reaches the customer. For guests (placeholder account
+    # number) this is the only number SMS/WhatsApp updates go to.
+    contact_phone = serializers.RegexField(
+        r"^\+?[\d ]{9,18}$", source="profile.secondary_phone", required=False, allow_blank=True,
+        error_messages={"invalid": "Enter a valid phone number."},
+    )
     loyalty = LoyaltyAccountSummarySerializer(source="loyalty_account", read_only=True)
     staff_role = serializers.SerializerMethodField()
     staff_permissions = serializers.SerializerMethodField()
@@ -35,6 +41,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "email",
             "is_staff",
             "is_superuser",
+            "is_guest",
             "staff_role",
             "staff_permissions",
             "staff_access_active",
@@ -43,11 +50,12 @@ class ProfileSerializer(serializers.ModelSerializer):
             "address_line",
             "city",
             "date_of_birth",
+            "contact_phone",
             "loyalty",
         ]
         read_only_fields = [
             "id", "phone_number", "is_phone_verified", "is_staff",
-            "is_superuser", "staff_role", "staff_permissions", "staff_access_active",
+            "is_superuser", "is_guest", "staff_role", "staff_permissions", "staff_access_active",
         ]
 
     def get_staff_role(self, obj):

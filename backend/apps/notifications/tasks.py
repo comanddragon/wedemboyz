@@ -1,4 +1,5 @@
 from core.jobs import app
+from core.utils import contact_phone
 
 
 @app.task(bind=True, max_retries=3, default_retry_delay=60)
@@ -15,7 +16,7 @@ def send_sms(self, notification_id: int):
         if prefs is not None and not prefs.sms_enabled:
             return
 
-        sms_service.send_sms(notification.user.phone_number, notification.title)
+        sms_service.send_sms(contact_phone(notification.user), notification.title)
     except Exception as exc:
         raise self.retry(exc=exc)
 
@@ -63,7 +64,7 @@ def send_whatsapp(self, notification_id: int):
             return  # opt-in only — unlike SMS, default is off
 
         message = notification.body.strip() or notification.title
-        whatsapp_service.send_whatsapp(notification.user.phone_number, message)
+        whatsapp_service.send_whatsapp(contact_phone(notification.user), message)
     except Exception as exc:
         raise self.retry(exc=exc)
 

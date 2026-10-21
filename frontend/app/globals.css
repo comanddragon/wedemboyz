@@ -742,3 +742,13 @@ input[type="radio"]:not(.sr-only):disabled {
   outline: 2px solid var(--at-brass-bright);
   outline-offset: 3px;
 }
+
+/* Dark footer on the dark homepage. Tailwind utilities read these tokens, so
+   overriding them here recolors text-navy / text-ink-muted / border-crease. */
+.chrome-dark {
+  --color-navy: #ffffff;
+  --color-ink: #ffffff;
+  --color-ink-muted: #b6bccb;
+  --color-crease: rgb(255 255 255 / 0.12);
+  background: #071130;
+}

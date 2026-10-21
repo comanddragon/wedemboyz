@@ -7,17 +7,23 @@ import { buttonStyles } from "@/src/components/ui";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
 import Image from "next/image";
 
-export function PublicNav() {
+export function PublicNav({ dark = false }: { dark?: boolean }) {
   const [open, setOpen] = useState(false);
   const { accessToken, isHydrated } = useAuthStore();
   const isAuthenticated = !!accessToken;
 
   return (
-    <div className="mobile-safe-top sticky top-0 z-40 border-b border-crease/70 bg-paper/92 backdrop-blur-xl">
+    <div className={`mobile-safe-top sticky top-0 z-40 border-b backdrop-blur-xl ${
+        dark
+          ? "border-white/10 bg-navy/92"
+          : "border-crease/70 bg-paper/92"
+      }`}>
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-[72px] sm:px-6">
         <Link
           href="/"
-          className="flex items-center font-display text-base font-bold tracking-tight text-navy"
+          className={`flex items-center font-display text-base font-bold tracking-tight ${
+            dark ? "text-white" : "text-navy"
+          }`}
         >
           <Image
             src="/icon-mark.png"
@@ -29,11 +35,14 @@ export function PublicNav() {
           />
           Wedemboyz Lavomatique
         </Link>
-        <div className="font-display hidden items-center gap-8 text-sm text-ink-muted md:flex">
-          <Link href="/pricing" className="transition-colors hover:text-ink">
+        <div className={`font-display hidden items-center gap-8 text-sm md:flex ${dark ? "text-white/70" : "text-ink-muted"}`}>
+          <Link href="/book" className={`transition-colors ${dark ? "hover:text-white" : "hover:text-ink"}`}>
+            Book a pickup
+          </Link>
+          <Link href="/pricing" className={`transition-colors ${dark ? "hover:text-white" : "hover:text-ink"}`}>
             Pricing
           </Link>
-          <Link href="/contact" className="transition-colors hover:text-ink">
+          <Link href="/contact" className={`transition-colors ${dark ? "hover:text-white" : "hover:text-ink"}`}>
             Contact
           </Link>
         </div>
@@ -49,7 +58,11 @@ export function PublicNav() {
             <>
               <Link
                 href="/login"
-                className="text-sm text-ink-muted hover:text-ink"
+                className={`text-sm ${
+                  dark
+                    ? "text-white/70 hover:text-white"
+                    : "text-ink-muted hover:text-ink"
+                }`}
               >
                 Log in
               </Link>
@@ -63,7 +76,9 @@ export function PublicNav() {
 
         <button
           type="button"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-navy text-white md:hidden"
+          className={`flex h-11 w-11 items-center justify-center rounded-full text-white md:hidden ${
+            dark ? "bg-white/10 ring-1 ring-white/20" : "bg-navy"
+          }`}
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-label={open ? "Close menu" : "Open menu"}
@@ -78,6 +93,14 @@ export function PublicNav() {
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.16em] text-gold-600">
               Explore Wedemboyz Lavomatique
             </p>
+            <Link
+              href="/book"
+              onClick={() => setOpen(false)}
+              className="flex min-h-16 items-center justify-between border-b border-crease text-2xl font-medium text-navy"
+            >
+              Book a pickup
+              <ArrowRight className="h-5 w-5 text-gold" />
+            </Link>
             <Link
               href="/pricing"
               onClick={() => setOpen(false)}

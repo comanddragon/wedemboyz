@@ -63,7 +63,7 @@ STORAGES = {
     },
 }
 
-MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/wedemboyz-media/"
 
 # ---------------------------------------------------------------------------
 # Database (Neon) — configured from a single DB_URL connection string

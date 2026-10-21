@@ -22,12 +22,13 @@ const hiddenRoutes = [
 export function SiteShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
     const hide = hiddenRoutes.some(route => pathname.startsWith(route))
+    const dark = pathname === '/'
 
     return (
         <>
-            {!hide && <PublicNav />}
+            {!hide && <PublicNav dark={dark} />}
             {children}
-            {!hide && <PublicFooter />}
+            {!hide && <PublicFooter dark={dark} />}
         </>
     )
 }

@@ -299,7 +299,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                   {name}
                 </p>
                 <p className="mt-0.5 text-xs text-ink-muted">
-                  {admin && role ? ROLE_LABELS[role] : "Customer account"}
+                  {admin && role ? ROLE_LABELS[role] : user?.is_guest ? "Guest — not saved to an account" : "Customer account"}
                 </p>
               </div>
               {user?.is_staff && (
@@ -397,7 +397,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
             <div className="mt-auto border-t border-crease-soft pt-4">
               <p className="px-2 text-sm font-semibold text-navy">{name}</p>
               <p className="mb-2 px-2 text-xs text-ink-muted">
-                {admin && role ? ROLE_LABELS[role] : "Customer account"}
+                {admin && role ? ROLE_LABELS[role] : user?.is_guest ? "Guest — not saved to an account" : "Customer account"}
               </p>
               <LogoutButton className="w-full justify-start" />
             </div>

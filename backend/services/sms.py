@@ -8,7 +8,7 @@ import logging
 
 from django.conf import settings
 
-from core.utils import format_phone_number
+from core.utils import format_phone_number, is_guest_placeholder_phone
 
 logger = logging.getLogger("apps")
 
@@ -52,6 +52,8 @@ def send_sms(phone_number: str, message: str) -> bool:
     keys configured, logs to console instead of hitting the real gateway —
     mirrors how EMAIL_BACKEND falls back to console in development.py.
     """
+    if not phone_number or is_guest_placeholder_phone(phone_number):
+        return False  # guest with no contact number — nobody to message
     phone_number = format_phone_number(phone_number)
 
     if settings.DEBUG and not settings.AFRICASTALKING_API_KEY:

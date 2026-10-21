@@ -21,8 +21,13 @@ export function useAuth() {
     onSuccess: (tokens) => setTokens(tokens),
   });
 
+  // A guest "registering" upgrades the existing account instead of making a
+  // second one, so everything they booked as a guest stays theirs.
   const registerMutation = useMutation({
-    mutationFn: (input: RegisterInput) => authApi.register(input),
+    mutationFn: (input: RegisterInput) =>
+      user?.is_guest && accessToken
+        ? authApi.claimGuestAccount(input)
+        : authApi.register(input),
     onSuccess: (tokens) => setTokens(tokens),
   });
 
@@ -44,6 +49,7 @@ export function useAuth() {
   return {
     user,
     isAuthenticated: Boolean(accessToken),
+    isGuest: Boolean(user?.is_guest),
     isHydrated,
     login: loginMutation.mutateAsync,
     isLoggingIn: loginMutation.isPending,

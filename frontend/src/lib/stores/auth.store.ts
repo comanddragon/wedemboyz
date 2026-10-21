@@ -10,6 +10,7 @@ interface AuthUser {
   last_name: string;
   is_staff: boolean;
   is_superuser: boolean;
+  is_guest?: boolean;
   staff_role: "OWNER" | "MANAGER" | "ATTENDANT" | null;
   staff_permissions: string[];
   staff_access_active: boolean;

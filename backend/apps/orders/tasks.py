@@ -1,4 +1,5 @@
 from core.jobs import app
+from core.utils import contact_phone
 
 
 @app.task(bind=True, max_retries=3, default_retry_delay=60)
@@ -16,7 +17,7 @@ def send_status_update(self, order_id: int):
         builder = message_by_status.get(order.status)
         if builder is None:
             return
-        sms.send_sms(order.user.phone_number, builder(order))
+        sms.send_sms(contact_phone(order.user), builder(order))
     except Exception as exc:
         raise self.retry(exc=exc)
 

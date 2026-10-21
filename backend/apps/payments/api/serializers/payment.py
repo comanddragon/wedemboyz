@@ -4,6 +4,7 @@ from rest_framework import serializers
 from apps.orders.models import Order
 from apps.payments.models import Payment, PaymentMethod, generate_display_label
 from core.constants import PaymentGateway, PaymentMethodType, PaymentStatus
+from core.utils import contact_phone
 User = get_user_model()
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
@@ -191,7 +192,7 @@ class PaymentInitiateSerializer(serializers.ModelSerializer):
             phone_number = (
                 phone_number
                 or (method.phone_number if method else "")
-                or getattr(order.user, "phone_number", "")
+                or contact_phone(order.user)
             )
             if not phone_number:
                 raise serializers.ValidationError(

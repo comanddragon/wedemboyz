@@ -25,9 +25,11 @@ function LogoMark() {
  * which is why this footer "looked different" once it was wired into
  * SiteShell — it wasn't reskinned, it was unstyled.
  */
-export function PublicFooter() {
+export function PublicFooter({ dark = false }: { dark?: boolean }) {
   return (
-    <footer className="border-t border-crease px-6 py-14">
+    <footer
+      className={`border-t border-crease px-6 py-14 ${dark ? "chrome-dark" : ""}`}
+    >
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
         <div>
           <Link

@@ -20,6 +20,10 @@ export interface UserProfile {
   address_line: string;
   city: string;
   date_of_birth: string | null; // ISO date
+  /** Number the shop contacts the customer on (the only one for guests). */
+  contact_phone: string;
+  /** True until a guest session is upgraded with a real phone + password. */
+  is_guest: boolean;
   loyalty: LoyaltyAccountSummary;
   is_staff: boolean;
   is_superuser: boolean;
@@ -30,7 +34,7 @@ export interface UserProfile {
 
 /** Fields the client may PATCH on /users/me/ — everything else is read-only. */
 export type ProfileUpdateInput = Partial<
-  Pick<UserProfile, "first_name" | "last_name" | "email" | "address_line" | "city" | "date_of_birth">
+  Pick<UserProfile, "first_name" | "last_name" | "email" | "address_line" | "city" | "date_of_birth" | "contact_phone">
 > & {
   avatar?: File | null;
 };
@@ -65,11 +69,15 @@ export interface AuthTokens {
     last_name: string;
     is_staff: boolean;
     is_superuser: boolean;
+    is_guest?: boolean;
     staff_role: "OWNER" | "MANAGER" | "ATTENDANT" | null;
     staff_permissions: string[];
     staff_access_active: boolean;
   };
 }
+
+/** Body for POST /auth/guest/claim/ — same fields as registration. */
+export type ClaimAccountInput = RegisterInput;
 
 export interface ChangePasswordInput {
   old_password: string;

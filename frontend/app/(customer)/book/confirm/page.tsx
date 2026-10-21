@@ -14,8 +14,9 @@ import { WizardSteps } from "@/src/components/booking/WizardSteps";
 import { PaymentMethodIcon } from "@/src/components/payments/PaymentMethodIcon";
 import { Button, Card, Field, Input, Select } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/useAuth";
+import { ensureSession } from "@/src/lib/guest-session";
 import { useBooking } from "@/src/hooks/useBooking";
-import { ordersApi, paymentsApi, scheduleApi } from "@/src/lib/api";
+import { ordersApi, paymentsApi, profileApi, scheduleApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
 import type { PaymentGateway, PaymentMethod } from "@/src/types";
@@ -106,7 +107,12 @@ function SavedMethodsSkeleton() {
 export default function BookConfirmPage() {
   const router = useRouter();
   const booking = useBooking();
-  const { user } = useAuth();
+  const { user, isAuthenticated, isGuest } = useAuth();
+  // A visitor who hasn't signed in has no session yet (it is created on
+  // submit), so they're treated as a guest here too.
+  const needsContact = !isAuthenticated || isGuest;
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
   const [selection, setSelection] = useState<PaymentSelection | null>(null);
   const [operator, setOperator] = useState<MobileMoneyOperator>("MTN_MOMO");
   const [customNumber, setCustomNumber] = useState("");
@@ -115,6 +121,7 @@ export default function BookConfirmPage() {
   const { data: savedMethods, isLoading: isLoadingMethods } = useQuery({
     queryKey: queryKeys.payments.methods,
     queryFn: () => paymentsApi.listPaymentMethods(),
+    enabled: isAuthenticated,
   });
 
   // Default to the customer's default saved method, if any, otherwise
@@ -140,10 +147,15 @@ export default function BookConfirmPage() {
   const effectivePhoneNumber = resolvePhoneNumber(
     effectiveSelection,
     customNumber,
-    user?.phone_number,
+    // Guests have a placeholder account number; their contact number is the real one.
+    needsContact ? contactPhone.trim() || undefined : user?.phone_number,
   );
   const needsCustomNumber =
     effectiveSelection.type === "custom" && customNumber.trim().length === 0;
+  const contactPhoneValid = /^\+?[\d ]{9,18}$/.test(contactPhone.trim());
+  const missingContact =
+    needsContact && (contactName.trim().length === 0 || !contactPhoneValid);
+  const accountNumberLabel = needsContact ? contactPhone.trim() : user?.phone_number;
 
   function isSelected(candidate: PaymentSelection): boolean {
     if (candidate.type !== effectiveSelection.type) return false;
@@ -155,6 +167,16 @@ export default function BookConfirmPage() {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
+      // Guests are signed in automatically; their name + contact number are
+      // saved on the account so the shop can reach them about the order.
+      await ensureSession();
+      if (needsContact) {
+        await profileApi.updateProfile({
+          first_name: contactName.trim(),
+          contact_phone: contactPhone.trim(),
+        });
+      }
+
       const order = await ordersApi.createOrder({
         pickup_address: booking.pickupAddress,
         delivery_address: booking.deliveryAddress,
@@ -221,6 +243,35 @@ export default function BookConfirmPage() {
             </span>
           </p>
 
+          {needsContact && (
+            <div className="mb-6 space-y-1">
+              <p className="text-sm font-medium text-ink">Your contact details</p>
+              <p className="mb-2 text-xs text-ink-muted">
+                No account needed — we&apos;ll keep this booking on this device
+                and text you updates. You can create an account any time to
+                keep it on every device.
+              </p>
+              <Field label="Your name">
+                <Input
+                  type="text"
+                  autoComplete="name"
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                  placeholder="e.g. Ada Ngo"
+                />
+              </Field>
+              <Field label="Phone number">
+                <Input
+                  type="tel"
+                  autoComplete="tel"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                  placeholder="e.g. 677300001"
+                />
+              </Field>
+            </div>
+          )}
+
           <fieldset className="space-y-2">
             <legend className="mb-2 text-sm font-medium text-ink">
               Payment method
@@ -281,7 +332,7 @@ export default function BookConfirmPage() {
               </label>
             ))}
 
-            {user?.phone_number && (
+            {accountNumberLabel && (
               <label
                 className={`flex cursor-pointer items-center gap-3 rounded-xl border border-crease px-3.5 py-2.5 text-sm transition-all duration-200 hover:border-navy/40 hover:bg-steam/60 ${
                   isSelected({ type: "account" })
@@ -298,7 +349,8 @@ export default function BookConfirmPage() {
                 <PaymentMethodIcon method={operator} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium text-ink">
-                    My account number ({maskPhoneNumber(user.phone_number)})
+                    {needsContact ? "My contact number" : "My account number"} (
+                    {maskPhoneNumber(accountNumberLabel)})
                   </span>
                   <span className="block text-xs text-ink-muted">
                     Mobile Money
@@ -383,7 +435,8 @@ export default function BookConfirmPage() {
             disabled={
               submitMutation.isPending ||
               booking.items.length === 0 ||
-              needsCustomNumber
+              needsCustomNumber ||
+              missingContact
             }
             className="mt-6 w-full"
           >

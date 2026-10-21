@@ -18,6 +18,7 @@ import {
   serviceLabel,
 } from "@/src/components/ui";
 import { useBooking } from "@/src/hooks/useBooking";
+import { ensureSession } from "@/src/lib/guest-session";
 import type { ServiceType } from "@/src/types";
 
 const SERVICE_TYPES: ServiceType[] = [
@@ -79,6 +80,9 @@ export default function BookServicesPage() {
 
   function handleAddItem(e: React.FormEvent) {
     e.preventDefault();
+    // Start a guest session in the background on the first item, so a visitor
+    // can book without signing up. Failures are retried at checkout.
+    void ensureSession().catch(() => undefined);
     addItem({
       service_type: serviceType,
       label,

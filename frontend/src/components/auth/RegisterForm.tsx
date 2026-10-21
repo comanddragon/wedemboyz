@@ -16,7 +16,7 @@ const SUCCESS_PAUSE_MS = 500;
 
 export function RegisterForm() {
   const router = useRouter();
-  const { register, isRegistering } = useAuth();
+  const { register, isRegistering, isGuest } = useAuth();
   const firstNameId = useId();
   const lastNameId = useId();
   const emailId = useId();
@@ -66,6 +66,12 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} noValidate>
       {errorMessage && <FormErrorBanner message={errorMessage} />}
+      {isGuest && (
+        <p className="mb-4 rounded-xl bg-gold-50 px-3.5 py-2.5 text-sm text-navy">
+          Creating an account keeps the orders you&apos;ve already booked as a
+          guest — nothing is lost.
+        </p>
+      )}
 
       <PhoneField
         value={phoneNumber}

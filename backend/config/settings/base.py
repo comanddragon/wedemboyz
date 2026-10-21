@@ -69,11 +69,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # DEV-ONLY: overwrites an order's total to a small fixed amount for the
-    # duration of a payment-initiation request only, so CamPay's sandbox can
-    # be exercised without moving real-sized money. Inert unless
-    # settings.DEBUG is True — see apps/payments/middleware.py docstring.
-    "apps.payments.middleware.DevTestPaymentAmountMiddleware",
 ]
 
 TEMPLATES = [
@@ -154,6 +149,13 @@ REST_FRAMEWORK = {
     ],
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
+
+# Guest sessions have no password to fall back on, so their refresh token
+# must outlive a normal login's or a guest who returns after a week loses
+# their bookings. Renewed on every refresh (see GuestAwareTokenRefreshSerializer).
+GUEST_REFRESH_TOKEN_LIFETIME_DAYS = config(
+    "GUEST_REFRESH_TOKEN_LIFETIME_DAYS", default=365, cast=int
+)
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(

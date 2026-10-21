@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 import { Providers } from "@/src/components/providers/Providers";
 
@@ -7,6 +7,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Wedemboyz Lavomatique",
   description: "Laundry pickup and delivery for Yaounde.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

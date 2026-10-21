@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { discountsApi } from "@/src/lib/api";
+import { useAuthStore } from "@/src/lib/stores/auth.store";
 import { queryKeys } from "@/src/lib/query-keys";
 import {
   estimateBookingSubtotal,
@@ -19,6 +20,7 @@ import {
  */
 export function useBooking() {
   const store = useBookingStore();
+  const hasSession = useAuthStore((state) => Boolean(state.accessToken));
 
   const subtotal = useMemo(
     () => estimateBookingSubtotal(store.items),
@@ -33,7 +35,7 @@ export function useBooking() {
         code: store.promoCode as string,
         order_total: subtotal,
       }),
-    enabled: Boolean(store.promoCode) && subtotal > 0,
+    enabled: hasSession && Boolean(store.promoCode) && subtotal > 0,
     retry: false,
   });
 

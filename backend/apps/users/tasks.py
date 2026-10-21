@@ -8,6 +8,8 @@ def send_welcome_sms(self, user_id: int):
 
     try:
         user = CustomUser.objects.get(pk=user_id)
+        if user.is_guest:
+            return
         sms.send_sms(
             user.phone_number,
             "Welcome to Wedemboyz Lavomatique! Book your first pickup in the app.",

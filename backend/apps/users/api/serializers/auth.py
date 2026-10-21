@@ -2,8 +2,14 @@ from django.contrib.auth import password_validation
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from apps.users.models import CustomUser
+from core.utils import format_phone_number
 from apps.staff.permissions import get_staff_permissions, get_staff_role
 from typing import Any, Dict
+
+from django.conf import settings
+from datetime import timedelta
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -50,6 +56,7 @@ class LoginSerializer(TokenObtainPairSerializer):
             "last_name": self.user.last_name,
             "is_staff": self.user.is_staff,
             "is_superuser": self.user.is_superuser,
+            "is_guest": self.user.is_guest,
             "staff_role": get_staff_role(self.user),
             "staff_permissions": get_staff_permissions(self.user),
             "staff_access_active": get_staff_role(self.user) is not None,
@@ -59,3 +66,102 @@ class LoginSerializer(TokenObtainPairSerializer):
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
+
+
+def auth_payload(user) -> Dict[str, Any]:
+    """Same shape as the login response, so the frontend can treat a guest
+    session, a fresh registration and a login identically."""
+    refresh = RefreshToken.for_user(user)
+    if user.is_guest:
+        refresh["guest"] = True
+        refresh.set_exp(lifetime=timedelta(days=settings.GUEST_REFRESH_TOKEN_LIFETIME_DAYS))
+    return {
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "user": {
+            "id": user.pk,
+            "phone_number": user.phone_number,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "is_staff": user.is_staff,
+            "is_superuser": user.is_superuser,
+            "is_guest": user.is_guest,
+            "staff_role": get_staff_role(user),
+            "staff_permissions": get_staff_permissions(user),
+            "staff_access_active": get_staff_role(user) is not None,
+        },
+    }
+
+
+class GuestSessionSerializer(serializers.Serializer):
+    """Optional details a guest can leave so the shop can reach them."""
+
+    first_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    last_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    contact_phone = serializers.RegexField(
+        r"^\+?[\d ]{9,18}$", required=False, allow_blank=True,
+        error_messages={"invalid": "Enter a valid phone number."},
+    )
+
+    def create(self, validated_data):
+        from core.utils import format_phone_number, make_guest_phone
+
+        user = CustomUser(
+            phone_number=make_guest_phone(),
+            first_name=validated_data.get("first_name", ""),
+            last_name=validated_data.get("last_name", ""),
+            is_guest=True,
+        )
+        user.set_unusable_password()
+        user.save()  # signals create profile + loyalty account
+
+        contact = validated_data.get("contact_phone", "")
+        if contact:
+            profile = user.profile
+            profile.secondary_phone = format_phone_number(contact)
+            profile.save(update_fields=["secondary_phone", "updated_at"])
+        return user
+
+
+class ClaimAccountSerializer(RegisterSerializer):
+    """Turns the calling guest into a normal account, in place."""
+
+    def validate_phone_number(self, value):
+        # The field-level unique check compares the raw input; accounts are
+        # stored in normalised form ("677…" -> "237677…"), so check that too.
+        normalised = format_phone_number(value)
+        if CustomUser.objects.filter(phone_number=normalised).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("A user with this phone number already exists.")
+        return value
+
+    def create(self, validated_data):
+        raise NotImplementedError
+
+    def update(self, instance, validated_data):
+        instance.phone_number = format_phone_number(validated_data["phone_number"])
+        instance.first_name = validated_data.get("first_name") or instance.first_name
+        instance.last_name = validated_data.get("last_name") or instance.last_name
+        instance.email = validated_data.get("email") or instance.email
+        instance.set_password(validated_data["password"])
+        instance.is_guest = False
+        instance.save()
+        return instance
+
+
+class GuestAwareTokenRefreshSerializer(TokenRefreshSerializer):
+    """Keeps a guest's refresh token long-lived across rotation (SimpleJWT
+    resets the expiry to the normal 7 days on every rotation)."""
+
+    def validate(self, attrs):
+        was_guest = False
+        try:
+            was_guest = bool(RefreshToken(attrs["refresh"]).get("guest"))
+        except Exception:
+            pass  # super().validate() reports the real error
+        data = super().validate(attrs)
+        if was_guest and "refresh" in data:
+            token = RefreshToken(data["refresh"])
+            token["guest"] = True
+            token.set_exp(lifetime=timedelta(days=settings.GUEST_REFRESH_TOKEN_LIFETIME_DAYS))
+            data["refresh"] = str(token)
+        return data

@@ -1,5 +1,6 @@
 "use client";
 
+import { ensureSession } from "@/src/lib/guest-session";
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
@@ -82,7 +83,11 @@ export default function BookReviewPage() {
               type="text"
               value={promoInput}
               onChange={(e) => setPromoInput(e.target.value)}
-              onBlur={() => setPromoCode(promoInput || null)}
+              onBlur={() => {
+                if (!promoInput) return setPromoCode(null);
+                // Promo checks are per-customer, so visitors need a session first.
+                void ensureSession().then(() => setPromoCode(promoInput));
+              }}
               placeholder="e.g. WELCOME10"
             />
           </Field>

@@ -24,6 +24,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     is_staff = models.BooleanField(default=False)
     is_phone_verified = models.BooleanField(default=False)
     is_walk_in = models.BooleanField(default=False)
+    # Created by POST /auth/guest/ so someone can book without registering.
+    # Has a placeholder phone_number and no usable password until the guest
+    # claims the account (POST /auth/guest/claim/), which keeps the same row —
+    # and therefore all of its orders, payments and chats.
+    is_guest = models.BooleanField(default=False)
 
     USERNAME_FIELD = "phone_number"
     REQUIRED_FIELDS = []  # phone_number + password is all createsuperuser needs

@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from core.jobs import app
+from core.utils import contact_phone
 
 
 @app.task(bind=True, max_retries=3, default_retry_delay=60)
@@ -203,7 +204,7 @@ def send_receipt_email(self, payment_id: int):
             else f"Subscription #{payment.subscription_id}"
         )
 
-        sms.send_sms(user.phone_number, sms.payment_received_message(payment))
+        sms.send_sms(contact_phone(user), sms.payment_received_message(payment))
 
         if user.email:
             send_mail(
