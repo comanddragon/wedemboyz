@@ -6,7 +6,8 @@ export interface DraftItem extends OrderItemInput {
   /** Client-only id for list rendering/removal — never sent to the API. */
   clientId: string;
 }
-export type OrderType = "drop-off" | "pickup" | "delivery";
+export type OrderType = "drop-off" | "pickup";
+export type PaymentOption = "PAY_AT_PICKUP" | "PAY_AFTER_DELIVERY";
 
 interface BookingState {
   // Step 1 — services
@@ -19,6 +20,7 @@ interface BookingState {
   scheduledPickupDate: string | null;
   scheduledPickupSlot: string | null;
   notes: string;
+  paymentOption: PaymentOption;
 
   // Step 3 — review/promo/loyalty
   promoCode: string | null;
@@ -32,6 +34,7 @@ interface BookingState {
   }) => void;
   setSchedule: (input: { date: string; slot: string }) => void;
   setNotes: (notes: string) => void;
+  setPaymentOption: (option: PaymentOption) => void;
   setPromoCode: (code: string | null) => void;
   setPointsRedemption: (input: {
     usePoints: boolean;
@@ -51,6 +54,7 @@ const initialState = {
   scheduledPickupDate: null as string | null,
   scheduledPickupSlot: null as string | null,
   notes: "",
+  paymentOption: "PAY_AT_PICKUP" as PaymentOption,
   promoCode: null as string | null,
   usePoints: false,
   pointsToRedeem: 0,
@@ -71,6 +75,7 @@ export const useBookingStore = create<BookingState>()((set) => ({
     set({ scheduledPickupDate: date, scheduledPickupSlot: slot }),
 
   setNotes: (notes) => set({ notes }),
+  setPaymentOption: (paymentOption) => set({ paymentOption }),
 
   setPromoCode: (code) => set({ promoCode: code }),
 
@@ -99,16 +104,19 @@ export const useBookingStore = create<BookingState>()((set) => ({
   removeItem: (clientId) =>
     set((state) => {
       const removed = state.items.find((item) => item.clientId === clientId);
-      if (removed?.photoPreviewUrl) URL.revokeObjectURL(removed.photoPreviewUrl);
-      return { items: state.items.filter((item) => item.clientId !== clientId) };
+      removed?.photoPreviewUrls?.forEach(URL.revokeObjectURL);
+      return {
+        items: state.items.filter((item) => item.clientId !== clientId),
+      };
     }),
 
-  reset: () => set((state) => {
-    state.items.forEach((item) => {
-      if (item.photoPreviewUrl) URL.revokeObjectURL(item.photoPreviewUrl);
-    });
-    return initialState;
-  }),
+  reset: () =>
+    set((state) => {
+      state.items.forEach((item) => {
+        item.photoPreviewUrls?.forEach(URL.revokeObjectURL);
+      });
+      return initialState;
+    }),
 }));
 
 /**

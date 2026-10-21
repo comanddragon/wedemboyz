@@ -7,6 +7,7 @@ from rest_framework import serializers
 from apps.orders.models import (
     Order,
     OrderItem,
+    OrderItemPhoto,
     OrderPaymentHistory,
     OrderStatusHistory,
 )
@@ -34,12 +35,21 @@ class OrderItemInputSerializer(serializers.Serializer):
         return attrs
 
 
+class OrderItemPhotoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItemPhoto
+        fields = ["id", "image", "created_at"]
+        read_only_fields = fields
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
+    photos = OrderItemPhotoSerializer(many=True, read_only=True)
+
     class Meta:
         model = OrderItem
         fields = [
             "id", "service_type", "label", "description", "status",
-            "condition_notes", "stain_notes", "photo", "weight_kg", "quantity",
+            "condition_notes", "stain_notes", "photo", "photos", "weight_kg", "quantity",
             "unit_price", "subtotal",
         ]
         read_only_fields = fields
@@ -172,6 +182,8 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "status",
             "pickup_address",
             "delivery_address",
+            "fulfillment_type",
+            "payment_option",
             "notes",
             "internal_notes",
             "source",
@@ -283,6 +295,8 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             "id",
             "pickup_address",
             "delivery_address",
+            "fulfillment_type",
+            "payment_option",
             "notes",
             "items",
             "promo_code",
@@ -364,6 +378,8 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             user=user,
             pickup_address=validated_data["pickup_address"],
             delivery_address=validated_data["delivery_address"],
+            fulfillment_type=validated_data.get("fulfillment_type", Order.FulfillmentType.PICKUP),
+            payment_option=validated_data.get("payment_option", Order.PaymentOption.PAY_AT_PICKUP),
             notes=validated_data.get("notes", ""),
             source=Order.Source.ONLINE,
             subscription=subscription,

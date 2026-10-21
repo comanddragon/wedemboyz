@@ -16,6 +16,7 @@ export interface OrderItem {
   condition_notes: string;
   stain_notes: string;
   photo: string | null;
+  photos: Array<{ id: number; image: string; created_at: string }>;
   weight_kg: string | null; // Piece-priced items do not require weight
   quantity: number;
   unit_price: string;
@@ -29,10 +30,10 @@ export interface OrderItemInput {
   description?: string;
   weight_kg: number;
   quantity?: number; // defaults to 1 server-side
-  /** Optional intake photo. Sent as multipart data when the order is created. */
-  photo?: File;
-  /** Local-only preview URL used while moving through the booking wizard. */
-  photoPreviewUrl?: string;
+  /** Optional intake photos. Sent as multipart data when the order is created. */
+  photos?: File[];
+  /** Local-only preview URLs used while moving through the booking wizard. */
+  photoPreviewUrls?: string[];
 }
 
 /** Mirrors apps.orders.api.serializers.order.OrderStatusHistorySerializer */
@@ -103,6 +104,8 @@ export interface OrderDetail {
   status: OrderStatus;
   pickup_address: string;
   delivery_address: string;
+  fulfillment_type: "PICKUP" | "DROP_OFF";
+  payment_option: "PAY_AT_PICKUP" | "PAY_AFTER_DELIVERY";
   notes: string;
   internal_notes: string;
   source: "ONLINE" | "WALK_IN" | "PHONE" | "STAFF";
@@ -146,6 +149,8 @@ export interface OrderDetail {
 
 /** Payload for POST /orders/ — mirrors OrderCreateSerializer's writable fields. */
 export interface CreateOrderInput {
+  fulfillment_type: "PICKUP" | "DROP_OFF";
+  payment_option: "PAY_AT_PICKUP" | "PAY_AFTER_DELIVERY";
   pickup_address: string;
   delivery_address: string;
   notes?: string;

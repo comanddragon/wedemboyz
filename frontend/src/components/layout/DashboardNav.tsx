@@ -299,7 +299,11 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
             className="relative grid h-11 w-11 place-items-center rounded-full bg-mist text-navy transition-colors hover:bg-gold-50 sm:bg-white/90 sm:shadow-float lg:h-10 lg:w-10"
             aria-label={`${admin ? "Open inbox" : "Open notifications"}${attentionCount > 0 ? `, ${attentionCount} unread` : ""}`}
           >
-            {admin ? <MessageCircle className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+            {admin ? (
+              <MessageCircle className="h-4 w-4" />
+            ) : (
+              <Bell className="h-4 w-4" />
+            )}
             {attentionCount > 0 ? (
               <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold tabular-nums text-navy ring-2 ring-white">
                 {attentionCount > 99 ? "99+" : attentionCount}
@@ -322,7 +326,11 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                     {name}
                   </p>
                   <p className="mt-0.5 text-xs text-ink-muted">
-                    {admin && role ? ROLE_LABELS[role] : user?.is_guest ? "Guest — not saved to an account" : "Customer account"}
+                    {admin && role
+                      ? ROLE_LABELS[role]
+                      : user?.is_guest
+                        ? "Guest — not saved to an account"
+                        : "Customer account"}
                   </p>
                 </div>
               </div>
@@ -436,9 +444,15 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
               <div className="mb-2 flex items-center gap-3 px-2">
                 <CustomerAvatar name={name} size="sm" />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-navy">{name}</p>
+                  <p className="truncate text-sm font-semibold text-navy">
+                    {name}
+                  </p>
                   <p className="text-xs text-ink-muted">
-                    {admin && role ? ROLE_LABELS[role] : user?.is_guest ? "Guest — not saved to an account" : "Customer account"}
+                    {admin && role
+                      ? ROLE_LABELS[role]
+                      : user?.is_guest
+                        ? "Guest — not saved to an account"
+                        : "Customer account"}
                   </p>
                 </div>
               </div>

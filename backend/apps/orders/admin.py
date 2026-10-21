@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from .models import Order, OrderItem, OrderStatusHistory, PickupDeliverySchedule
+from .models import Order, OrderItem, OrderItemPhoto, OrderStatusHistory, PickupDeliverySchedule
+
+
+class OrderItemPhotoInline(admin.TabularInline):
+    model = OrderItemPhoto
+    extra = 0
 
 
 class OrderItemInline(admin.TabularInline):
@@ -34,6 +39,7 @@ class OrderItemAdmin(admin.ModelAdmin):
     list_display = ["order", "label", "service_type", "weight_kg", "quantity", "subtotal"]
     list_filter = ["service_type"]
     search_fields = ["label"]
+    inlines = [OrderItemPhotoInline]
 
 
 @admin.register(PickupDeliverySchedule)

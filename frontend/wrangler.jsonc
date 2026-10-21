@@ -15,8 +15,8 @@
     }
   ],
   "vars": {
-    "NEXT_PUBLIC_API_BASE_URL": "https://api-wedemboyz.ntsemancho.online/api/v1",
-    "NEXT_PUBLIC_WS_BASE_URL": "wss://api-wedemboyz.ntsemancho.online"
+    "NEXT_PUBLIC_API_BASE_URL": "https://api-wedemboyz-lavomatique.ntsemancho.online/api/v1",
+    "NEXT_PUBLIC_WS_BASE_URL": "wss://api-wedemboyz-lavomatique.ntsemancho.online"
   },
   "assets": {
     "directory": ".open-next/assets",

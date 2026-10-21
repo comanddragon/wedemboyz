@@ -9,6 +9,14 @@ from core.models import SoftDeleteModel, TimeStampedModel
 
 
 class Order(TimeStampedModel, SoftDeleteModel):
+    class FulfillmentType(models.TextChoices):
+        PICKUP = "PICKUP", "Pick up"
+        DROP_OFF = "DROP_OFF", "Drop off"
+
+    class PaymentOption(models.TextChoices):
+        PAY_AT_PICKUP = "PAY_AT_PICKUP", "Pay at pickup"
+        PAY_AFTER_DELIVERY = "PAY_AFTER_DELIVERY", "Pay after delivery"
+
     class Source(models.TextChoices):
         ONLINE = "ONLINE", "Online"
         WALK_IN = "WALK_IN", "Walk-in"
@@ -29,6 +37,12 @@ class Order(TimeStampedModel, SoftDeleteModel):
 
     pickup_address = models.CharField(max_length=255)
     delivery_address = models.CharField(max_length=255)
+    fulfillment_type = models.CharField(
+        max_length=12, choices=FulfillmentType.choices, default=FulfillmentType.PICKUP
+    )
+    payment_option = models.CharField(
+        max_length=24, choices=PaymentOption.choices, default=PaymentOption.PAY_AT_PICKUP
+    )
     notes = models.TextField(blank=True)
     internal_notes = models.TextField(blank=True)
     source = models.CharField(max_length=10, choices=Source.choices, default=Source.ONLINE, db_index=True)
@@ -183,6 +197,17 @@ class OrderItem(TimeStampedModel):
         order = self.order
         super().delete(*args, **kwargs)
         order.recalculate_total()
+
+
+class OrderItemPhoto(TimeStampedModel):
+    item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name="photos")
+    image = models.ImageField(upload_to="orders/intake/%Y/%m/")
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Photo for order item #{self.item_id}"
 
 
 class OrderStatusHistory(TimeStampedModel):

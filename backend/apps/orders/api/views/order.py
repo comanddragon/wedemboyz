@@ -108,24 +108,34 @@ class OrderListCreateView(generics.ListCreateAPIView):
 
             image_field = serializers.ImageField(allow_empty_file=False)
             for index in range(len(payload["items"])):
-                photo = request.FILES.get(f"item_photo_{index}")
-                if photo is None:
-                    continue
-                if photo.content_type not in {"image/jpeg", "image/png", "image/webp"}:
-                    raise ValidationError({f"item_photo_{index}": "Use a JPG, PNG, or WebP image."})
-                if photo.size > 5 * 1024 * 1024:
-                    raise ValidationError({f"item_photo_{index}": "Each photo must be 5 MB or smaller."})
-                uploaded_photos[index] = image_field.run_validation(photo)
-                photo.seek(0)
+                item_photos = [
+                    photo for key, photo in request.FILES.items()
+                    if key.startswith(f"item_photo_{index}_")
+                ]
+                legacy_photo = request.FILES.get(f"item_photo_{index}")
+                if legacy_photo:
+                    item_photos.append(legacy_photo)
+                if len(item_photos) > 6:
+                    raise ValidationError({f"item_photo_{index}": "Add no more than 6 photos per item."})
+                for photo_index, photo in enumerate(item_photos):
+                    field_name = f"item_photo_{index}_{photo_index}"
+                    if photo.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+                        raise ValidationError({field_name: "Use a JPG, PNG, or WebP image."})
+                    if photo.size > 5 * 1024 * 1024:
+                        raise ValidationError({field_name: "Each photo must be 5 MB or smaller."})
+                    uploaded_photos.setdefault(index, []).append(image_field.run_validation(photo))
+                    photo.seek(0)
 
         serializer = self.get_serializer(data=payload)
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
         if uploaded_photos:
             created_items = list(order.items.order_by("id"))
-            for index, photo in uploaded_photos.items():
-                created_items[index].photo = photo
-                created_items[index].save(update_fields=["photo", "updated_at"])
+            from apps.orders.models import OrderItemPhoto
+
+            for index, photos in uploaded_photos.items():
+                for photo in photos:
+                    OrderItemPhoto.objects.create(item=created_items[index], image=photo)
         order.refresh_from_db()
         output = OrderDetailSerializer(order, context=self.get_serializer_context())
         return Response(output.data, status=status.HTTP_201_CREATED)
@@ -141,7 +151,7 @@ class OrderDetailView(generics.RetrieveUpdateAPIView):
     def get_queryset(self):
         qs = Order.objects.select_related(
             "user", "assigned_to", "driver", "created_by"
-        ).prefetch_related("items", "status_history")
+        ).prefetch_related("items__photos", "status_history")
         if has_staff_permission(self.request.user, StaffPermission.ORDERS_VIEW):
             return qs
         return qs.filter(user=self.request.user)

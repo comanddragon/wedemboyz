@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, ImagePlus, Trash2, X } from "lucide-react";
+import { Camera, ImagePlus, Pencil, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -9,7 +9,6 @@ import { BookingShell } from "@/src/components/booking/BookingShell";
 import {
   Button,
   Card,
-  CreaseDivider,
   Field,
   Input,
   Select,
@@ -40,43 +39,73 @@ const SERVICE_TYPES: ServiceType[] = [
 ];
 
 export default function BookServicesPage() {
-  const { items, addItem, removeItem, subtotal } = useBooking();
+  const { items, addItem, updateItem, removeItem, subtotal } = useBooking();
 
   const [serviceType, setServiceType] = useState<ServiceType>("TSHIRT");
   const [label, setLabel] = useState("");
   const [description, setDescription] = useState("");
   const [weightKg, setWeightKg] = useState("1");
   const [quantity, setQuantity] = useState("1");
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [photoError, setPhotoError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  function clearPhoto() {
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
-    setPhoto(null);
-    setPhotoPreview(null);
-    setPhotoError("");
-    if (photoInputRef.current) photoInputRef.current.value = "";
-  }
-
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    if (photos.length + files.length > 6) {
+      setPhotoError("You can add up to 6 photos per item.");
+      e.target.value = "";
+      return;
+    }
+    if (
+      files.some(
+        (file) =>
+          !["image/jpeg", "image/png", "image/webp"].includes(file.type),
+      )
+    ) {
       setPhotoError("Choose a JPG, PNG, or WebP image.");
       e.target.value = "";
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setPhotoError("Photo must be 5 MB or smaller.");
+    if (files.some((file) => file.size > 5 * 1024 * 1024)) {
+      setPhotoError("Each photo must be 5 MB or smaller.");
       e.target.value = "";
       return;
     }
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
-    setPhoto(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    setPhotos((current) => [...current, ...files]);
+    setPhotoPreviews((current) => [
+      ...current,
+      ...files.map(URL.createObjectURL),
+    ]);
     setPhotoError("");
+    e.target.value = "";
+  }
+
+  function removePhoto(index: number) {
+    URL.revokeObjectURL(photoPreviews[index]);
+    setPhotos((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    );
+    setPhotoPreviews((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    );
+  }
+
+  function beginEdit(clientId: string) {
+    const item = items.find((candidate) => candidate.clientId === clientId);
+    if (!item) return;
+    setEditingId(clientId);
+    setServiceType(item.service_type);
+    setLabel(item.label ?? "");
+    setDescription(item.description ?? "");
+    setWeightKg(String(item.weight_kg));
+    setQuantity(String(item.quantity ?? 1));
+    setPhotos(item.photos ?? []);
+    setPhotoPreviews(item.photoPreviewUrls ?? []);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function handleAddItem(e: React.FormEvent) {
@@ -84,21 +113,24 @@ export default function BookServicesPage() {
     // Start a guest session in the background on the first item, so a visitor
     // can book without signing up. Failures are retried at checkout.
     void ensureSession().catch(() => undefined);
-    addItem({
+    const item = {
       service_type: serviceType,
       label,
       description,
       weight_kg: Number(weightKg),
       quantity: Number(quantity) || 1,
-      photo: photo ?? undefined,
-      photoPreviewUrl: photoPreview ?? undefined,
-    });
+      photos,
+      photoPreviewUrls: photoPreviews,
+    };
+    if (editingId) updateItem(editingId, item);
+    else addItem(item);
+    setEditingId(null);
     setLabel("");
     setDescription("");
     setWeightKg("1");
     setQuantity("1");
-    setPhoto(null);
-    setPhotoPreview(null);
+    setPhotos([]);
+    setPhotoPreviews([]);
     setPhotoError("");
     if (photoInputRef.current) photoInputRef.current.value = "";
   }
@@ -109,14 +141,14 @@ export default function BookServicesPage() {
       subtitle="Step 1 — what needs cleaning?"
       actions={
         <div className="flex items-center justify-between">
-        <Link href="/dashboard">
-          <Button variant="ghost">Back</Button>
-        </Link>
-        {items.length > 0 && (
-          <Link href="/book/schedule">
-            <Button>Next: Schedule</Button>
+          <Link href="/dashboard">
+            <Button variant="ghost">Back</Button>
           </Link>
-        )}
+          {items.length > 0 && (
+            <Link href="/book/schedule">
+              <Button>Next: Schedule</Button>
+            </Link>
+          )}
         </div>
       }
     >
@@ -156,25 +188,72 @@ export default function BookServicesPage() {
 
             <div className="mb-4">
               <p className="mb-1.5 font-display text-[0.8125rem] font-medium text-ink">
-                Item photo <span className="font-normal text-ink-muted">(optional)</span>
+                Item photo{" "}
+                <span className="font-normal text-ink-muted">(optional)</span>
               </p>
-              {photoPreview ? (
-                <div className="flex items-center gap-3 rounded-xl border border-crease bg-steam/40 p-2">
-                  <Image src={photoPreview} alt="Selected item preview" width={64} height={64} unoptimized className="h-16 w-16 rounded-lg object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-ink">{photo?.name}</p>
-                    <p className="mt-0.5 text-[11px] text-ink-muted">Ready to attach</p>
-                  </div>
-                  <button type="button" onClick={clearPhoto} className="grid h-8 w-8 place-items-center rounded-full text-ink-muted hover:bg-white hover:text-status-cancelled-text" aria-label="Remove selected photo"><X className="h-4 w-4" /></button>
+              {photoPreviews.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {photoPreviews.map((preview, index) => (
+                    <div
+                      key={preview}
+                      className="group relative aspect-square overflow-hidden rounded-xl border border-crease bg-steam"
+                    >
+                      <Image
+                        src={preview}
+                        alt={`Selected item photo ${index + 1}`}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-white/95 text-ink shadow-float hover:text-status-cancelled-text"
+                        aria-label={`Remove photo ${index + 1}`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {photoPreviews.length < 6 && (
+                    <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-crease text-[11px] font-medium text-ink-muted hover:border-navy/40 hover:text-navy">
+                      <ImagePlus className="h-4 w-4" /> Add more
+                      <input
+                        ref={photoInputRef}
+                        multiple
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handlePhotoChange}
+                        className="sr-only"
+                      />
+                    </label>
+                  )}
                 </div>
               ) : (
                 <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-crease px-3 py-3 text-xs font-medium text-ink-muted transition-colors hover:border-navy/40 hover:bg-steam/50 hover:text-navy focus-within:ring-4 focus-within:ring-gold/30">
                   <ImagePlus className="h-4 w-4" aria-hidden="true" />
                   Add photo or use camera
-                  <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={handlePhotoChange} className="sr-only" />
+                  <input
+                    ref={photoInputRef}
+                    multiple
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    capture="environment"
+                    onChange={handlePhotoChange}
+                    className="sr-only"
+                  />
                 </label>
               )}
-              {photoError ? <p className="mt-1.5 text-xs text-status-cancelled-text">{photoError}</p> : <p className="mt-1.5 flex items-center gap-1 text-[11px] text-ink-muted"><Camera className="h-3 w-3" aria-hidden="true" />Show stains or special-care details · max 5 MB</p>}
+              {photoError ? (
+                <p className="mt-1.5 text-xs text-status-cancelled-text">
+                  {photoError}
+                </p>
+              ) : (
+                <p className="mt-1.5 flex items-center gap-1 text-[11px] text-ink-muted">
+                  <Camera className="h-3 w-3" aria-hidden="true" />
+                  Up to 6 photos · 5 MB each
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -198,15 +277,19 @@ export default function BookServicesPage() {
             </div>
 
             <Button type="submit" variant="secondary" className="w-full">
-              Add item
+              {editingId ? "Save changes" : "Add item"}
             </Button>
           </form>
         </Card>
 
         <section className="flex min-h-0 flex-col">
           <div className="mb-3 flex shrink-0 items-baseline justify-between gap-4">
-            <h2 className="font-display text-sm font-medium text-ink">Items ({items.length})</h2>
-            <p className="text-sm font-semibold tabular-nums text-navy">{formatCurrency(subtotal)}</p>
+            <h2 className="font-display text-sm font-medium text-ink">
+              Items ({items.length})
+            </h2>
+            <p className="text-sm font-semibold tabular-nums text-navy">
+              {formatCurrency(subtotal)}
+            </p>
           </div>
           {items.length === 0 && (
             <p className="text-sm text-ink-muted">No items added yet.</p>
@@ -215,7 +298,20 @@ export default function BookServicesPage() {
             {items.map((item) => (
               <li key={item.clientId}>
                 <Card className="flex items-start gap-3 p-4">
-                  {item.photoPreviewUrl ? <Image src={item.photoPreviewUrl} alt="" width={48} height={48} unoptimized className="h-12 w-12 shrink-0 rounded-lg object-cover" /> : <span className="mt-0.5 text-navy"><ServiceIcon type={item.service_type} /></span>}
+                  {item.photoPreviewUrls?.[0] ? (
+                    <Image
+                      src={item.photoPreviewUrls[0]}
+                      alt=""
+                      width={48}
+                      height={48}
+                      unoptimized
+                      className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <span className="mt-0.5 text-navy">
+                      <ServiceIcon type={item.service_type} />
+                    </span>
+                  )}
                   <div className="flex-1">
                     <p className="text-sm font-medium text-ink">
                       {item.label || serviceLabel(item.service_type)}
@@ -231,6 +327,15 @@ export default function BookServicesPage() {
                     )}
                   </div>
                   <button
+                    type="button"
+                    onClick={() => beginEdit(item.clientId)}
+                    aria-label={`Edit ${item.label || serviceLabel(item.service_type)}`}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-ink-muted hover:bg-steam hover:text-navy"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => removeItem(item.clientId)}
                     aria-label="Remove item"
                     className="text-ink-muted hover:text-status-cancelled-text"
@@ -241,10 +346,8 @@ export default function BookServicesPage() {
               </li>
             ))}
           </ul>
-
         </section>
       </div>
-
     </BookingShell>
   );
 }

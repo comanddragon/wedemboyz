@@ -36,20 +36,36 @@ export async function listOrders(
 export async function createOrder(
   input: CreateOrderInput,
 ): Promise<OrderDetail> {
-  const photos = input.items.some((item) => item.photo);
+  const photos = input.items.some((item) => item.photos?.length);
   if (!photos) {
-    const res = await apiClient.post("/orders/", input);
+    const res = await apiClient.post("/orders/", {
+      ...input,
+      items: input.items.map(
+        ({ photos: _photos, photoPreviewUrls: _previews, ...item }) => item,
+      ),
+    });
     return unwrap<OrderDetail>(res);
   }
 
   const form = new FormData();
   form.append("pickup_address", input.pickup_address);
   form.append("delivery_address", input.delivery_address);
+  form.append("fulfillment_type", input.fulfillment_type);
+  form.append("payment_option", input.payment_option);
   form.append("notes", input.notes ?? "");
   if (input.promo_code) form.append("promo_code", input.promo_code);
-  form.append("items", JSON.stringify(input.items.map(({ photo: _photo, photoPreviewUrl: _preview, ...item }) => item)));
+  form.append(
+    "items",
+    JSON.stringify(
+      input.items.map(
+        ({ photos: _photos, photoPreviewUrls: _previews, ...item }) => item,
+      ),
+    ),
+  );
   input.items.forEach((item, index) => {
-    if (item.photo) form.append(`item_photo_${index}`, item.photo);
+    item.photos?.forEach((photo, photoIndex) => {
+      form.append(`item_photo_${index}_${photoIndex}`, photo);
+    });
   });
   const res = await apiClient.post("/orders/", form);
   return unwrap<OrderDetail>(res);
@@ -120,7 +136,10 @@ export async function updateOrderItem(
   itemId: number,
   input: UpdateOrderItemInput,
 ): Promise<OrderItem> {
-  const res = await apiClient.patch(`/orders/${orderId}/items/${itemId}/`, input);
+  const res = await apiClient.patch(
+    `/orders/${orderId}/items/${itemId}/`,
+    input,
+  );
   return unwrap<OrderItem>(res);
 }
 

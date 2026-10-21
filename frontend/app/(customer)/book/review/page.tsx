@@ -21,6 +21,7 @@ import { formatCurrency } from "@/src/lib/constants";
 export default function BookReviewPage() {
   const {
     items,
+    orderType,
     pickupAddress,
     deliveryAddress,
     scheduledPickupDate,
@@ -44,12 +45,12 @@ export default function BookReviewPage() {
       subtitle="Step 3 — review your order"
       actions={
         <div className="flex items-center justify-between">
-        <Link href="/book/schedule">
-          <Button variant="ghost">Back</Button>
-        </Link>
-        <Link href="/book/confirm">
-          <Button>Next: Payment</Button>
-        </Link>
+          <Link href="/book/schedule">
+            <Button variant="ghost">Back</Button>
+          </Link>
+          <Link href="/book/confirm">
+            <Button>Next: Payment</Button>
+          </Link>
         </div>
       }
     >
@@ -64,7 +65,20 @@ export default function BookReviewPage() {
                 key={item.clientId}
                 className="flex items-center gap-2 text-sm"
               >
-                {item.photoPreviewUrl ? <Image src={item.photoPreviewUrl} alt="" width={40} height={40} unoptimized className="h-10 w-10 shrink-0 rounded-lg object-cover" /> : <span className="text-navy"><ServiceIcon type={item.service_type} /></span>}
+                {item.photoPreviewUrls?.[0] ? (
+                  <Image
+                    src={item.photoPreviewUrls[0]}
+                    alt=""
+                    width={40}
+                    height={40}
+                    unoptimized
+                    className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                  />
+                ) : (
+                  <span className="text-navy">
+                    <ServiceIcon type={item.service_type} />
+                  </span>
+                )}
                 <span>
                   {item.label || serviceLabel(item.service_type)} —{" "}
                   {item.weight_kg}kg x{item.quantity ?? 1}
@@ -76,8 +90,13 @@ export default function BookReviewPage() {
           <CreaseDivider className="my-4" />
 
           <p className="text-sm text-ink-muted">
-            Pickup: {pickupAddress || "(not set)"}
+            Order type: {orderType === "pickup" ? "Pick up" : "Drop off"}
           </p>
+          {orderType === "pickup" ? (
+            <p className="text-sm text-ink-muted">
+              Pick-up address: {pickupAddress || "(not set)"}
+            </p>
+          ) : null}
           <p className="text-sm text-ink-muted">
             Delivery: {deliveryAddress || "(not set)"}
           </p>
@@ -138,7 +157,6 @@ export default function BookReviewPage() {
           </p>
         </div>
       </Card>
-
     </BookingShell>
   );
 }

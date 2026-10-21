@@ -6,6 +6,15 @@ import { ArrowRight, Menu, X } from "lucide-react";
 import { buttonStyles } from "@/src/components/ui";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
 import Image from "next/image";
+import { BUSINESS } from "@/src/lib/constants";
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path fill="#25D366" d="M12.04 2a9.84 9.84 0 0 0-8.42 14.92L2.05 22l5.2-1.53A9.94 9.94 0 1 0 12.04 2Zm0 17.98a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.08.91.92-3-.2-.31A8.1 8.1 0 1 1 12.04 20Zm4.45-6.07c-.24-.12-1.44-.71-1.67-.79-.22-.08-.38-.12-.55.12-.16.25-.63.79-.77.95-.14.17-.28.19-.53.07-.24-.12-1.03-.38-1.96-1.21a7.33 7.33 0 0 1-1.36-1.69c-.14-.24-.01-.37.11-.5.11-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.17.04-.31-.02-.43-.06-.12-.55-1.32-.75-1.8-.2-.48-.4-.41-.55-.42h-.47c-.16 0-.42.06-.65.3-.22.25-.85.83-.85 2.03 0 1.19.87 2.34.99 2.5.12.16 1.71 2.61 4.14 3.66.58.25 1.03.4 1.38.51.58.19 1.11.16 1.53.1.47-.07 1.44-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28Z" />
+    </svg>
+  );
+}
 
 export function PublicNav() {
   const [open, setOpen] = useState(false);
@@ -42,6 +51,15 @@ export function PublicNav() {
         </div>
 
         <div className="font-display hidden items-center justify-end gap-3 md:flex">
+          <a
+            href={BUSINESS.whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="grid h-10 w-10 place-items-center rounded-full border border-crease bg-white transition-colors hover:border-[#25D366]/50 hover:bg-[#25D366]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]"
+            aria-label="Message the owner on WhatsApp"
+          >
+            <WhatsAppIcon className="h-[22px] w-[22px]" />
+          </a>
           {isHydrated && isAuthenticated ? (
             <Link href="/dashboard">
               <span className={buttonStyles({ variant: "gold" })}>
@@ -64,15 +82,26 @@ export function PublicNav() {
           )}
         </div>
 
-        <button
-          type="button"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-navy text-white md:hidden"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-label={open ? "Close menu" : "Open menu"}
-        >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <a
+            href={BUSINESS.whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="grid h-11 w-11 place-items-center rounded-full border border-crease bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]"
+            aria-label="Message the owner on WhatsApp"
+          >
+            <WhatsAppIcon className="h-6 w-6" />
+          </a>
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-navy text-white"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-label={open ? "Close menu" : "Open menu"}
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </nav>
 
       {open && (

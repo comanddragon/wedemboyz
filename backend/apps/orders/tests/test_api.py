@@ -1,7 +1,9 @@
+import base64
 from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -84,3 +86,39 @@ class TestOrderConsumesSubscription:
 
         sub.refresh_from_db()
         assert sub.kg_remaining == Decimal("10")  # untouched
+
+
+class TestOrderPlacementOptions:
+    def test_stores_fulfillment_and_payment_options(self, auth_client):
+        client, _ = auth_client
+        payload = {
+            **VALID_ORDER_PAYLOAD,
+            "fulfillment_type": "DROP_OFF",
+            "payment_option": "PAY_AFTER_DELIVERY",
+        }
+
+        response = client.post("/api/v1/orders/", payload, format="json")
+
+        assert response.status_code == 201, response.data
+        assert response.data["fulfillment_type"] == "DROP_OFF"
+        assert response.data["payment_option"] == "PAY_AFTER_DELIVERY"
+
+    def test_accepts_multiple_photos_for_one_item(self, auth_client):
+        client, _ = auth_client
+        image = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        )
+        payload = {
+            "pickup_address": VALID_ORDER_PAYLOAD["pickup_address"],
+            "delivery_address": VALID_ORDER_PAYLOAD["delivery_address"],
+            "fulfillment_type": "PICKUP",
+            "payment_option": "PAY_AT_PICKUP",
+            "items": '[{"service_type":"LAVAGE_ESSORAGE","weight_kg":"5.0","quantity":1}]',
+            "item_photo_0_0": SimpleUploadedFile("front.png", image, content_type="image/png"),
+            "item_photo_0_1": SimpleUploadedFile("stain.png", image, content_type="image/png"),
+        }
+
+        response = client.post("/api/v1/orders/", payload, format="multipart")
+
+        assert response.status_code == 201, response.data
+        assert len(response.data["items"][0]["photos"]) == 2
