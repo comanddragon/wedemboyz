@@ -45,7 +45,7 @@ const FAQ = [
   },
   {
     q: "How do I pay?",
-    a: "By cash, card, PayPal, MTN Mobile Money or Orange Money. Auto-renew is available with card or PayPal.",
+    a: "By cash, PayPal, MTN Mobile Money or Orange Money. Auto-renew is available with PayPal.",
   },
   {
     q: "Do you deliver?",

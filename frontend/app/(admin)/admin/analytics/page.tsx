@@ -121,22 +121,26 @@ export default function AdminAnalyticsPage() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
+          compact
           icon={TrendingUp}
           label="Income booked"
           value={summaryLoading ? "—" : formatCurrency(summary?.income_booked ?? 0)}
         />
         <StatCard
+          compact
           icon={TrendingDown}
           label="Cash received"
           value={summaryLoading ? "—" : formatCurrency(summary?.cash_received ?? 0)}
         />
         <StatCard
+          compact
           icon={Wallet}
           label="Outstanding"
           value={summaryLoading ? "—" : formatCurrency(summary?.outstanding ?? 0)}
           accent="gold"
         />
         <StatCard
+          compact
           icon={Receipt}
           label="Operating profit"
           value={summaryLoading ? "—" : formatCurrency(summary?.profit ?? 0)}
@@ -151,15 +155,13 @@ export default function AdminAnalyticsPage() {
         </p>
       )}
 
-      <Card className="mt-6">
-        <div className="mb-4 flex items-center justify-between">
+      <Card className="mt-4 overflow-hidden p-0">
+        <div className="flex items-center justify-between border-b border-crease bg-revenue-green-soft/55 px-4 py-3 sm:px-5">
           <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-steam text-navy">
-              <BarChart3 className="h-[18px] w-[18px]" aria-hidden="true" />
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-revenue-green text-white shadow-card-sm">
+              <BarChart3 className="h-4 w-4" aria-hidden="true" />
             </span>
-            <h2 className="font-display text-sm font-medium text-ink">
-              Income booked
-            </h2>
+            <div><h2 className="font-display text-base font-semibold text-navy">Revenue trend</h2><p className="text-xs text-revenue-green-dark">Income booked across the selected period</p></div>
           </div>
           <div className="inline-flex rounded-md border border-crease bg-white p-0.5">
             {(["daily", "monthly"] as const).map((p) => (
@@ -167,9 +169,9 @@ export default function AdminAnalyticsPage() {
                 key={p}
                 type="button"
                 onClick={() => setPeriod(p)}
-                className={`rounded px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+                  className={`rounded px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
                   period === p
-                    ? "bg-navy text-white"
+                    ? "bg-revenue-green-dark text-white"
                     : "text-ink-muted hover:text-ink"
                 }`}
               >
@@ -179,20 +181,22 @@ export default function AdminAnalyticsPage() {
           </div>
         </div>
 
+        <div className="p-3.5 sm:p-4">
         {revenueError && (
           <p className="mb-3 text-sm text-status-cancelled-text">
             {getApiErrorMessage(revenueError)}
           </p>
         )}
         {revenueLoading && (
-          <div className="h-[220px] animate-pulse rounded-md bg-steam" />
+          <div className="h-[260px] animate-pulse rounded-md bg-steam" />
         )}
         {!revenueLoading && revenue && (
           <RevenueChart points={revenue.results} period={revenue.period} />
         )}
+        </div>
       </Card>
 
-      <div className="mb-4 mt-10 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 mt-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-sm font-medium text-ink">Expenses</h2>
         <div className="flex flex-wrap items-center gap-2">
           <Select

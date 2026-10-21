@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState } from "react";
 
-import { WizardSteps } from "@/src/components/booking/WizardSteps";
+import { BookingShell } from "@/src/components/booking/BookingShell";
 import {
   Button,
   Card,
@@ -18,6 +18,7 @@ import {
   serviceLabel,
 } from "@/src/components/ui";
 import { useBooking } from "@/src/hooks/useBooking";
+import { formatCurrency } from "@/src/lib/constants";
 import { ensureSession } from "@/src/lib/guest-session";
 import type { ServiceType } from "@/src/types";
 
@@ -103,17 +104,24 @@ export default function BookServicesPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
-      <h1 className="font-display mb-1 text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
-        Book a pickup
-      </h1>
-      <p className="mb-6 text-sm text-ink-muted">
-        Step 1 — what needs cleaning?
-      </p>
-      <WizardSteps current={1} />
-
-      <div className="grid items-start gap-6 lg:grid-cols-2 xl:gap-10">
-        <Card>
+    <BookingShell
+      step={1}
+      subtitle="Step 1 — what needs cleaning?"
+      actions={
+        <div className="flex items-center justify-between">
+        <Link href="/dashboard">
+          <Button variant="ghost">Back</Button>
+        </Link>
+        {items.length > 0 && (
+          <Link href="/book/schedule">
+            <Button>Next: Schedule</Button>
+          </Link>
+        )}
+        </div>
+      }
+    >
+      <div className="grid h-full min-h-0 items-start gap-5 pb-3 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:gap-8">
+        <Card className="p-4 lg:p-5">
           <form onSubmit={handleAddItem}>
             <Field label="Service">
               <Select
@@ -142,6 +150,7 @@ export default function BookServicesPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="e.g. Small coffee stain on left sleeve, please pre-treat"
+                rows={2}
               />
             </Field>
 
@@ -194,14 +203,15 @@ export default function BookServicesPage() {
           </form>
         </Card>
 
-        <section>
-          <h2 className="font-display mb-3 text-sm font-medium text-ink">
-            Items ({items.length})
-          </h2>
+        <section className="flex min-h-0 flex-col">
+          <div className="mb-3 flex shrink-0 items-baseline justify-between gap-4">
+            <h2 className="font-display text-sm font-medium text-ink">Items ({items.length})</h2>
+            <p className="text-sm font-semibold tabular-nums text-navy">{formatCurrency(subtotal)}</p>
+          </div>
           {items.length === 0 && (
             <p className="text-sm text-ink-muted">No items added yet.</p>
           )}
-          <ul className="space-y-2">
+          <ul className="min-h-0 space-y-2 pr-1 lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-gutter:stable]">
             {items.map((item) => (
               <li key={item.clientId}>
                 <Card className="flex items-start gap-3 p-4">
@@ -232,22 +242,9 @@ export default function BookServicesPage() {
             ))}
           </ul>
 
-          <p className="mt-4 text-sm text-ink-muted">
-            Estimated subtotal: {subtotal} XAF
-          </p>
         </section>
       </div>
 
-      <div className="mt-8 flex justify-between">
-        <Link href="/dashboard">
-          <Button variant="ghost">Back</Button>
-        </Link>
-        {items.length > 0 && (
-          <Link href="/book/schedule">
-            <Button>Next: Schedule</Button>
-          </Link>
-        )}
-      </div>
-    </main>
+    </BookingShell>
   );
 }

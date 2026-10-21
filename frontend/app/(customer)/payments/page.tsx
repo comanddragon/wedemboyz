@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, CreditCard, Receipt } from "lucide-react";
+import { ChevronLeft, ChevronRight, Receipt } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -11,6 +11,9 @@ import {
   StatusBadge,
   paymentStatusTone,
 } from "@/src/components/ui";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
+import { PaymentMethodIcon } from "@/src/components/payments/PaymentMethodIcon";
+import { useAuth } from "@/src/hooks/useAuth";
 import { paymentsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
@@ -46,11 +49,8 @@ function PaymentsSkeleton() {
 
 function PaymentRow({ payment }: { payment: Payment }) {
   return (
-    <li>
-      <Card className="flex items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy">
-          <CreditCard className="h-4 w-4" aria-hidden="true" />
-        </span>
+    <li className="grid gap-3 px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:px-5">
+        <PaymentMethodIcon method={payment.payment_method_type} gateway={payment.gateway} className="h-10 w-12" />
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-ink">
@@ -73,7 +73,7 @@ function PaymentRow({ payment }: { payment: Payment }) {
           )}
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-1">
+        <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
           <p className="text-sm font-semibold text-ink">
             {formatCurrency(payment.amount)}
           </p>
@@ -82,12 +82,12 @@ function PaymentRow({ payment }: { payment: Payment }) {
             tone={paymentStatusTone(payment.status)}
           />
         </div>
-      </Card>
     </li>
   );
 }
 
 export default function PaymentHistoryPage() {
+  const { user } = useAuth();
   const [page, setPage] = useState(1);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -98,14 +98,12 @@ export default function PaymentHistoryPage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <div className="mb-6 flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-navy-50 text-navy">
-          <Receipt className="h-5 w-5" aria-hidden="true" />
-        </span>
+        <CustomerAvatar name={user ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() || user.phone_number : "Customer"} size="lg" />
         <div>
-          <EyebrowLabel words={["Your account"]} />
           <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
             Payment history
           </h1>
+          <p className="mt-1 text-sm text-ink-muted">Receipts and payment activity across your account.</p>
         </div>
       </div>
 
@@ -144,11 +142,11 @@ export default function PaymentHistoryPage() {
 
       {!isLoading && !isError && data && data.results.length > 0 && (
         <>
-          <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+          <div className="overflow-hidden rounded-2xl border border-crease bg-white"><div className="flex items-center justify-between border-b border-crease bg-steam/35 px-5 py-3"><p className="text-xs font-medium text-ink-muted">Transaction history</p><Receipt className="h-4 w-4 text-gold-600" /></div><ul className="divide-y divide-crease">
             {data.results.map((payment) => (
               <PaymentRow key={payment.id} payment={payment} />
             ))}
-          </ul>
+          </ul></div>
 
           {data.num_pages > 1 && (
             <div className="mt-6 flex items-center justify-between">

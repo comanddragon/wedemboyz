@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 
-import { WizardSteps } from "@/src/components/booking/WizardSteps";
+import { BookingShell } from "@/src/components/booking/BookingShell";
 import {
   Button,
   Card,
@@ -16,6 +16,7 @@ import {
   serviceLabel,
 } from "@/src/components/ui";
 import { useBooking } from "@/src/hooks/useBooking";
+import { formatCurrency } from "@/src/lib/constants";
 
 export default function BookReviewPage() {
   const {
@@ -38,13 +39,20 @@ export default function BookReviewPage() {
   const [promoInput, setPromoInput] = useState(promoCode ?? "");
 
   return (
-    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
-      <h1 className="font-display mb-1 text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
-        Book a pickup
-      </h1>
-      <p className="mb-6 text-sm text-ink-muted">Step 3 — review your order</p>
-      <WizardSteps current={3} />
-
+    <BookingShell
+      step={3}
+      subtitle="Step 3 — review your order"
+      actions={
+        <div className="flex items-center justify-between">
+        <Link href="/book/schedule">
+          <Button variant="ghost">Back</Button>
+        </Link>
+        <Link href="/book/confirm">
+          <Button>Next: Payment</Button>
+        </Link>
+        </div>
+      }
+    >
       <Card className="grid gap-x-12 gap-y-6 lg:grid-cols-[1.3fr_1fr] lg:p-7">
         <div>
           <h2 className="font-display mb-3 text-sm font-medium text-ink">
@@ -109,19 +117,19 @@ export default function BookReviewPage() {
           <div className="space-y-1 text-sm">
             <div className="flex justify-between text-ink-muted">
               <span>Subtotal (estimate)</span>
-              <span>{subtotal} XAF</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex justify-between text-ink-muted">
               <span>Delivery fee (estimate)</span>
-              <span>{deliveryFee} XAF</span>
+              <span>{formatCurrency(deliveryFee)}</span>
             </div>
             <div className="flex justify-between text-ink-muted">
               <span>Discount</span>
-              <span>-{discount} XAF</span>
+              <span>-{formatCurrency(discount)}</span>
             </div>
             <div className="flex justify-between pt-2 text-base font-semibold text-navy">
               <span>Total (estimate)</span>
-              <span>{total} XAF</span>
+              <span>{formatCurrency(total)}</span>
             </div>
           </div>
           <p className="mt-2 text-xs text-ink-muted">
@@ -131,14 +139,6 @@ export default function BookReviewPage() {
         </div>
       </Card>
 
-      <div className="mt-8 flex justify-between">
-        <Link href="/book/schedule">
-          <Button variant="ghost">Back</Button>
-        </Link>
-        <Link href="/book/confirm">
-          <Button>Next: Payment</Button>
-        </Link>
-      </div>
-    </main>
+    </BookingShell>
   );
 }

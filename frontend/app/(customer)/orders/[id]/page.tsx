@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageCircle } from "lucide-react";
+import { CalendarDays, MapPin, MessageCircle, PackageCheck, Truck, WalletCards } from "lucide-react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -16,6 +17,7 @@ import {
 } from "@/src/components/ui";
 import { ordersApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import { EDITABLE_ORDER_STATUSES } from "@/src/types";
 
@@ -72,87 +74,84 @@ export default function OrderDetailPage() {
         &larr; Back to orders
       </Link>
 
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
-          Order #{order.id}
-        </h1>
+      <div className="mb-5 flex items-end justify-between gap-4">
+        <div><h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">{order.ticket_number ?? `Order #${order.id}`}</h1><p className="mt-1 text-sm text-ink-muted">Placed {new Date(order.created_at).toLocaleString()}</p></div>
         <StatusBadge
           label={order.status}
           tone={orderStatusTone(order.status)}
         />
       </div>
 
-      <Card>
-        <p className="text-sm text-ink-muted">Pickup: {order.pickup_address}</p>
-        <p className="text-sm text-ink-muted">
-          Delivery: {order.delivery_address}
-        </p>
-        {order.notes && (
-          <p className="text-sm text-ink-muted">Notes: {order.notes}</p>
-        )}
+      <section className="mb-6 grid overflow-hidden rounded-2xl border border-crease bg-white sm:grid-cols-3">
+        {[
+          { icon: PackageCheck, label: "Laundry load", value: `${order.pieces_count} pieces · ${Number(order.weight_kg_total).toFixed(1)} kg` },
+          { icon: WalletCards, label: "Amount due", value: formatCurrency(order.balance_due) },
+          { icon: CalendarDays, label: "Last updated", value: new Date(order.updated_at).toLocaleDateString() },
+        ].map(({ icon: Icon, label, value }, index) => <div key={label} className={`flex items-center gap-3 px-5 py-4 ${index ? "border-t border-crease sm:border-l sm:border-t-0" : ""}`}><span className="grid h-9 w-9 place-items-center rounded-xl bg-navy-50 text-navy"><Icon className="h-4 w-4" aria-hidden="true" /></span><div><p className="text-[11px] text-ink-muted">{label}</p><p className="text-sm font-semibold text-navy">{value}</p></div></div>)}
+      </section>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+      <Card className="overflow-hidden p-0">
+        <div className="border-b border-crease bg-steam/30 p-5"><h2 className="font-display text-lg font-semibold text-navy">Your items</h2><p className="mt-1 text-xs text-ink-muted">Photos and care details submitted with this order.</p></div>
 
         <CreaseDivider />
 
-        <h2 className="font-display mb-3 text-sm font-medium text-ink">
-          Items
-        </h2>
-        <ul className="mb-4 space-y-3">
+        <ul className="divide-y divide-crease">
           {order.items.map((item) => (
-            <li key={item.id} className="flex items-start gap-2">
-              {item.photo ? <img src={item.photo} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" /> : <span className="mt-0.5 text-navy"><ServiceIcon type={item.service_type} /></span>}
+            <li key={item.id} className="flex items-start gap-3 px-5 py-4">
+              {item.photo ? <a href={item.photo} target="_blank" rel="noreferrer" className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-steam"><Image src={item.photo} alt={item.label || serviceLabel(item.service_type)} fill unoptimized className="object-cover" /></a> : <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-navy-50 text-navy"><ServiceIcon type={item.service_type} /></span>}
               <div className="flex-1 text-sm">
                 <p className="font-medium text-ink">
                   {item.label || serviceLabel(item.service_type)}
                 </p>
                 <p className="text-xs text-ink-muted">
                   {serviceLabel(item.service_type)} — {item.weight_kg}kg x
-                  {item.quantity} — {item.subtotal} XAF
+                  {item.quantity} — {formatCurrency(item.subtotal)}
                 </p>
                 {item.description && (
                   <p className="mt-1 text-xs text-ink-muted">
                     {item.description}
                   </p>
                 )}
+                <StatusBadge label={item.status} tone={item.status === "PACKED" ? "ready" : "progress"} />
               </div>
             </li>
           ))}
         </ul>
 
-        <div className="space-y-1 text-sm">
+        <div className="space-y-1 border-t border-crease bg-steam/25 p-5 text-sm">
           <div className="flex justify-between text-ink-muted">
             <span>Subtotal</span>
-            <span>{order.subtotal} XAF</span>
+            <span>{formatCurrency(order.subtotal)}</span>
           </div>
           <div className="flex justify-between text-ink-muted">
             <span>Discount</span>
-            <span>-{order.discount_amount} XAF</span>
+            <span>-{formatCurrency(order.discount_amount)}</span>
           </div>
           <div className="flex justify-between text-ink-muted">
             <span>Delivery fee</span>
-            <span>{order.delivery_fee} XAF</span>
+            <span>{formatCurrency(order.delivery_fee)}</span>
           </div>
           <div className="flex justify-between pt-2 text-base font-semibold text-navy">
             <span>Total</span>
             <span>
-              {order.total_amount} {order.currency}
+              {formatCurrency(order.total_amount)}
             </span>
           </div>
         </div>
 
-        <CreaseDivider />
+      </Card>
 
-        <h2 className="font-display mb-3 text-sm font-medium text-ink">
-          Status history
-        </h2>
-        <ul className="space-y-1 text-sm text-ink-muted">
+      <div className="space-y-5">
+        <Card><h2 className="mb-4 font-display text-base font-semibold text-navy">Pickup & delivery</h2><div className="space-y-4 text-sm"><div className="flex gap-3"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" /><div><p className="text-xs font-medium text-ink-muted">Pickup address</p><p className="text-ink">{order.pickup_address}</p></div></div><div className="flex gap-3"><Truck className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" /><div><p className="text-xs font-medium text-ink-muted">Delivery address</p><p className="text-ink">{order.delivery_address}</p></div></div>{order.notes ? <div className="rounded-xl bg-gold-50 px-3 py-2 text-sm text-gold-600"><strong>Your note:</strong> {order.notes}</div> : null}</div></Card>
+        <Card><h2 className="mb-4 font-display text-base font-semibold text-navy">Order progress</h2><ul className="space-y-4 text-sm text-ink-muted">
           {order.status_history.map((entry, i) => (
-            <li key={i}>
-              {entry.status} — {new Date(entry.created_at).toLocaleString()}
-              {entry.note && ` — ${entry.note}`}
+            <li key={i} className="flex gap-3"><span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gold" /><div><StatusBadge label={entry.status} tone={orderStatusTone(entry.status)} /><p className="mt-1 text-xs">{new Date(entry.created_at).toLocaleString()}</p>{entry.note ? <p className="mt-1 text-xs text-ink">{entry.note}</p> : null}</div>
             </li>
           ))}
-        </ul>
-      </Card>
+        </ul></Card>
+      </div>
+      </div>
 
       <div className="mt-6 flex items-center gap-3">
         {canCancel && (

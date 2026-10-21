@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { WashingLoader } from "@/src/components/ui/WashingLoader";
 
 export function GuardLoading({
   label = "Loading your workspace",
@@ -12,22 +12,10 @@ export function GuardLoading({
       aria-live="polite"
     >
       <div className="flex flex-col items-center text-center">
-        <span className="grid h-16 w-16 place-items-center rounded-full bg-white shadow-card">
-          <Image
-            src="/icon-mark.png"
-            alt=""
-            width={36}
-            height={44}
-            className="h-11 w-auto object-contain"
-            priority
-          />
-        </span>
+        <WashingLoader className="w-28" />
         <p className="mt-4 font-display text-sm font-medium text-navy">
           {label}
         </p>
-        <span className="mt-3 h-1 w-20 overflow-hidden rounded-full bg-crease">
-          <span className="block h-full w-1/2 animate-pulse rounded-full bg-gold motion-reduce:animate-none" />
-        </span>
       </div>
     </div>
   );

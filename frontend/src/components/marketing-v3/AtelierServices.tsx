@@ -172,7 +172,7 @@ export function AtelierServices() {
                       <Icon className="h-5 w-5" aria-hidden="true" />
                     </span>
                     <span className="at-serif-num order-3 text-right text-sm font-bold text-[var(--at-ivory)] sm:order-none sm:text-xl">
-                      {service.price.toLocaleString()}
+                      {service.price.toLocaleString("en-US")}
                       <span className="ml-1 text-xs font-medium text-[var(--at-slate)]">
                         {service.perKg ? "XAF/kg" : "XAF"}
                       </span>

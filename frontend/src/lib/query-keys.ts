@@ -46,6 +46,7 @@ export const queryKeys = {
   },
   notifications: {
     list: (page: number) => ["notifications", "list", page] as const,
+    unread: ["notifications", "unread"] as const,
     preferences: ["notifications", "preferences"] as const,
   },
   customers: {

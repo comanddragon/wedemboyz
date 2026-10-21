@@ -1,282 +1,95 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ArrowUpRight, CalendarDays, CreditCard, ReceiptText, RotateCcw } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
 import { Pagination } from "@/src/components/admin/Pagination";
 import { SearchInput } from "@/src/components/admin/SearchInput";
-import {
-  SortableTh,
-  TableContainer,
-  TableEmptyRow,
-  TableSkeleton,
-  TBody,
-  Td,
-  Th,
-  THead,
-  Tr,
-} from "@/src/components/admin/Table";
 import { Tabs } from "@/src/components/admin/Tabs";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import { PaymentMethodIcon } from "@/src/components/payments/PaymentMethodIcon";
-import { useSort } from "@/src/components/admin/useSort";
-import { Select, StatusBadge, paymentStatusTone } from "@/src/components/ui";
+import { Button, Select, StatusBadge, paymentStatusTone } from "@/src/components/ui";
 import { paymentsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
-import type { Payment, PaymentMethodType, PaymentStatus } from "@/src/types";
 import { customerFullName, customerNumber } from "@/src/lib/utils";
+import type { PaymentMethodType, PaymentStatus } from "@/src/types";
 
-const METHOD_LABELS: Record<PaymentMethodType, string> = {
-  MTN_MOMO: "MTN Mobile Money",
-  ORANGE_MONEY: "Orange Money",
-  CASH: "Cash",
-  BANK_TRANSFER: "Bank transfer",
-  OTHER: "Other",
-};
-
-const STATUS_OPTIONS: { value: PaymentStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "All statuses" },
-  { value: "PENDING", label: "Pending" },
-  { value: "SUCCEEDED", label: "Succeeded" },
-  { value: "FAILED", label: "Failed" },
-  { value: "REFUNDED", label: "Refunded" },
-  { value: "PARTIALLY_REFUNDED", label: "Partially refunded" },
+const METHOD_LABELS: Record<PaymentMethodType, string> = { MTN_MOMO: "MTN Mobile Money", ORANGE_MONEY: "Orange Money", CASH: "Cash", BANK_TRANSFER: "Bank transfer", OTHER: "Other" };
+const STATUS_OPTIONS: Array<{ value: PaymentStatus | "ALL"; label: string }> = [
+  { value: "ALL", label: "All statuses" }, { value: "PENDING", label: "Pending" }, { value: "SUCCEEDED", label: "Succeeded" },
+  { value: "FAILED", label: "Failed" }, { value: "REFUNDED", label: "Refunded" }, { value: "PARTIALLY_REFUNDED", label: "Partially refunded" },
+];
+const METHOD_OPTIONS: Array<{ value: PaymentMethodType | "ALL"; label: string }> = [
+  { value: "ALL", label: "All methods" }, ...Object.entries(METHOD_LABELS).map(([value, label]) => ({ value: value as PaymentMethodType, label })),
 ];
 
-type SortKey =
-  | "id"
-  | "order"
-  | "customer"
-  | "phone_number"
-  | "amount"
-  | "status"
-  | "created_at";
-
 export default function AdminPaymentsPage() {
-  const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<PaymentStatus | "ALL">(
-    "ALL",
-  );
+  const [status, setStatus] = useState<PaymentStatus | "ALL">("ALL");
+  const [method, setMethod] = useState<PaymentMethodType | "ALL">("ALL");
+  const [period, setPeriod] = useState("ALL");
+  const { data, isLoading, error } = useQuery({ queryKey: queryKeys.payments.list(page), queryFn: () => paymentsApi.listPayments(page) });
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.payments.list(page),
-    queryFn: () => paymentsApi.listPayments(page),
-  });
-
-  const filtered = useMemo(() => {
-    if (!data) return undefined;
+  const payments = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return data.results.filter((p) => {
-      const name = customerFullName(p.customer)?.toLowerCase() ?? "";
-      const number = customerNumber(p.customer)?.toLowerCase() ?? "";
-      const matchesSearch =
-        term === "" ||
-        String(p.id).includes(term) ||
-        (p.order !== null && String(p.order).includes(term)) ||
-        name.includes(term) ||
-        number.includes(term);
-      const matchesStatus = statusFilter === "ALL" || p.status === statusFilter;
-      return matchesSearch && matchesStatus;
+    const now = Date.now();
+    const cutoff = period === "7" ? now - 7 * 864e5 : period === "30" ? now - 30 * 864e5 : 0;
+    return data?.results.filter((payment) => {
+      const name = customerFullName(payment.customer)?.toLowerCase() ?? payment.payer_name.toLowerCase();
+      const phone = customerNumber(payment.customer)?.toLowerCase() ?? payment.payer_phone.toLowerCase();
+      const searchable = `${payment.id} ${payment.order ?? ""} ${payment.reference} ${payment.gateway_reference} ${name} ${phone}`.toLowerCase();
+      return (!term || searchable.includes(term)) && (status === "ALL" || payment.status === status) && (method === "ALL" || payment.payment_method_type === method) && (!cutoff || new Date(payment.received_at).getTime() >= cutoff);
     });
-  }, [data, search, statusFilter]);
+  }, [data, search, status, method, period]);
 
-  const { sorted, toggle, directionFor } = useSort<Payment, SortKey>(
-    filtered,
-    (row, key) => {
-      switch (key) {
-        case "id":
-          return row.id;
-        case "customer":
-          return customerFullName(row.customer)?.toLowerCase() ?? "";
-        case "phone_number":
-          return customerNumber(row.customer) ?? "";
-        case "order":
-          return row.order ?? "";
-        case "amount":
-          return Number(row.amount);
-        case "status":
-          return row.status;
-        case "created_at":
-          return row.created_at;
-      }
-    },
-  );
+  const summary = useMemo(() => ({
+    received: payments?.filter((p) => p.status === "SUCCEEDED").reduce((sum, p) => sum + Number(p.amount), 0) ?? 0,
+    pending: payments?.filter((p) => p.status === "PENDING").reduce((sum, p) => sum + Number(p.amount), 0) ?? 0,
+    refunds: payments?.filter((p) => p.status.includes("REFUNDED")).reduce((sum, p) => sum + Number(p.amount), 0) ?? 0,
+  }), [payments]);
 
-  return (
-    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
-      <AdminPageHeader
-        title="Payments"
-        description="Manual ledger of money received from customers."
-      />
+  const clearFilters = () => { setSearch(""); setStatus("ALL"); setMethod("ALL"); setPeriod("ALL"); };
+  const hasFilters = Boolean(search || status !== "ALL" || method !== "ALL" || period !== "ALL");
 
-      <Tabs
-        items={[
-          { href: "/admin/payments", label: "Payments" },
-          { href: "/admin/payments/refunds", label: "Refunds" },
-          { href: "/admin/payments/invoices", label: "Invoices" },
-        ]}
-      />
+  return <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+    <AdminPageHeader title="Payments" description="Track every payment, settlement, and exception from one clean ledger." />
+    <Tabs items={[{ href: "/admin/payments", label: "Payments" }, { href: "/admin/payments/refunds", label: "Refunds" }, { href: "/admin/payments/invoices", label: "Invoices" }]} />
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <SearchInput
-          placeholder="Search this page by payment # or order #"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="sm:max-w-xs"
-          aria-label="Search payments on this page"
-        />
-        <Select
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as PaymentStatus | "ALL")
-          }
-          className="sm:w-52"
-          aria-label="Filter by status"
-        >
-          {STATUS_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
-        {data && (
-          <p className="text-xs text-ink-muted sm:ml-auto">
-            {filtered?.length ?? 0} of {data.results.length} on this page ·{" "}
-            {data.count} total
-          </p>
-        )}
-      </div>
+    <section className="mb-6 grid overflow-hidden rounded-2xl border border-crease bg-white sm:grid-cols-3" aria-label="Payment summary">
+      {[
+        { label: "Received", value: summary.received, icon: CreditCard, tone: "text-status-complete-text bg-status-complete-bg" },
+        { label: "Pending", value: summary.pending, icon: CalendarDays, tone: "text-status-pending-text bg-status-pending-bg" },
+        { label: "Refunded", value: summary.refunds, icon: RotateCcw, tone: "text-status-progress-text bg-status-progress-bg" },
+      ].map(({ label, value, icon: Icon, tone }, index) => <div key={label} className={`flex items-center gap-3 px-5 py-4 ${index ? "border-t border-crease sm:border-l sm:border-t-0" : ""}`}><span className={`grid h-10 w-10 place-items-center rounded-xl ${tone}`}><Icon className="h-4 w-4" aria-hidden="true" /></span><div><p className="text-xs text-ink-muted">{label} in view</p><p className="font-display text-xl font-semibold tabular-nums text-navy">{formatCurrency(value)}</p></div></div>)}
+    </section>
 
-      {error && (
-        <p className="mb-3 text-sm text-status-cancelled-text">
-          {getApiErrorMessage(error)}
-        </p>
-      )}
+    <div className="mb-5 grid gap-3 rounded-2xl border border-crease bg-white p-3 sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_180px_190px_170px_auto]">
+      <SearchInput placeholder="Payment, order, reference, or customer" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search payments" />
+      <Select value={status} onChange={(e) => setStatus(e.target.value as PaymentStatus | "ALL")} aria-label="Filter by status">{STATUS_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</Select>
+      <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethodType | "ALL")} aria-label="Filter by payment method">{METHOD_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</Select>
+      <Select value={period} onChange={(e) => setPeriod(e.target.value)} aria-label="Filter by date"><option value="ALL">Any date</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></Select>
+      <Button variant="ghost" onClick={clearFilters} disabled={!hasFilters}>Clear</Button>
+    </div>
 
-      <TableContainer>
-        <THead>
-          <SortableTh
-            label="Payment"
-            active={directionFor("id") !== null}
-            direction={directionFor("id")}
-            onSort={() => toggle("id")}
-          />
-          <SortableTh
-            label="Order"
-            active={directionFor("order") !== null}
-            direction={directionFor("order")}
-            onSort={() => toggle("order")}
-          />
-          <SortableTh
-            label="Customer"
-            active={directionFor("customer") !== null}
-            direction={directionFor("customer")}
-            onSort={() => toggle("customer")}
-          />
-          <SortableTh
-            label="Phone Number"
-            active={directionFor("phone_number") !== null}
-            direction={directionFor("phone_number")}
-            onSort={() => toggle("phone_number")}
-          />
-          <Th>Method</Th>
-          <SortableTh
-            label="Amount"
-            align="right"
-            active={directionFor("amount") !== null}
-            direction={directionFor("amount")}
-            onSort={() => toggle("amount")}
-          />
-          <SortableTh
-            label="Status"
-            active={directionFor("status") !== null}
-            direction={directionFor("status")}
-            onSort={() => toggle("status")}
-          />
-          <SortableTh
-            label="Date"
-            active={directionFor("created_at") !== null}
-            direction={directionFor("created_at")}
-            onSort={() => toggle("created_at")}
-          />
-          <Th className="w-8" />
-        </THead>
-        <TBody>
-          {isLoading && <TableSkeleton columns={7} />}
-
-          {!isLoading && sorted && sorted.length === 0 && (
-            <TableEmptyRow colSpan={7}>
-              {data && data.results.length === 0
-                ? "No payments yet."
-                : "No payments match your search or filter."}
-            </TableEmptyRow>
-          )}
-
-          {!isLoading &&
-            sorted?.map((payment) => (
-              <Tr
-                key={payment.id}
-                onClick={() => router.push(`/admin/payments/${payment.id}`)}
-              >
-                <Td className="font-medium">#{payment.id}</Td>
-                <Td className="text-ink-muted">
-                  {payment.order !== null
-                    ? `#${payment.order}`
-                    : `Sub #${payment.subscription}`}
-                </Td>
-                <Td>
-                  {customerFullName(payment.customer) ?? (
-                    <span className="text-ink-muted">—</span>
-                  )}
-                </Td>
-                <Td>
-                  {customerNumber(payment.customer) ?? (
-                    <span className="text-ink-muted">—</span>
-                  )}
-                </Td>
-
-                <Td className="text-ink-muted">
-                  <span className="flex items-center gap-2"><PaymentMethodIcon method={payment.payment_method_type} className="h-8 w-10" />{METHOD_LABELS[payment.payment_method_type]}</span>
-                  {payment.reference && (
-                    <span className="block text-xs">{payment.reference}</span>
-                  )}
-                </Td>
-                <Td align="right" className="tabular-nums">
-                  {formatCurrency(payment.amount)}
-                </Td>
-                <Td>
-                  <StatusBadge
-                    label={payment.status}
-                    tone={paymentStatusTone(payment.status)}
-                  />
-                </Td>
-                <Td className="whitespace-nowrap text-ink-muted">
-                  {new Date(payment.received_at).toLocaleDateString()}
-                </Td>
-                <Td>
-                  <ChevronRight
-                    className="h-4 w-4 text-ink-muted"
-                    aria-hidden="true"
-                  />
-                </Td>
-              </Tr>
-            ))}
-        </TBody>
-      </TableContainer>
-
-      {data && (
-        <Pagination
-          currentPage={data.current_page}
-          numPages={data.num_pages}
-          onPageChange={setPage}
-        />
-      )}
-    </main>
-  );
+    {error && <p className="mb-3 text-sm text-status-cancelled-text">{getApiErrorMessage(error)}</p>}
+    <section className="overflow-hidden rounded-2xl border border-crease bg-white" aria-label="Payment ledger">
+      <div className="flex items-center justify-between border-b border-crease bg-steam/35 px-5 py-3"><p className="text-xs font-medium text-ink-muted">Transaction ledger</p>{data && <p className="text-xs text-ink-muted">{payments?.length ?? 0} shown · {data.count} total</p>}</div>
+      {isLoading ? <div className="space-y-px">{[0,1,2,3].map((item) => <div key={item} className="h-24 animate-pulse bg-steam/40" />)}</div> : payments?.length ? <div className="divide-y divide-crease">{payments.map((payment) => {
+        const name = customerFullName(payment.customer) || payment.payer_name || "Customer";
+        return <Link key={payment.id} href={`/admin/payments/${payment.id}`} className="grid gap-3 px-4 py-4 transition-colors hover:bg-steam/35 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-gold/30 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:items-center sm:px-5">
+          <span className="relative"><CustomerAvatar name={name} /><span className="absolute -bottom-1 -right-2 rounded-md bg-white shadow-card-sm"><PaymentMethodIcon method={payment.payment_method_type} className="h-5 w-7" /></span></span>
+          <span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="font-semibold text-navy">{name}</span><StatusBadge label={payment.status} tone={paymentStatusTone(payment.status)} /></span><span className="mt-1 block truncate text-xs text-ink-muted">{METHOD_LABELS[payment.payment_method_type]} · {payment.order ? `Order #${payment.order}` : `Subscription #${payment.subscription}`}{payment.reference ? ` · Ref ${payment.reference}` : ""}</span></span>
+          <span className="sm:text-right"><span className="block font-display text-lg font-semibold tabular-nums text-navy">{formatCurrency(payment.amount)}</span><span className="block text-xs text-ink-muted">{new Date(payment.received_at).toLocaleString()}</span></span>
+          <ArrowUpRight className="hidden h-4 w-4 text-ink-muted sm:block" aria-hidden="true" />
+        </Link>;
+      })}</div> : <div className="grid min-h-56 place-items-center px-6 text-center text-sm text-ink-muted"><div><ReceiptText className="mx-auto mb-3 h-6 w-6" aria-hidden="true" />No payments match these filters.</div></div>}
+    </section>
+    {data && <Pagination currentPage={data.current_page} numPages={data.num_pages} onPageChange={setPage} />}
+  </main>;
 }

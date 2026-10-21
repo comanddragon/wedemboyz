@@ -181,7 +181,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
 
         {billing === "MONTHLY" && (
           <p className="mt-5 text-xs text-ink-muted">
-            Billed automatically every 30 days by card or PayPal.
+            Billed automatically every 30 days by PayPal.
           </p>
         )}
 

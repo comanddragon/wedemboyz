@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { WizardSteps } from "@/src/components/booking/WizardSteps";
+import { BookingShell } from "@/src/components/booking/BookingShell";
 import {
   Button,
   Card,
+  DateInput,
   Field,
   Input,
   Select,
@@ -52,14 +53,21 @@ export default function BookSchedulePage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
-      <h1 className="font-display mb-1 text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
-        Book a pickup
-      </h1>
-      <p className="mb-6 text-sm text-ink-muted">Step 2 — when and where?</p>
-      <WizardSteps current={2} />
-
-      <Card className="grid gap-x-5 md:grid-cols-6 lg:p-7">
+    <BookingShell
+      step={2}
+      subtitle="Step 2 — when and where?"
+      actions={
+        <div className="flex items-center justify-between">
+        <Link href="/book">
+          <Button variant="ghost">Back</Button>
+        </Link>
+        <Link href="/book/review" onClick={handleContinue}>
+          <Button>Next: Review</Button>
+        </Link>
+        </div>
+      }
+    >
+      <Card className="grid grid-cols-1 gap-x-5 md:grid-cols-6 lg:p-6">
         <div className="md:col-span-2">
           <Field label="Order type">
             <Select
@@ -97,10 +105,9 @@ export default function BookSchedulePage() {
           </Field>
         </div>
 
-        <div className="md:col-span-2">
+        <div className="min-w-0 md:col-span-2">
           <Field label="Pickup date">
-            <Input
-              type="date"
+            <DateInput
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
@@ -131,14 +138,6 @@ export default function BookSchedulePage() {
         </div>
       </Card>
 
-      <div className="mt-8 flex justify-between">
-        <Link href="/book">
-          <Button variant="ghost">Back</Button>
-        </Link>
-        <Link href="/book/review" onClick={handleContinue}>
-          <Button>Next: Review</Button>
-        </Link>
-      </div>
-    </main>
+    </BookingShell>
   );
 }

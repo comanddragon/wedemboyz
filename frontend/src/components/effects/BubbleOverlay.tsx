@@ -216,7 +216,7 @@ export function BubbleOverlay() {
     return (
         <div
             aria-hidden="true"
-            className="pointer-events-none fixed inset-0 z-[5] overflow-hidden"
+            className="pointer-events-none fixed inset-x-0 top-0 bottom-3 z-[5] overflow-hidden"
         >
             <style>{keyframesCss}</style>
             {bubbles.map((bubble) => (

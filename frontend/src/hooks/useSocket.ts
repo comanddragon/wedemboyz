@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
 import { queryKeys } from "@/src/lib/query-keys";
+import { chatApi } from "@/src/lib/api";
+import { clearRoomUnread } from "@/src/lib/chat-cache";
 import { useChatStore } from "@/src/lib/stores/chat.store";
 import { ChatSocket } from "@/src/lib/ws/chatSocket";
 
@@ -40,6 +42,10 @@ export function useSocket(roomId: number | null) {
       // path invalidates it. Without this, the inbox's last_message/
       // unread_count goes stale for the life of the socket connection.
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.rooms });
+      chatApi.markRoomRead(roomId).then(
+        () => clearRoomUnread(queryClient, roomId),
+        () => undefined,
+      );
     });
 
     socket.connect();

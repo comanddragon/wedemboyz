@@ -11,8 +11,11 @@ import type {
 /** GET /notifications/ */
 export async function listNotifications(
   page = 1,
+  isRead?: boolean,
 ): Promise<Paginated<Notification>> {
-  const res = await apiClient.get("/notifications/", { params: { page } });
+  const res = await apiClient.get("/notifications/", {
+    params: { page, is_read: isRead },
+  });
   return unwrap<Paginated<Notification>>(res);
 }
 

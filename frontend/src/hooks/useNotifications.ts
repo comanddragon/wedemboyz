@@ -10,6 +10,7 @@ import { useNotificationStore } from "@/src/lib/stores/notification.store";
 export function useNotifications(page = 1) {
   const queryClient = useQueryClient();
   const setUnreadCount = useNotificationStore((state) => state.setUnreadCount);
+  const decrementUnreadCount = useNotificationStore((state) => state.decrement);
   const unreadCount = useNotificationStore((state) => state.unreadCount);
 
   const listQuery = useQuery({
@@ -17,16 +18,21 @@ export function useNotifications(page = 1) {
     queryFn: () => notificationsApi.listNotifications(page),
   });
 
+  const unreadQuery = useQuery({
+    queryKey: queryKeys.notifications.unread,
+    queryFn: () => notificationsApi.listNotifications(1, false),
+  });
+
   useEffect(() => {
-    if (listQuery.data) {
-      const unread = listQuery.data.results.filter((n) => !n.is_read).length;
-      setUnreadCount(unread);
+    if (unreadQuery.data) {
+      setUnreadCount(unreadQuery.data.count);
     }
-  }, [listQuery.data, setUnreadCount]);
+  }, [unreadQuery.data, setUnreadCount]);
 
   const markReadMutation = useMutation({
     mutationFn: (id: number) => notificationsApi.markNotificationRead(id),
     onSuccess: () => {
+      decrementUnreadCount();
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
@@ -34,6 +40,7 @@ export function useNotifications(page = 1) {
   const markAllReadMutation = useMutation({
     mutationFn: () => notificationsApi.markAllNotificationsRead(),
     onSuccess: () => {
+      setUnreadCount(0);
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });

@@ -14,6 +14,7 @@ import {
   THead,
   Tr,
 } from "@/src/components/admin/Table";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import { Button, Card, Field, Input, Select, StatusBadge, Textarea, orderStatusTone } from "@/src/components/ui";
 import { customersApi, discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
@@ -96,13 +97,16 @@ export default function AdminCustomerDetailPage() {
       </Link>
 
       <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
+        <div className="flex items-center gap-3">
+          <CustomerAvatar name={fullName} size="lg" />
+          <div>
           <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
             {fullName}
           </h1>
           <p className="mt-0.5 text-xs text-ink-muted">
             Customer since {new Date(customer.created_at).toLocaleDateString()}
           </p>
+          </div>
         </div>
         {!customer.is_active && (
           <StatusBadge label="Inactive" tone="cancelled" />

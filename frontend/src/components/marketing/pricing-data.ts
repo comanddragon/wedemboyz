@@ -98,7 +98,7 @@ export const PICKUP_DELIVERY_FEE = 1500;
 
 /** 17500 -> "17 500". Explicit locale so server and client render the same. */
 export function formatAmount(amount: number): string {
-  return amount.toLocaleString("fr-FR");
+  return amount.toLocaleString("en-US");
 }
 
 export const pricePerKg = (plan: Plan) => Math.round(plan.monthly / plan.kg);

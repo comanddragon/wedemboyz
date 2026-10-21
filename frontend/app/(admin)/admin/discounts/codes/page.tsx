@@ -30,6 +30,7 @@ import {
 } from "@/src/components/ui";
 import { discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import type { PromoCode } from "@/src/types";
 
@@ -62,7 +63,7 @@ function promoCodeStatus(promo: PromoCode): {
 function formatDiscountValue(promo: PromoCode): string {
   return promo.discount_type === "PERCENTAGE"
     ? `${Number(promo.value)}%`
-    : `${Number(promo.value)} XAF`;
+    : formatCurrency(promo.value);
 }
 
 type SortKey = "code" | "discount" | "times_used" | "valid_until";
@@ -233,7 +234,7 @@ export default function AdminPromoCodesPage() {
                   </Td>
                   <Td className="tabular-nums">{formatDiscountValue(promo)}</Td>
                   <Td className="text-ink-muted tabular-nums">
-                    {Number(promo.min_order_amount)} XAF
+                    {formatCurrency(promo.min_order_amount)}
                   </Td>
                   <Td align="right" className="tabular-nums">
                     {promo.times_used}

@@ -15,6 +15,7 @@ import {
 } from "@/src/components/ui";
 import { discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import type { DiscountCampaign, DiscountCampaignSegment } from "@/src/types";
 
@@ -41,7 +42,7 @@ function campaignStatus(campaign: DiscountCampaign): {
 function formatDiscountValue(campaign: DiscountCampaign): string {
   return campaign.discount_type === "PERCENTAGE"
     ? `${Number(campaign.value)}%`
-    : `${Number(campaign.value)} XAF`;
+    : formatCurrency(campaign.value);
 }
 
 export default function AdminDiscountDetailPage() {

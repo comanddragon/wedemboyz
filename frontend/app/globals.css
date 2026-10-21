@@ -67,6 +67,15 @@
   --color-status-cancelled-bg: #fce6e3;
   --color-status-cancelled-text: #9b3a3a;
 
+  --color-status-confirmed-bg: #e7f0ff;
+  --color-status-confirmed-text: #2458a6;
+  --color-status-delivery-bg: #eee9fb;
+  --color-status-delivery-text: #62459a;
+  --color-status-complete-bg: #dff3e5;
+  --color-status-complete-text: #1b6a3d;
+  --color-status-ready-alt-bg: #dff5f2;
+  --color-status-ready-alt-text: #176c69;
+
   /*
       Legacy "Fold Line" supporting colours. They are not in the flyer, so
       they are no longer used for brand surfaces on the pricing page. Kept
@@ -87,6 +96,11 @@
   --color-clothesline: #4c9a63;
   --color-clothesline-50: #e9f5ec;
   --color-clothesline-600: #35784a;
+
+  /* Analytics: an energetic green reserved for positive revenue movement. */
+  --color-revenue-green: #18a85b;
+  --color-revenue-green-dark: #08783b;
+  --color-revenue-green-soft: #e2f7ea;
 
   /* Dashboard action blue: reserved for navigation, focus and primary data. */
   --color-dashboard-blue: #1688f8;
@@ -743,12 +757,66 @@ input[type="radio"]:not(.sr-only):disabled {
   outline-offset: 3px;
 }
 
-/* Dark footer on the dark homepage. Tailwind utilities read these tokens, so
-   overriding them here recolors text-navy / text-ink-muted / border-crease. */
-.chrome-dark {
-  --color-navy: #ffffff;
-  --color-ink: #ffffff;
-  --color-ink-muted: #b6bccb;
-  --color-crease: rgb(255 255 255 / 0.12);
-  background: #071130;
+/* Date inputs: iOS Safari gives them an intrinsic width that overflows
+   narrow grid cells and collapses empty ones. Pin width and height. */
+input[type="date"].ui-control {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  height: calc(2.55rem + 2px);
+  text-align: left;
+}
+input[type="date"].ui-control::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.25rem;
+}
+.ui-date input {
+  position: relative;
+}
+.ui-date input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.ui-date input.is-empty:not(:focus)::-webkit-datetime-edit {
+  opacity: 0;
+}
+.ui-date:focus-within .ui-date-placeholder {
+  display: none;
+}
+
+/* Loader: the drum inside the logomark spins; the body wobbles slightly. */
+@keyframes wm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes wm-wobble {
+  0%,
+  100% {
+    transform: rotate(-0.8deg) translateY(0);
+  }
+  50% {
+    transform: rotate(0.8deg) translateY(-1px);
+  }
+}
+.wm-drum {
+  animation: wm-spin 2.6s linear infinite;
+}
+.wm-loader {
+  animation: wm-wobble 0.6s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wm-drum {
+    animation-duration: 8s;
+  }
+  .wm-loader {
+    animation: none;
+  }
 }

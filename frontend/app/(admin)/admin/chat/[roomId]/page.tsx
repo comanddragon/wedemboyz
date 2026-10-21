@@ -11,10 +11,12 @@ import {
   type ChatComposerSubmission,
 } from "@/src/components/chat/ChatComposer";
 import { MessageAttachments } from "@/src/components/chat/MessageAttachments";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import { Button, Select, StatusBadge } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useSocket } from "@/src/hooks/useSocket";
 import { chatApi, staffApi } from "@/src/lib/api";
+import { clearRoomUnread } from "@/src/lib/chat-cache";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
 import { useChatStore } from "@/src/lib/stores/chat.store";
@@ -138,12 +140,12 @@ export default function AdminChatRoomPage() {
 
   useEffect(() => {
     if (Number.isFinite(roomId)) {
-      chatApi.markRoomRead(roomId).catch(() => {
-        // Best-effort — an unread badge lingering a little longer isn't worth
-        // surfacing an error for.
-      });
+      chatApi.markRoomRead(roomId).then(
+        () => clearRoomUnread(queryClient, roomId),
+        () => undefined,
+      );
     }
-  }, [roomId]);
+  }, [queryClient, roomId]);
 
   const { status, messages, send } = useSocket(
     Number.isFinite(roomId) ? roomId : null,
@@ -194,15 +196,16 @@ export default function AdminChatRoomPage() {
     : "";
 
   return (
-    <div className="mx-auto flex h-screen max-w-5xl flex-col">
-      <div className="flex flex-col gap-3 border-b border-crease px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="flex shrink-0 flex-col gap-2 border-b border-crease bg-white px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
         <div className="flex items-center gap-3">
           <Link
             href="/admin/chat"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-steam hover:text-ink"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-steam hover:text-ink md:hidden"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
+          <CustomerAvatar name={customerName || `Customer ${roomId}`} size="sm" />
           <div>
             <p className="text-sm font-semibold text-navy">
               {customerName || `Conversation #${roomId}`}
@@ -234,7 +237,7 @@ export default function AdminChatRoomPage() {
                   event.target.value ? Number(event.target.value) : null,
                 )
               }
-              className="w-44"
+              className="w-36 py-1.5 text-xs"
               aria-label="Assigned staff member"
             >
               <option value="">Unassigned</option>
@@ -290,12 +293,12 @@ export default function AdminChatRoomPage() {
         </p>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto bg-paper">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#efeae2]">
         {historyQuery.isLoading ? (
           <MessagesSkeleton />
         ) : (
           <div className="flex min-h-full flex-col justify-end">
-            <div className="space-y-1 px-6 py-6">
+            <div className="space-y-1 px-4 py-6 sm:px-8">
               {messages.length === 0 && (
                 <p className="py-12 text-center text-sm text-ink-muted">
                   No messages yet — say hello.
@@ -321,9 +324,8 @@ export default function AdminChatRoomPage() {
                         {formatDayLabel(message.created_at)}
                       </p>
                     )}
-                    <div
-                      className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-                    >
+                    <div className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
+                      {!isMine && showSenderName ? <CustomerAvatar name={message.sender_name || customerName || "Customer"} size="sm" /> : !isMine ? <span className="w-9 shrink-0" /> : null}
                       <div
                         className={`max-w-[75%] ${isMine ? "items-end" : "items-start"} flex flex-col`}
                       >
@@ -335,8 +337,8 @@ export default function AdminChatRoomPage() {
                         <div
                           className={`flex flex-col gap-1.5 rounded-2xl px-4 py-2 text-sm leading-relaxed ${
                             isMine
-                              ? "rounded-br-sm bg-navy text-white"
-                              : "rounded-bl-sm bg-white text-ink"
+                              ? "rounded-br-sm bg-[#d9fdd3] text-ink shadow-card-sm"
+                              : "rounded-bl-sm bg-white text-ink shadow-card-sm"
                           } ${message.content ? "" : "p-1.5"}`}
                         >
                           {message.content && <span>{message.content}</span>}

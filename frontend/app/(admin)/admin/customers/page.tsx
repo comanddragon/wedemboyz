@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
 import { Pagination } from "@/src/components/admin/Pagination";
 import { SearchInput } from "@/src/components/admin/SearchInput";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import {
   SortableTh,
   TableContainer,
@@ -179,7 +180,7 @@ export default function AdminCustomersPage() {
                 onClick={() => router.push(`/admin/customers/${customer.id}`)}
               >
                 <Td className="font-medium">
-                  {`${customer.first_name} ${customer.last_name}`.trim() || "—"}
+                  <span className="flex items-center gap-2"><CustomerAvatar name={`${customer.first_name} ${customer.last_name}`.trim() || customer.phone_number} size="sm" /><span>{`${customer.first_name} ${customer.last_name}`.trim() || "—"}</span></span>
                   {!customer.is_active && (
                     <span className="ml-2 rounded-full bg-status-cancelled-bg px-2 py-0.5 text-[11px] font-medium text-status-cancelled-text">
                       inactive

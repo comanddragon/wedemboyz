@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
 import { Pagination } from "@/src/components/admin/Pagination";
 import { SearchInput } from "@/src/components/admin/SearchInput";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import {
   SortableTh,
   TableContainer,
@@ -21,6 +22,7 @@ import {
 } from "@/src/components/admin/Table";
 import { useSort } from "@/src/components/admin/useSort";
 import {
+  Button,
   Select,
   StatusBadge,
   orderStatusTone,
@@ -73,6 +75,8 @@ export default function AdminOrdersPage() {
     OrderPaymentStatus | "ALL"
   >("ALL");
   const [sourceFilter, setSourceFilter] = useState<(typeof SOURCE_OPTIONS)[number]>("ALL");
+  const [priorityFilter, setPriorityFilter] = useState<"ALL" | "NORMAL" | "EXPRESS" | "URGENT">("ALL");
+  const [periodFilter, setPeriodFilter] = useState("ALL");
 
   const staffQuery = useQuery({
     queryKey: ["staff", "operations"],
@@ -108,9 +112,12 @@ export default function AdminOrdersPage() {
         String(order.id).includes(term) ||
         name.includes(term) ||
         number.includes(term);
-      return matchesSearch;
+      const matchesPriority = priorityFilter === "ALL" || order.priority === priorityFilter;
+      const cutoff = periodFilter === "7" ? Date.now() - 7 * 864e5 : periodFilter === "30" ? Date.now() - 30 * 864e5 : 0;
+      const matchesPeriod = !cutoff || new Date(order.created_at).getTime() >= cutoff;
+      return matchesSearch && matchesPriority && matchesPeriod;
     });
-  }, [data, search]);
+  }, [data, search, priorityFilter, periodFilter]);
 
   const { sorted, toggle, directionFor } = useSort<OrderListItem, SortKey>(
     filtered,
@@ -161,6 +168,13 @@ export default function AdminOrdersPage() {
             </option>
           ))}
         </Select>
+        <Select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as typeof priorityFilter)} className="sm:w-40" aria-label="Filter by priority">
+          <option value="ALL">All priorities</option><option value="NORMAL">Normal</option><option value="EXPRESS">Express</option><option value="URGENT">Urgent</option>
+        </Select>
+        <Select value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value)} className="sm:w-40" aria-label="Filter by date">
+          <option value="ALL">Any date</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option>
+        </Select>
+        <Button variant="ghost" onClick={() => { setSearch(""); setStatusFilter("ALL"); setPaymentFilter("ALL"); setSourceFilter("ALL"); setPriorityFilter("ALL"); setPeriodFilter("ALL"); }}>Clear</Button>
         <Select
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value as (typeof SOURCE_OPTIONS)[number])}
@@ -265,9 +279,7 @@ export default function AdminOrdersPage() {
                   {order.source.replace(/_/g, " ")}
                 </Td>
                 <Td>
-                  {customerFullName(order.customer) ?? (
-                    <span className="text-ink-muted">—</span>
-                  )}
+                  <span className="flex items-center gap-2"><CustomerAvatar name={customerFullName(order.customer) ?? `Customer ${order.id}`} size="sm" /><span>{customerFullName(order.customer) ?? <span className="text-ink-muted">—</span>}</span></span>
                 </Td>
                 <Td className="text-xs text-ink-muted">
                   <p>{order.assigned_to ? staffNames.get(order.assigned_to) ?? "Assigned" : "Unassigned"}</p>

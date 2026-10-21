@@ -1,3 +1,4 @@
+import { CalendarDays } from "lucide-react";
 import type {
   InputHTMLAttributes,
   LabelHTMLAttributes,
@@ -73,5 +74,32 @@ export function Textarea({
       )}
       {...props}
     />
+  );
+}
+
+export function DateInput({
+  className,
+  value,
+  ...props
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const empty = !value;
+  return (
+    <div className="ui-date relative">
+      <Input
+        type="date"
+        value={value}
+        className={cn(empty && "is-empty", "pr-10", className)}
+        {...props}
+      />
+      {empty && (
+        <span className="ui-date-placeholder pointer-events-none absolute inset-y-0 left-[0.95rem] flex items-center text-sm text-ink-faint">
+          Select a date
+        </span>
+      )}
+      <CalendarDays
+        className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
+        aria-hidden="true"
+      />
+    </div>
   );
 }

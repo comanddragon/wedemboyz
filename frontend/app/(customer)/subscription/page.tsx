@@ -75,7 +75,6 @@ const GATEWAY_LABELS: Record<SubscriptionGateway, string> = {
 };
 
 const ALL_SUBSCRIPTION_GATEWAYS: SubscriptionGateway[] = [
-  "STRIPE",
   "PAYPAL",
   "MTN_MOMO",
   "ORANGE_MONEY",
@@ -148,7 +147,7 @@ function PlanPicker({
               <p className="text-sm font-semibold text-navy">{p.name}</p>
               <p className="mt-0.5 text-xs text-ink-muted">{p.kgPerMonth}</p>
               <p className="mt-3 font-display text-xl font-bold text-navy">
-                {p.price.toLocaleString()}
+                {p.price.toLocaleString("en-US")}
                 <span className="ml-1 text-xs font-medium text-ink-muted">
                   XAF
                 </span>
@@ -196,7 +195,7 @@ function PlanPicker({
         </div>
         {billingCycle === "MONTHLY" && (
           <p className="mt-2 text-xs text-ink-muted">
-            Auto-renew is only available with a card (Stripe) or PayPal.
+            Auto-renew is only available with PayPal.
           </p>
         )}
       </div>

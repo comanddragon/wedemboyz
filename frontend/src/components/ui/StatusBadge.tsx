@@ -9,19 +9,32 @@ import type {
   SubscriptionStatus,
 } from "@/src/types";
 
-export type StatusTone = "pending" | "progress" | "ready" | "cancelled";
+export type StatusTone =
+  | "pending"
+  | "confirmed"
+  | "progress"
+  | "ready"
+  | "delivery"
+  | "complete"
+  | "cancelled";
 
 const TONE_CLASSES: Record<StatusTone, string> = {
   pending: "bg-status-pending-bg text-status-pending-text",
+  confirmed: "bg-status-confirmed-bg text-status-confirmed-text",
   progress: "bg-status-progress-bg text-status-progress-text",
-  ready: "bg-status-ready-bg text-status-ready-text",
+  ready: "bg-status-ready-alt-bg text-status-ready-alt-text",
+  delivery: "bg-status-delivery-bg text-status-delivery-text",
+  complete: "bg-status-complete-bg text-status-complete-text",
   cancelled: "bg-status-cancelled-bg text-status-cancelled-text",
 };
 
 const DOT_CLASSES: Record<StatusTone, string> = {
   pending: "bg-status-pending-text",
+  confirmed: "bg-status-confirmed-text",
   progress: "bg-gold",
-  ready: "bg-clothesline",
+  ready: "bg-status-ready-alt-text",
+  delivery: "bg-status-delivery-text",
+  complete: "bg-status-complete-text",
   cancelled: "bg-coral",
 };
 
@@ -49,14 +62,17 @@ export function StatusBadge({
 export function orderStatusTone(status: OrderStatus): StatusTone {
   switch (status) {
     case "PENDING":
-    case "CONFIRMED":
       return "pending";
+    case "CONFIRMED":
+      return "confirmed";
     case "IN_PROGRESS":
       return "progress";
     case "READY":
-    case "OUT_FOR_DELIVERY":
-    case "DELIVERED":
       return "ready";
+    case "OUT_FOR_DELIVERY":
+      return "delivery";
+    case "DELIVERED":
+      return "complete";
     case "CANCELLED":
       return "cancelled";
     default:

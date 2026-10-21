@@ -15,6 +15,7 @@ import {
 } from "@/src/components/ui";
 import { discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import type { PromoCode } from "@/src/types";
 
@@ -36,7 +37,7 @@ function promoCodeStatus(promo: PromoCode): {
 function formatDiscountValue(promo: PromoCode): string {
   return promo.discount_type === "PERCENTAGE"
     ? `${Number(promo.value)}%`
-    : `${Number(promo.value)} XAF`;
+    : formatCurrency(promo.value);
 }
 
 export default function AdminPromoCodeDetailPage() {
@@ -126,7 +127,7 @@ export default function AdminPromoCodeDetailPage() {
             {promo.code}
           </h1>
           <p className="mt-0.5 text-xs text-ink-muted">
-            Min. order {Number(promo.min_order_amount)} XAF
+            Min. order {formatCurrency(promo.min_order_amount)}
           </p>
         </div>
         <StatusBadge label={status.label} tone={status.tone} />

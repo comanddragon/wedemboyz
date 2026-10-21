@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
   Bell,
@@ -28,7 +29,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { LogoutButton } from "@/src/components/auth/LogoutButton";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import { useLockBodyScroll } from "@/src/hooks/useLockBodyScroll";
+import { chatApi, notificationsApi } from "@/src/lib/api";
 import {
   canAccess,
   ROLE_LABELS,
@@ -36,6 +39,7 @@ import {
   type AdminRole,
 } from "@/src/lib/admin-rbac";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
+import { queryKeys } from "@/src/lib/query-keys";
 
 type NavItem = {
   href: string;
@@ -233,6 +237,21 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
     : links.filter((item) =>
         ["/dashboard", "/book", "/orders", "/chat"].includes(item.href),
       );
+  const { data: chatRooms } = useQuery({
+    queryKey: queryKeys.chat.rooms,
+    queryFn: () => chatApi.listChatRooms(),
+    enabled: Boolean(user && admin),
+    refetchInterval: 20_000,
+  });
+  const { data: unreadNotifications } = useQuery({
+    queryKey: queryKeys.notifications.unread,
+    queryFn: () => notificationsApi.listNotifications(1, false),
+    enabled: Boolean(user && !admin),
+    refetchInterval: 30_000,
+  });
+  const attentionCount = admin
+    ? (chatRooms?.reduce((total, room) => total + room.unread_count, 0) ?? 0)
+    : (unreadNotifications?.count ?? 0);
   useLockBodyScroll(open);
 
   return (
@@ -278,29 +297,34 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
           <Link
             href={admin ? "/admin/chat" : "/notifications"}
             className="relative grid h-11 w-11 place-items-center rounded-full bg-mist text-navy transition-colors hover:bg-gold-50 sm:bg-white/90 sm:shadow-float lg:h-10 lg:w-10"
-            aria-label={admin ? "Open inbox" : "Open notifications"}
+            aria-label={`${admin ? "Open inbox" : "Open notifications"}${attentionCount > 0 ? `, ${attentionCount} unread` : ""}`}
           >
             {admin ? <MessageCircle className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-            <span className="absolute right-2.5 top-2 h-1.5 w-1.5 rounded-full bg-gold" />
+            {attentionCount > 0 ? (
+              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold tabular-nums text-navy ring-2 ring-white">
+                {attentionCount > 99 ? "99+" : attentionCount}
+              </span>
+            ) : null}
           </Link>
           <details className="group relative hidden sm:block">
             <summary className="flex h-10 cursor-pointer list-none items-center gap-2 rounded-full border-0 bg-white/90 shadow-float px-2 pr-3 text-navy marker:content-none">
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-gold text-xs font-bold">
-                {name.charAt(0).toUpperCase()}
-              </span>
+              <CustomerAvatar name={name} size="xs" className="ring-0" />
               <span className="max-w-24 truncate text-xs font-semibold">
                 {name}
               </span>
               <ChevronDown className="h-3.5 w-3.5 text-ink-muted" />
             </summary>
             <div className="absolute right-0 top-12 w-56 rounded-2xl border-0 bg-white/90 shadow-float p-2 shadow-pop">
-              <div className="border-b border-crease-soft px-3 py-2">
-                <p className="truncate text-sm font-semibold text-navy">
-                  {name}
-                </p>
-                <p className="mt-0.5 text-xs text-ink-muted">
-                  {admin && role ? ROLE_LABELS[role] : user?.is_guest ? "Guest — not saved to an account" : "Customer account"}
-                </p>
+              <div className="flex items-center gap-3 border-b border-crease-soft px-3 py-2">
+                <CustomerAvatar name={name} size="sm" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-navy">
+                    {name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-ink-muted">
+                    {admin && role ? ROLE_LABELS[role] : user?.is_guest ? "Guest — not saved to an account" : "Customer account"}
+                  </p>
+                </div>
               </div>
               {user?.is_staff && (
                 <Link
@@ -395,10 +419,29 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
               ))}
             </nav>
             <div className="mt-auto border-t border-crease-soft pt-4">
-              <p className="px-2 text-sm font-semibold text-navy">{name}</p>
-              <p className="mb-2 px-2 text-xs text-ink-muted">
-                {admin && role ? ROLE_LABELS[role] : user?.is_guest ? "Guest — not saved to an account" : "Customer account"}
-              </p>
+              {user?.is_staff && (
+                <Link
+                  href={admin ? "/dashboard" : "/admin"}
+                  onClick={() => setOpen(false)}
+                  className="mb-3 flex min-h-12 items-center gap-3 rounded-xl bg-gold-50 px-3 py-3 text-sm font-semibold text-navy active:bg-steam"
+                >
+                  {admin ? (
+                    <LayoutDashboard className="h-[18px] w-[18px]" />
+                  ) : (
+                    <UserCog className="h-[18px] w-[18px]" />
+                  )}
+                  {admin ? "Customer view" : "Admin console"}
+                </Link>
+              )}
+              <div className="mb-2 flex items-center gap-3 px-2">
+                <CustomerAvatar name={name} size="sm" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-navy">{name}</p>
+                  <p className="text-xs text-ink-muted">
+                    {admin && role ? ROLE_LABELS[role] : user?.is_guest ? "Guest — not saved to an account" : "Customer account"}
+                  </p>
+                </div>
+              </div>
               <LogoutButton className="w-full justify-start" />
             </div>
           </div>

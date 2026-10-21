@@ -3,14 +3,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   CircleCheck,
-  CircleOff,
   Star,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { WizardSteps } from "@/src/components/booking/WizardSteps";
+import { BookingShell } from "@/src/components/booking/BookingShell";
 import { PaymentMethodIcon } from "@/src/components/payments/PaymentMethodIcon";
 import { Button, Card, Field, Input, Select } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -19,6 +18,7 @@ import { useBooking } from "@/src/hooks/useBooking";
 import { ordersApi, paymentsApi, profileApi, scheduleApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
+import { formatCurrency } from "@/src/lib/constants";
 import type { PaymentGateway, PaymentMethod } from "@/src/types";
 
 type MobileMoneyOperator = Extract<PaymentGateway, "MTN_MOMO" | "ORANGE_MONEY">;
@@ -227,19 +227,29 @@ export default function BookConfirmPage() {
   });
 
   return (
-    <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
-      <h1 className="font-display mb-1 text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
-        Book a pickup
-      </h1>
-      <p className="mb-6 text-sm text-ink-muted">Step 4 — payment</p>
-      <WizardSteps current={4} />
-
+    <BookingShell
+      step={4}
+      subtitle="Step 4 — payment"
+      actions={
+        <div className="flex items-center justify-between">
+        <Link href="/book/review">
+          <Button variant="ghost">Back</Button>
+        </Link>
+        <Link
+          href="/settings/payments"
+          className="text-xs font-medium text-navy hover:underline"
+        >
+          Manage payment methods
+        </Link>
+        </div>
+      }
+    >
       <Card className="grid items-start gap-x-12 gap-y-6 lg:grid-cols-[1.2fr_1fr] lg:p-7">
         <div>
           <p className="mb-4 text-sm text-ink-muted">
             Total due:{" "}
             <span className="text-base font-semibold text-navy">
-              {booking.total} XAF
+              {formatCurrency(booking.total)}
             </span>
           </p>
 
@@ -390,12 +400,6 @@ export default function BookConfirmPage() {
               </span>
             </label>
 
-            <label className="flex cursor-not-allowed items-center gap-2 rounded-xl border border-crease px-3.5 py-2.5 text-sm transition-all duration-200 hover:border-navy/40 hover:bg-steam/60 text-ink-muted">
-              <input type="radio" name="payment-selection" disabled />
-              <PaymentMethodIcon method="STRIPE" />
-              <CircleOff className="h-4 w-4" aria-hidden="true" />
-              {GATEWAY_LABELS.STRIPE} — not wired up yet
-            </label>
           </fieldset>
         </div>
 
@@ -445,17 +449,6 @@ export default function BookConfirmPage() {
         </div>
       </Card>
 
-      <div className="mt-8 flex items-center justify-between">
-        <Link href="/book/review">
-          <Button variant="ghost">Back</Button>
-        </Link>
-        <Link
-          href="/settings/payments"
-          className="text-xs font-medium text-navy hover:underline"
-        >
-          Manage payment methods
-        </Link>
-      </div>
-    </main>
+    </BookingShell>
   );
 }

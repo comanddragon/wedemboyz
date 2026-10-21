@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import { Card, StatusBadge, paymentStatusTone } from "@/src/components/ui";
 import { paymentsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
@@ -72,7 +73,9 @@ export default function AdminPaymentDetailPage() {
       </Link>
 
       <div className="mb-6 flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-3">
+          <CustomerAvatar name={payment.payer_name || (payment.customer ? `${payment.customer.first_name} ${payment.customer.last_name}`.trim() : `Payment ${payment.id}`)} size="lg" />
+          <div>
           <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
             Payment #{payment.id}
           </h1>
@@ -88,6 +91,7 @@ export default function AdminPaymentDetailPage() {
               For subscription #{payment.subscription}
             </p>
           )}
+          </div>
         </div>
         <StatusBadge
           label={payment.status}

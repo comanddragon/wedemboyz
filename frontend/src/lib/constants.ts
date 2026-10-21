@@ -24,11 +24,9 @@ export const CURRENCY = "XAF";
  * computing real charges (the server is always authoritative on price). */
 export function formatCurrency(amount: number | string): string {
   const value = typeof amount === "string" ? Number(amount) : amount;
-  return new Intl.NumberFormat("fr-CM", {
-    style: "currency",
-    currency: CURRENCY,
+  return `${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value)} FCFA`;
 }
 
 /** Mirrors apps.chat.constants — kept in sync with the backend so invalid

@@ -22,7 +22,6 @@ import type { PaymentGateway } from "@/src/types";
 const GATEWAYS: { value: PaymentGateway; label: string }[] = [
   { value: "MTN_MOMO", label: "MTN Mobile Money" },
   { value: "ORANGE_MONEY", label: "Orange Money" },
-  { value: "STRIPE", label: "Card (Stripe)" },
 ];
 
 function gatewayLabel(gateway: PaymentGateway): string {

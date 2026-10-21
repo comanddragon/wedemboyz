@@ -7,6 +7,7 @@ import { useState } from "react";
 import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
 import { Pagination } from "@/src/components/admin/Pagination";
 import { SearchInput } from "@/src/components/admin/SearchInput";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import { TableContainer, TableEmptyRow, TableSkeleton, TBody, Td, Th, THead, Tr } from "@/src/components/admin/Table";
 import { Button, Input, Select, StatusBadge } from "@/src/components/ui";
 import { paymentsApi } from "@/src/lib/api";
@@ -29,7 +30,7 @@ export default function AdminSubscriptionsPage() {
       {subscriptions.isLoading ? <TableSkeleton columns={6} /> : null}
       {!subscriptions.isLoading && !subscriptions.data?.results.length ? <TableEmptyRow colSpan={6}><span className="inline-flex items-center gap-2"><BadgePercent className="h-4 w-4" /> No subscriptions match.</span></TableEmptyRow> : null}
       {subscriptions.data?.results.map((subscription) => <Tr key={subscription.id}>
-        <Td><p className="font-medium">{subscription.customer_name || `Customer #${subscription.user}`}</p><p className="text-xs text-ink-muted">{subscription.customer_phone}</p></Td>
+        <Td><div className="flex items-center gap-2"><CustomerAvatar name={subscription.customer_name || subscription.customer_phone || `Customer ${subscription.user}`} size="sm" /><div><p className="font-medium">{subscription.customer_name || `Customer #${subscription.user}`}</p><p className="text-xs text-ink-muted">{subscription.customer_phone}</p></div></div></Td>
         <Td>{subscription.plan}</Td><Td align="right" className="tabular-nums">{Number(subscription.kg_remaining).toFixed(1)} kg</Td>
         <Td className="whitespace-nowrap text-xs text-ink-muted">{subscription.start_date} → {subscription.end_date}</Td><Td><StatusBadge label={subscription.status} tone={subscription.status === "ACTIVE" ? "ready" : subscription.status === "PENDING" ? "pending" : "progress"} /></Td>
         <Td align="right"><div className="flex flex-wrap justify-end gap-1.5">

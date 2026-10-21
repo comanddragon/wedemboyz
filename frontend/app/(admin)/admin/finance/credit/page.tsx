@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
 import { Pagination } from "@/src/components/admin/Pagination";
 import { SearchInput } from "@/src/components/admin/SearchInput";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import {
   SortableTh,
   TableContainer,
@@ -166,8 +167,7 @@ export default function AdminCreditAccountsPage() {
                 }
               >
                 <Td className="font-medium">
-                  {`${account.user.first_name} ${account.user.last_name}`.trim() ||
-                    `Customer #${account.user.id}`}
+                  <span className="flex items-center gap-2"><CustomerAvatar name={`${account.user.first_name} ${account.user.last_name}`.trim() || account.user.phone_number} size="sm" /><span>{`${account.user.first_name} ${account.user.last_name}`.trim() || `Customer #${account.user.id}`}</span></span>
                 </Td>
                 <Td className="text-ink-muted">{account.user.phone_number}</Td>
                 <Td align="right" className="tabular-nums">

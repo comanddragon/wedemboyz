@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Save, Truck, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, MapPin, PackageCheck, Save, Shirt, Truck, UserRound, WalletCards } from "lucide-react";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
@@ -14,6 +15,7 @@ import {
   THead,
   Tr,
 } from "@/src/components/admin/Table";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import { PaymentSummary } from "@/src/components/payments/PaymentSummary";
 import { PaymentMethodIcon } from "@/src/components/payments/PaymentMethodIcon";
 import {
@@ -179,14 +181,17 @@ export default function AdminOrderDetailPage() {
         Back to orders
       </Link>
 
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex items-center gap-3">
+          <CustomerAvatar name={customerFullName(order.customer) ?? `Customer ${order.user}`} size="lg" />
+          <div>
           <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
             {order.ticket_number ?? `Order #${order.id}`}
           </h1>
-          <p className="mt-0.5 text-xs text-ink-muted">
-            {customerFullName(order.customer) ?? `Customer #${order.user}`} · {order.source.replace(/_/g, " ")} · {order.priority}
+          <p className="mt-1 text-sm text-ink-muted">
+            {customerFullName(order.customer) ?? `Customer #${order.user}`} · placed {new Date(order.created_at).toLocaleString()}
           </p>
+          </div>
         </div>
         <StatusBadge
           label={order.status}
@@ -194,13 +199,24 @@ export default function AdminOrderDetailPage() {
         />
       </div>
 
+      <section className="mb-6 grid overflow-hidden rounded-2xl border border-crease bg-white sm:grid-cols-2 xl:grid-cols-4" aria-label="Order overview">
+        {[
+          { icon: Shirt, label: "Laundry load", value: `${order.pieces_count} pieces · ${Number(order.weight_kg_total).toFixed(1)} kg` },
+          { icon: WalletCards, label: "Payment", value: `${formatCurrency(order.balance_due)} due` },
+          { icon: UserRound, label: "Customer", value: customerFullName(order.customer) ?? `Customer #${order.user}` },
+          { icon: CalendarDays, label: "Priority & source", value: `${order.priority} · ${order.source.replace(/_/g, " ")}` },
+        ].map(({ icon: Icon, label, value }, index) => <div key={label} className={`flex items-center gap-3 px-5 py-4 ${index ? "border-t border-crease sm:border-l sm:border-t-0 sm:[&:nth-child(3)]:border-l-0 sm:[&:nth-child(3)]:border-t xl:[&:nth-child(3)]:border-l xl:[&:nth-child(3)]:border-t-0" : ""}`}><span className="grid h-9 w-9 place-items-center rounded-xl bg-navy-50 text-navy"><Icon className="h-4 w-4" aria-hidden="true" /></span><div className="min-w-0"><p className="text-[11px] text-ink-muted">{label}</p><p className="truncate text-sm font-semibold text-navy">{value}</p></div></div>)}
+      </section>
+
       <div className="grid items-start gap-6 lg:grid-cols-[1.3fr_1fr]">
-        <Card className="p-0">
-          <div className="space-y-1 p-5 pb-4 text-sm text-ink-muted">
-            <p>Pickup: {order.pickup_address}</p>
-            <p>Delivery: {order.delivery_address}</p>
-            <p>{order.pieces_count} piece{order.pieces_count === 1 ? "" : "s"} · {Number(order.weight_kg_total).toFixed(1)} kg</p>
-            {order.notes && <p>Notes: {order.notes}</p>}
+        <Card className="overflow-hidden p-0">
+          <div className="border-b border-crease bg-steam/30 p-5">
+            <div className="mb-4 flex items-center justify-between"><div><h2 className="font-display text-lg font-semibold text-navy">Items in this order</h2><p className="text-xs text-ink-muted">Inspect photos, care notes, and processing progress.</p></div><PackageCheck className="h-5 w-5 text-gold" aria-hidden="true" /></div>
+            <div className="grid gap-3 text-sm sm:grid-cols-2">
+              <div className="flex gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" /><div><p className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Pickup</p><p className="text-ink">{order.pickup_address || "Not provided"}</p></div></div>
+              <div className="flex gap-2"><Truck className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" /><div><p className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Delivery</p><p className="text-ink">{order.delivery_address || "Not provided"}</p></div></div>
+            </div>
+            {order.notes && <div className="mt-4 rounded-xl bg-gold-50 px-4 py-3 text-sm text-gold-600"><span className="font-semibold">Customer note:</span> {order.notes}</div>}
           </div>
 
           <TableContainer className="rounded-none border-x-0 border-b-0">
@@ -217,9 +233,7 @@ export default function AdminOrderDetailPage() {
                 <Tr key={item.id}>
                   <Td>
                     <div className="flex items-start gap-2">
-                      <span className="mt-0.5 text-navy">
-                        <ServiceIcon type={item.service_type} />
-                      </span>
+                      {item.photo ? <a href={item.photo} target="_blank" rel="noreferrer" className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-steam"><Image src={item.photo} alt={item.label || serviceLabel(item.service_type)} fill unoptimized className="object-cover transition-transform group-hover:scale-105" /></a> : <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-navy-50 text-navy"><ServiceIcon type={item.service_type} /></span>}
                       <div>
                         <p className="font-medium text-ink">
                           {item.label || serviceLabel(item.service_type)}
@@ -229,6 +243,7 @@ export default function AdminOrderDetailPage() {
                             {item.description}
                           </p>
                         )}
+                        {(item.condition_notes || item.stain_notes) && <p className="mt-1 text-xs font-medium text-status-progress-text">{[item.condition_notes, item.stain_notes].filter(Boolean).join(" · ")}</p>}
                       </div>
                     </div>
                   </Td>

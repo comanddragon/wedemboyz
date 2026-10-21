@@ -6,21 +6,39 @@ small laundromat — 1 owner + 3 employees, ~80 regular customers and roughly
 4-5 orders a day over the last 90 days — across every app (users, orders,
 payments, discounts, finance, inventory, chat, notifications, staff).
 
+Idempotency
+-----------
+Running the command repeatedly is safe:
+
+* Seed users are identified by the reserved email domain
+  ``@seed.wedemboyz.invalid`` (the ``.invalid`` TLD can never route, so seed
+  accounts can never email a real person). If seed staff already exist, the
+  bulk/random data (users, orders, chats, expenses, ...) is NOT created again.
+  The command only tops up the fixed reference data and exits cleanly.
+* Reference data (promo codes, loyalty rules, discount campaigns, inventory
+  items) is keyed on a natural key (code / name) and only created when missing.
+* Everything runs in a single transaction, so a failure leaves the DB untouched.
+* ``--force`` skips the "already seeded" check and stacks another batch of
+  random data on top. Seed emails carry a per-run token, so batches never collide.
+* ``--clear`` wipes seedable tables first, then reseeds.
+
 Usage
 -----
     python manage.py seed_data
     python manage.py seed_data --customers 200 --orders 1500 --staff 6
     python manage.py seed_data --seed 42          # reproducible run
     python manage.py seed_data --clear            # wipe seedable tables, then reseed
-    python manage.py seed_data --clear-only        # wipe seedable tables and exit
+    python manage.py seed_data --clear-only       # wipe seedable tables and exit
+    python manage.py seed_data --force            # add another batch on top
 
-Only run this against a development/test database. `--clear` and
-`--clear-only` refuse to run unless DEBUG=True as a basic guard rail against
-pointing this at prod.
+WARNING: there are no environment guards. `--clear` / `--clear-only` delete every
+seedable table plus all non-superuser users on whatever database the settings
+point at, with no confirmation prompt. Back up first if the data matters.
 """
 
 import os
 import random
+import uuid
 from datetime import timedelta, date
 from decimal import Decimal
 
@@ -54,6 +72,12 @@ from core.constants import Currency, OrderStatus, PaymentGateway, PaymentStatus,
 from services.pricing import kg_allowance_for_plan
 
 User = get_user_model()
+
+# ---------------------------------------------------------------------------
+# Seed marker. Every seeded user with an email gets an address on this domain;
+# seed staff always have one, which is what the "already seeded?" check uses.
+# ---------------------------------------------------------------------------
+SEED_EMAIL_DOMAIN = "seed.wedemboyz.invalid"
 
 # ---------------------------------------------------------------------------
 # Faker instance for generic filler text only (freeform notes, etc). Locale
@@ -130,6 +154,19 @@ INVENTORY_ITEMS = [
     ("Steam Iron", InventoryCategory.EQUIPMENT, InventoryUnit.PCS),
     ("Ironing Board Cover", InventoryCategory.EQUIPMENT, InventoryUnit.PCS),
     ("Whitening Bleach 1L", InventoryCategory.DETERGENT, InventoryUnit.L),
+]
+
+# Fixed-identity reference data (natural keys: code / name).
+SEED_PROMO_CODES = [
+    ("WELCOME10", DiscountType.PERCENTAGE, Decimal("10")),
+    ("SAVE500", DiscountType.FIXED, Decimal("500")),
+    ("LOYALTY5", DiscountType.PERCENTAGE, Decimal("5")),
+]
+EXTRA_PROMO_CODES = ["PROMO100", "PROMO101"]  # index 0 is created already expired/inactive
+SEED_PROMO_CODE_NAMES = [c[0] for c in SEED_PROMO_CODES] + EXTRA_PROMO_CODES
+
+SEED_CAMPAIGN_NAMES = [
+    "Rainy Season Wash & Fold", "End of Month Payday Deal", "First Order Welcome Campaign",
 ]
 
 CHAT_CUSTOMER_LINES = [
@@ -287,7 +324,7 @@ def rand_inventory_note():
 
 
 class Command(BaseCommand):
-    help = "Seed the database with a small-laundromat dataset (1 owner, 3 employees)."
+    help = "Seed the database with a small-laundromat dataset (1 owner, 3 employees). Safe to re-run."
 
     def add_arguments(self, parser):
         parser.add_argument("--customers", type=int, default=80, help="Number of customer users to create.")
@@ -296,11 +333,11 @@ class Command(BaseCommand):
         parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducible runs.")
         parser.add_argument(
             "--clear", action="store_true",
-            help="Delete existing rows from seedable tables before seeding (requires DEBUG=True).",
+            help="Delete existing rows from seedable tables before seeding. Destructive; no environment guard.",
         )
         parser.add_argument(
             "--clear-only", action="store_true",
-            help="Delete existing rows from seedable tables and exit without reseeding (requires DEBUG=True).",
+            help="Delete existing rows from seedable tables and exit without reseeding. Destructive; no environment guard.",
         )
         parser.add_argument(
             "--days-back", type=int, default=90,
@@ -309,7 +346,12 @@ class Command(BaseCommand):
         parser.add_argument(
             "--allow-production",
             action="store_true",
-            help="Explicitly allow non-destructive demo seeding when DEBUG=False.",
+            help="Deprecated no-op, kept so existing command lines keep working.",
+        )
+        parser.add_argument(
+            "--force",
+            action="store_true",
+            help="Skip the 'already seeded' check and add another batch of random data on top.",
         )
 
     # -- helpers -------------------------------------------------------
@@ -333,37 +375,29 @@ class Command(BaseCommand):
     def log(self, msg):
         self.stdout.write(msg)
 
+    def seed_staff_queryset(self):
+        """Staff accounts created by this command (identified by the reserved domain)."""
+        return User.objects.filter(is_staff=True, email__iendswith="@" + SEED_EMAIL_DOMAIN)
+
+    def is_seeded(self):
+        return self.seed_staff_queryset().exists()
+
+    def seed_email(self, kind, index):
+        # run_id keeps addresses unique across --force batches.
+        return f"{kind}-{self.run_id}-{index}@{SEED_EMAIL_DOMAIN}"
+
     # -- main entrypoint -------------------------------------------------
 
     def handle(self, *args, **options):
+        # With DEBUG off, seeded users get non-routable phones/emails and all
+        # notifications disabled, so seed accounts can never message anyone real.
         production_seed = not settings.DEBUG
-        if production_seed and not options["allow_production"]:
-            raise CommandError(
-                "Refusing to seed with DEBUG=False without --allow-production."
-            )
-
-        seed_password = os.environ.get("SEED_USER_PASSWORD", "")
-        if production_seed and len(seed_password) < 12:
-            raise CommandError(
-                "Set SEED_USER_PASSWORD to at least 12 characters before production seeding."
-            )
-        if not seed_password:
-            seed_password = "Password123!"
-
-        if production_seed and User.objects.filter(
-            email__endswith="@seed.wedemboyz.invalid"
-        ).exists():
-            raise CommandError(
-                "Seed users already exist; refusing to create a duplicate production dataset."
-            )
 
         if options["seed"] is not None:
             random.seed(options["seed"])
             fake.seed_instance(options["seed"])
 
         if options["clear"] or options["clear_only"]:
-            if not settings.DEBUG:
-                raise CommandError("--clear/--clear-only refuse to run unless DEBUG=True. Point this at a dev/test DB only.")
             self.clear_data()
             if options["clear_only"]:
                 self.stdout.write(self.style.SUCCESS("Cleared seedable tables. Skipping reseed (--clear-only)."))
@@ -373,12 +407,36 @@ class Command(BaseCommand):
         n_staff = options["staff"]
         n_orders = options["orders"]
         days_back = options["days_back"]
-
-        used_phones = set(User.objects.values_list("phone_number", flat=True))
+        self.run_id = uuid.uuid4().hex[:8]
 
         settings.SEED_DATA_ACTIVE = True
         try:
             with transaction.atomic():
+                # --- Idempotency gate -------------------------------------
+                if self.is_seeded() and not options["force"]:
+                    staff_users = list(self.seed_staff_queryset())
+                    self.log(self.style.WARNING(
+                        "Seed data already present — skipping users/orders/chat/finance. "
+                        "Topping up reference data only."
+                    ))
+                    self.seed_reference_data(staff_users, days_back)
+                    self.stdout.write(self.style.SUCCESS(
+                        "Nothing else to do. Use --clear to rebuild "
+                        "or --force to add another batch."
+                    ))
+                    return
+
+                # --- Password (only needed once we actually create users) --
+                seed_password = os.environ.get("SEED_USER_PASSWORD", "")
+                if production_seed and len(seed_password) < 12:
+                    raise CommandError(
+                        "Set SEED_USER_PASSWORD to at least 12 characters before production seeding."
+                    )
+                if not seed_password:
+                    seed_password = "Password123!"
+
+                used_phones = set(User.objects.values_list("phone_number", flat=True))
+
                 staff_users = self.seed_staff(
                     n_staff, used_phones, seed_password, production_seed
                 )
@@ -388,10 +446,7 @@ class Command(BaseCommand):
                 self.seed_notification_preferences(
                     staff_users + customers, production_seed
                 )
-                promo_codes = self.seed_promo_codes(days_back)
-                self.seed_loyalty_rules()
-                self.seed_discount_campaigns(days_back)
-                self.seed_inventory(staff_users, days_back)
+                promo_codes, _items = self.seed_reference_data(staff_users, days_back)
                 payment_methods = self.seed_payment_methods(customers, production_seed)
                 orders = self.seed_orders(
                     n_orders, customers, staff_users, promo_codes, payment_methods, days_back
@@ -410,6 +465,16 @@ class Command(BaseCommand):
             settings.SEED_DATA_ACTIVE = False
 
         self.print_summary()
+
+    # -- reference data (idempotent, natural-keyed) ---------------------
+
+    def seed_reference_data(self, staff_users, days_back):
+        """Everything with a fixed identity. Safe to call any number of times."""
+        promo_codes = self.seed_promo_codes(days_back)
+        self.seed_loyalty_rules()
+        self.seed_discount_campaigns(days_back)
+        items = self.seed_inventory(staff_users, days_back)
+        return promo_codes, items
 
     # -- clearing ---------------------------------------------------------
 
@@ -437,6 +502,7 @@ class Command(BaseCommand):
         CreditTransaction.objects.all().delete()
         CreditAccount.objects.all().delete()
         Expense.objects.all().delete()
+        PayrollEntry.objects.all().delete()
         InventoryTransaction.objects.all().delete()
         InventoryItem.objects.all().delete()
         StaffActivityLog.objects.all().delete()
@@ -462,11 +528,7 @@ class Command(BaseCommand):
             user = User.objects.create_user(
                 phone_number=phone,
                 password=seed_password,
-                email=(
-                    f"staff-{i}@seed.wedemboyz.invalid"
-                    if production_seed
-                    else f"{first.lower()}.{last.lower()}{i}@wedemboyz.cm"
-                ),
+                email=self.seed_email("staff", i),
                 first_name=first,
                 last_name=last,
                 is_staff=True,
@@ -506,15 +568,11 @@ class Command(BaseCommand):
         for i in range(n_customers):
             first, last = rand_name()
             phone = rand_test_phone(used_phones) if production_seed else rand_phone(used_phones)
-            has_email = random.random() < 0.55
+            has_email = production_seed or random.random() < 0.55
             user = User.objects.create_user(
                 phone_number=phone,
                 password=seed_password,
-                email=(
-                    f"customer-{i}@seed.wedemboyz.invalid"
-                    if production_seed
-                    else (f"{first.lower()}.{last.lower()}{i}@gmail.com" if has_email else None)
-                ),
+                email=self.seed_email("customer", i) if has_email else None,
                 first_name=first,
                 last_name=last,
                 is_phone_verified=random.random() < 0.85,
@@ -563,6 +621,11 @@ class Command(BaseCommand):
         return customers
 
     def seed_notification_preferences(self, users, production_seed=False):
+        # Skip anyone who already has a row (OneToOne safe).
+        existing = set(
+            NotificationPreference.objects.filter(user__in=users).values_list("user_id", flat=True)
+        )
+        users = [u for u in users if u.pk not in existing]
         self.log(f"Creating notification preferences for {len(users)} users...")
         prefs = [
             NotificationPreference(
@@ -579,15 +642,15 @@ class Command(BaseCommand):
     # -- discounts / loyalty program setup --------------------------------
 
     def seed_promo_codes(self, days_back):
-        self.log("Creating promo codes...")
+        """Create any missing seed promo codes (keyed on `code`). Returns all seed codes."""
         now = timezone.now()
+        existing = set(
+            PromoCode.objects.filter(code__in=SEED_PROMO_CODE_NAMES).values_list("code", flat=True)
+        )
         codes = []
-        seeds = [
-            ("WELCOME10", DiscountType.PERCENTAGE, Decimal("10")),
-            ("SAVE500", DiscountType.FIXED, Decimal("500")),
-            ("LOYALTY5", DiscountType.PERCENTAGE, Decimal("5")),
-        ]
-        for code, dtype, value in seeds:
+        for code, dtype, value in SEED_PROMO_CODES:
+            if code in existing:
+                continue
             codes.append(PromoCode(
                 code=code,
                 description=f"{value}{'%' if dtype == DiscountType.PERCENTAGE else ' XAF'} off",
@@ -601,12 +664,14 @@ class Command(BaseCommand):
                 is_active=random.random() < 0.85,
             ))
         # A couple of expired/extra codes so expiry handling is exercised.
-        for i in range(2):
+        for i, code in enumerate(EXTRA_PROMO_CODES):
+            if code in existing:
+                continue
             dtype = random.choice(list(DiscountType))
             value = Decimal(random.choice([5, 10, 12, 15, 300, 500, 750])) if dtype == DiscountType.PERCENTAGE \
                 else Decimal(random.choice([300, 500, 750, 1000, 1500]))
             codes.append(PromoCode(
-                code=f"PROMO{100 + i}",
+                code=code,
                 description="Auto-generated promotional code",
                 discount_type=dtype,
                 value=value,
@@ -617,29 +682,41 @@ class Command(BaseCommand):
                 valid_until=now - timedelta(days=random.randint(1, 5)) if i == 0 else now + timedelta(days=60),
                 is_active=i != 0,
             ))
-        PromoCode.objects.bulk_create(codes, batch_size=100)
-        return list(PromoCode.objects.all())
+        if codes:
+            self.log(f"Creating {len(codes)} promo codes...")
+            PromoCode.objects.bulk_create(codes, batch_size=100)
+        else:
+            self.log("Promo codes already present.")
+        return list(PromoCode.objects.filter(code__in=SEED_PROMO_CODE_NAMES))
 
     def seed_loyalty_rules(self):
-        self.log("Creating loyalty rules...")
-        LoyaltyRule.objects.bulk_create([
-            LoyaltyRule(name="Standard earning rate", points_per_currency_unit=Decimal("0.0100"),
-                        min_spend=Decimal("0"), is_active=True),
-            LoyaltyRule(name="Gold tier bonus rate", points_per_currency_unit=Decimal("0.0150"),
-                        min_spend=Decimal("5000"), is_active=True),
-            LoyaltyRule(name="Weekend double points", points_per_currency_unit=Decimal("0.0200"),
-                        min_spend=Decimal("2000"), is_active=False),
-        ])
+        rules = [
+            dict(name="Standard earning rate", points_per_currency_unit=Decimal("0.0100"),
+                 min_spend=Decimal("0"), is_active=True),
+            dict(name="Gold tier bonus rate", points_per_currency_unit=Decimal("0.0150"),
+                 min_spend=Decimal("5000"), is_active=True),
+            dict(name="Weekend double points", points_per_currency_unit=Decimal("0.0200"),
+                 min_spend=Decimal("2000"), is_active=False),
+        ]
+        created = 0
+        for rule in rules:
+            _, was_created = LoyaltyRule.objects.get_or_create(
+                name=rule["name"],
+                defaults={k: v for k, v in rule.items() if k != "name"},
+            )
+            created += was_created
+        self.log(f"Loyalty rules: {created} created, {len(rules) - created} already present.")
 
     def seed_discount_campaigns(self, days_back):
-        self.log("Creating discount campaigns...")
         now = timezone.now()
+        existing = set(
+            DiscountCampaign.objects.filter(name__in=SEED_CAMPAIGN_NAMES).values_list("name", flat=True)
+        )
         campaigns = []
-        names = [
-            "Rainy Season Wash & Fold", "End of Month Payday Deal", "First Order Welcome Campaign",
-        ]
         segments = list(DiscountCampaign.Segment)
-        for name in names:
+        for name in SEED_CAMPAIGN_NAMES:
+            if name in existing:
+                continue
             dtype = random.choice(list(DiscountType))
             value = Decimal(random.choice([10, 15, 20, 25])) if dtype == DiscountType.PERCENTAGE \
                 else Decimal(random.choice([500, 1000, 1500, 2000]))
@@ -654,25 +731,41 @@ class Command(BaseCommand):
                 end_date=start + timedelta(days=random.randint(7, 30)),
                 is_active=random.random() < 0.5,
             ))
-        DiscountCampaign.objects.bulk_create(campaigns, batch_size=50)
+        if campaigns:
+            self.log(f"Creating {len(campaigns)} discount campaigns...")
+            DiscountCampaign.objects.bulk_create(campaigns, batch_size=50)
+        else:
+            self.log("Discount campaigns already present.")
 
     # -- inventory ----------------------------------------------------
 
     def seed_inventory(self, staff_users, days_back):
-        self.log("Creating inventory items and transactions...")
-        items = []
+        """Create any missing inventory items (keyed on `name`) plus a short
+        transaction history for each newly created item only."""
+        names = [name for name, _c, _u in INVENTORY_ITEMS]
+        existing = set(InventoryItem.objects.filter(name__in=names).values_list("name", flat=True))
+
+        new_items = []
         for name, category, unit in INVENTORY_ITEMS:
+            if name in existing:
+                continue
             qty = Decimal(random.randint(5, 80))
-            items.append(InventoryItem(
+            new_items.append(InventoryItem(
                 name=name, category=category, unit=unit, quantity=qty,
                 low_stock_threshold=Decimal(random.randint(3, 15)),
                 notes=rand_inventory_note(),
             ))
-        InventoryItem.objects.bulk_create(items)
-        items = list(InventoryItem.objects.all())
+
+        if not new_items:
+            self.log("Inventory items already present.")
+            return list(InventoryItem.objects.filter(name__in=names))
+
+        self.log(f"Creating {len(new_items)} inventory items and transactions...")
+        InventoryItem.objects.bulk_create(new_items)
+        created_items = list(InventoryItem.objects.filter(name__in=[i.name for i in new_items]))
 
         transactions = []
-        for item in items:
+        for item in created_items:
             for _ in range(random.randint(3, 8)):
                 change_type = weighted_choice([
                     (InventoryTransaction.ChangeType.RESTOCK, 3),
@@ -694,7 +787,7 @@ class Command(BaseCommand):
                 ))
         InventoryTransaction.objects.bulk_create(transactions, batch_size=500)
         self.backdate(InventoryTransaction, transactions, days_back, touch_updated=False)
-        return items
+        return list(InventoryItem.objects.filter(name__in=names))
 
     # -- payment methods ------------------------------------------------
 
@@ -1063,6 +1156,7 @@ class Command(BaseCommand):
         for order in orders:
             orders_by_user.setdefault(order.user_id, []).append(order)
 
+        created_txns = []
         for user in credit_customers:
             account = accounts[user.pk]
             n_txns = random.randint(1, 6)
@@ -1084,8 +1178,9 @@ class Command(BaseCommand):
                     note=random.choice(["", "Phone follow-up confirmed.", "Paid in person at shop."]),
                     created_by=random.choice(staff_users),
                 )
-        all_txns = list(CreditTransaction.objects.filter(credit_account__in=accounts.values()))
-        self.backdate(CreditTransaction, all_txns, days_back, touch_updated=False)
+                created_txns.append(txn)
+        # Only backdate rows this run created (not every credit txn in the DB).
+        self.backdate(CreditTransaction, created_txns, days_back, touch_updated=False)
 
     def seed_expenses(self, staff_users, days_back, total_revenue):
         """Expenses follow realistic business cadence instead of being drawn
@@ -1107,6 +1202,7 @@ class Command(BaseCommand):
         expenses = []
         for m in range(months_back):
             month_end = now - timedelta(days=30 * m)
+            pay_period = month_end.date().replace(day=1)
 
             def add(category, lo, hi):
                 expenses.append(Expense(
@@ -1119,16 +1215,19 @@ class Command(BaseCommand):
             add(ExpenseCategory.RENT, 100000, 200000)
 
             # Payroll is a dedicated ledger, not a generic expense category.
+            # Keyed on (employee, pay_period) so a rerun never double-pays a month.
             for employee in staff_users:
-                PayrollEntry.objects.create(
+                PayrollEntry.objects.get_or_create(
                     employee=employee,
-                    pay_period=month_end.date().replace(day=1),
-                    amount=Decimal(random.randint(60000, 120000)),
-                    currency=Currency.XAF,
-                    status=PayrollEntry.Status.PAID,
-                    paid_on=rand_date_in_month(month_end),
-                    notes=random.choice(["Monthly salary", "Salary and overtime", "Salary and performance bonus"]),
-                    created_by=random.choice(staff_users),
+                    pay_period=pay_period,
+                    defaults=dict(
+                        amount=Decimal(random.randint(60000, 120000)),
+                        currency=Currency.XAF,
+                        status=PayrollEntry.Status.PAID,
+                        paid_on=rand_date_in_month(month_end),
+                        notes=random.choice(["Monthly salary", "Salary and overtime", "Salary and performance bonus"]),
+                        created_by=random.choice(staff_users),
+                    ),
                 )
 
             # Utilities: a couple of bills a month.
@@ -1165,7 +1264,6 @@ class Command(BaseCommand):
     def seed_staff_invites(self, staff_users, used_phones, days_back, production_seed):
         self.log("Creating staff invites...")
         invites = []
-        owner = staff_users[0]
         for _ in range(2):
             first, last = rand_name()
             phone = rand_test_phone(used_phones) if production_seed else rand_phone(used_phones)
@@ -1232,6 +1330,7 @@ class Command(BaseCommand):
             ("Notification preferences", NotificationPreference.objects.count()),
             ("Credit accounts", CreditAccount.objects.count()),
             ("Credit transactions", CreditTransaction.objects.count()),
+            ("Payroll entries", PayrollEntry.objects.count()),
             ("Expenses", Expense.objects.count()),
         ]
         width = max(len(label) for label, _ in rows)

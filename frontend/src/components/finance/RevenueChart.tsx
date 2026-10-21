@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, LineChart, Table2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, BarChart3, LineChart, Table2 } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 
 import {
@@ -34,21 +34,23 @@ export function RevenueChart({
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const gradientId = useId();
 
-  const width = 720;
-  const height = 220;
-  const paddingLeft = 8;
-  const paddingRight = 8;
-  const paddingTop = 16;
-  const paddingBottom = 28;
+  // Keep the dashboard trend wide and shallow so the whole story remains
+  // visible without making the analytics page a chart-only viewport.
+  const width = 1200;
+  const height = 215;
+  const paddingLeft = 92;
+  const paddingRight = 12;
+  const paddingTop = 10;
+  const paddingBottom = 30;
   const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingTop - paddingBottom;
 
   const maxRevenue = useMemo(
-    () => Math.max(1, ...points.map((p) => p.revenue)),
+    () => Math.max(1, ...points.map((p) => p.revenue)) * 1.08,
     [points],
   );
 
-  const barGap = 6;
+  const barGap = 8;
   const barWidth =
     points.length > 0 ? Math.max(4, chartWidth / points.length - barGap) : 0;
   // Same slot pitch as the bars, so a given date lands at the same x whether
@@ -57,6 +59,15 @@ export function RevenueChart({
     paddingLeft + i * (barWidth + barGap) + barWidth / 2;
   const valueY = (revenue: number) =>
     height - paddingBottom - (revenue / maxRevenue) * chartHeight;
+
+  const insights = useMemo(() => {
+    const total = points.reduce((sum, point) => sum + point.revenue, 0);
+    const peak = points.reduce((best, point) => point.revenue > best.revenue ? point : best, points[0]);
+    const first = points[0]?.revenue ?? 0;
+    const last = points.at(-1)?.revenue ?? 0;
+    const change = first > 0 ? ((last - first) / first) * 100 : null;
+    return { total, average: total / Math.max(points.length, 1), peak, change };
+  }, [points]);
 
   const formatLabel = (date: string) => {
     if (period === "monthly") {
@@ -98,7 +109,14 @@ export function RevenueChart({
 
   return (
     <div>
-      <div className="mb-3 flex justify-end">
+      <div className="mb-3 grid overflow-hidden rounded-xl bg-navy text-white sm:grid-cols-3">
+        <div className="px-4 py-2.5"><p className="text-xs text-white/65">Total in view</p><p className="font-display text-base font-semibold tabular-nums">{formatCurrency(insights.total)}</p></div>
+        <div className="border-t border-white/10 px-4 py-2.5 sm:border-l sm:border-t-0"><p className="text-xs text-white/65">Average per {period === "daily" ? "day" : "month"}</p><p className="font-display text-base font-semibold tabular-nums">{formatCurrency(insights.average)}</p></div>
+        <div className="border-t border-white/10 px-4 py-2.5 sm:border-l sm:border-t-0"><p className="text-xs text-white/65">Period movement</p><p className={`inline-flex items-center gap-1 font-display text-base font-semibold tabular-nums ${insights.change !== null && insights.change < 0 ? "text-coral" : "text-[#57e38d]"}`}>{insights.change === null ? "New" : `${Math.abs(insights.change).toFixed(1)}%`}{insights.change !== null && (insights.change < 0 ? <ArrowDownRight className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />)}</p></div>
+      </div>
+
+      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[13px] text-ink-muted">Peak: <strong className="font-semibold text-revenue-green-dark">{formatCurrency(insights.peak.revenue)}</strong> on {formatLabel(insights.peak.date)}</p>
         <div className="inline-flex rounded-md border border-crease bg-white p-0.5">
           {(
             [
@@ -112,13 +130,13 @@ export function RevenueChart({
               type="button"
               onClick={() => setView(key)}
               aria-pressed={view === key}
-              className={`inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
                 view === key
-                  ? "bg-navy text-white"
+                  ? "bg-revenue-green-dark text-white"
                   : "text-ink-muted hover:text-ink"
               }`}
             >
-              <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+              <Icon className="h-3 w-3" aria-hidden="true" />
               {label}
             </button>
           ))}
@@ -149,22 +167,14 @@ export function RevenueChart({
       )}
 
       {view === "bar" && (
-        <div className="relative">
+        <div className="relative overflow-x-auto">
           <svg
             viewBox={`0 0 ${width} ${height}`}
-            className="w-full"
+            className="min-w-[720px] w-full"
             role="img"
             aria-label={`Revenue by ${period === "monthly" ? "month" : "day"}`}
           >
-            {/* baseline */}
-            <line
-              x1={paddingLeft}
-              y1={height - paddingBottom}
-              x2={width - paddingRight}
-              y2={height - paddingBottom}
-              stroke="var(--color-crease)"
-              strokeWidth={1}
-            />
+            {[0, 0.25, 0.5, 0.75, 1].map((tick) => { const y = height - paddingBottom - tick * chartHeight; return <g key={tick}><line x1={paddingLeft} y1={y} x2={width - paddingRight} y2={y} stroke="var(--color-crease-soft)" strokeWidth={0.75} strokeDasharray={tick === 0 ? undefined : "4 5"} /><text x={paddingLeft - 10} y={y + 3.5} textAnchor="end" fontSize={10} fontWeight={500} fill="var(--color-ink-muted)">{formatCurrency(maxRevenue * tick).replace(" XAF", "")}</text></g>; })}
             {points.map((p, i) => {
               const barHeight = (p.revenue / maxRevenue) * chartHeight;
               const x = paddingLeft + i * (barWidth + barGap);
@@ -181,8 +191,8 @@ export function RevenueChart({
                     rx={2}
                     fill={
                       isActive
-                        ? "var(--color-gold)"
-                        : "var(--color-navy)"
+                        ? "var(--color-revenue-green-dark)"
+                        : "var(--color-revenue-green)"
                     }
                     opacity={isActive ? 1 : 0.85}
                     className="transition-[opacity,fill] duration-150"
@@ -201,9 +211,10 @@ export function RevenueChart({
                   {i % labelStride === 0 && (
                     <text
                       x={x + barWidth / 2}
-                      y={height - paddingBottom + 16}
+                      y={height - paddingBottom + 13}
                       textAnchor="middle"
                       fontSize={10}
+                      fontWeight={500}
                       fill="var(--color-ink-muted)"
                     >
                       {formatLabel(p.date)}
@@ -215,11 +226,11 @@ export function RevenueChart({
           </svg>
 
           {activeIndex !== null && points[activeIndex] && (
-            <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full rounded-md border border-crease bg-white px-3 py-1.5 text-xs shadow-sm">
-              <p className="font-medium text-ink">
+            <div className="pointer-events-none absolute left-1/2 top-1 -translate-x-1/2 rounded-lg bg-navy px-3 py-2 text-xs text-white shadow-float">
+              <p className="font-medium text-white">
                 {formatLabel(points[activeIndex].date)}
               </p>
-              <p className="text-ink-muted">
+              <p className="text-white/70">
                 {formatCurrency(points[activeIndex].revenue)} ·{" "}
                 {points[activeIndex].payment_count} payment
                 {points[activeIndex].payment_count === 1 ? "" : "s"}
@@ -230,10 +241,10 @@ export function RevenueChart({
       )}
 
       {view === "line" && (
-        <div className="relative">
+        <div className="relative overflow-x-auto">
           <svg
             viewBox={`0 0 ${width} ${height}`}
-            className="w-full"
+            className="min-w-[720px] w-full"
             role="img"
             aria-label={`Revenue by ${period === "monthly" ? "month" : "day"}`}
           >
@@ -241,32 +252,24 @@ export function RevenueChart({
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="0%"
-                  stopColor="var(--color-navy)"
-                  stopOpacity={0.35}
+                  stopColor="var(--color-revenue-green)"
+                  stopOpacity={0.38}
                 />
                 <stop
                   offset="100%"
-                  stopColor="var(--color-navy)"
+                  stopColor="var(--color-revenue-green)"
                   stopOpacity={0}
                 />
               </linearGradient>
             </defs>
 
-            {/* baseline */}
-            <line
-              x1={paddingLeft}
-              y1={height - paddingBottom}
-              x2={width - paddingRight}
-              y2={height - paddingBottom}
-              stroke="var(--color-crease)"
-              strokeWidth={1}
-            />
+            {[0, 0.25, 0.5, 0.75, 1].map((tick) => { const y = height - paddingBottom - tick * chartHeight; return <g key={tick}><line x1={paddingLeft} y1={y} x2={width - paddingRight} y2={y} stroke="var(--color-crease-soft)" strokeWidth={0.75} strokeDasharray={tick === 0 ? undefined : "4 5"} /><text x={paddingLeft - 10} y={y + 3.5} textAnchor="end" fontSize={10} fontWeight={500} fill="var(--color-ink-muted)">{formatCurrency(maxRevenue * tick).replace(" XAF", "")}</text></g>; })}
 
             <path d={areaPath} fill={`url(#${gradientId})`} stroke="none" />
             <path
               d={linePath}
               fill="none"
-              stroke="var(--color-gold)"
+              stroke="var(--color-revenue-green)"
               strokeWidth={2}
               strokeLinejoin="round"
               strokeLinecap="round"
@@ -301,22 +304,23 @@ export function RevenueChart({
                   <circle
                     cx={x}
                     cy={y}
-                    r={isActive ? 5 : 3}
+                    r={isActive ? 3.5 : 2.25}
                     fill={
                       isActive
-                        ? "var(--color-gold)"
-                        : "var(--color-navy)"
+                        ? "var(--color-revenue-green-dark)"
+                        : "var(--color-revenue-green)"
                     }
                     stroke="white"
-                    strokeWidth={1.5}
+                    strokeWidth={1.25}
                     className="pointer-events-none transition-[r,fill] duration-150"
                   />
                   {i % labelStride === 0 && (
                     <text
                       x={x}
-                      y={height - paddingBottom + 16}
+                      y={height - paddingBottom + 13}
                       textAnchor="middle"
                       fontSize={10}
+                      fontWeight={500}
                       fill="var(--color-ink-muted)"
                     >
                       {formatLabel(p.date)}
@@ -328,11 +332,11 @@ export function RevenueChart({
           </svg>
 
           {activeIndex !== null && points[activeIndex] && (
-            <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full rounded-md border border-crease bg-white px-3 py-1.5 text-xs shadow-sm">
-              <p className="font-medium text-ink">
+            <div className="pointer-events-none absolute left-1/2 top-1 -translate-x-1/2 rounded-lg bg-navy px-3 py-2 text-xs text-white shadow-float">
+              <p className="font-medium text-white">
                 {formatLabel(points[activeIndex].date)}
               </p>
-              <p className="text-ink-muted">
+              <p className="text-white/70">
                 {formatCurrency(points[activeIndex].revenue)} ·{" "}
                 {points[activeIndex].payment_count} payment
                 {points[activeIndex].payment_count === 1 ? "" : "s"}

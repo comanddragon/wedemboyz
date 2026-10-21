@@ -7,6 +7,7 @@ import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
 import { Button, Card, Field, Input, Select, Textarea } from "@/src/components/ui";
 import { staffApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { formatCurrency } from "@/src/lib/constants";
 
 const SERVICE_TYPES = [
   ["VESTE", "Jacket"], ["TSHIRT", "T-shirt"], ["CHEMISE", "Shirt"],
@@ -114,7 +115,7 @@ export default function SettingsPage() {
           <Field label="Effective" htmlFor="price-effective"><Input id="price-effective" name="effective_from" type="date" required /></Field>
           <Button size="sm" type="submit" aria-label="Add price"><Plus className="h-3.5 w-3.5" /></Button>
         </form>
-        <div className="mt-2 divide-y divide-crease">{prices.data?.results.map((item) => <div key={item.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 py-2 text-xs"><div><p className="font-semibold text-ink">{item.label}</p><p className="text-ink-muted">{item.unit_mode === "KILOGRAM" ? "per kg" : "per piece"} · from {item.effective_from}</p></div><span className="font-semibold tabular-nums text-navy">{Number(item.price).toLocaleString()} XAF</span><Button size="sm" variant="ghost" onClick={() => togglePrice.mutate({ id: item.id, active: !item.is_active })}>{item.is_active ? "Disable" : "Enable"}</Button></div>)}</div>
+        <div className="mt-2 divide-y divide-crease">{prices.data?.results.map((item) => <div key={item.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 py-2 text-xs"><div><p className="font-semibold text-ink">{item.label}</p><p className="text-ink-muted">{item.unit_mode === "KILOGRAM" ? "per kg" : "per piece"} · from {item.effective_from}</p></div><span className="font-semibold tabular-nums text-navy">{formatCurrency(item.price)}</span><Button size="sm" variant="ghost" onClick={() => togglePrice.mutate({ id: item.id, active: !item.is_active })}>{item.is_active ? "Disable" : "Enable"}</Button></div>)}</div>
       </Card>
       <Card className="p-4">
         <h2 className="mb-3 text-sm font-semibold text-navy">Subscription plans</h2>

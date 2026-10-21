@@ -89,7 +89,7 @@ export function ChatComposer({
   const canSubmit = !isSending && (draft.trim().length > 0 || files.length > 0);
 
   return (
-    <div className="border-t border-crease bg-white">
+    <div className="shrink-0 border-t border-crease bg-white">
       {files.length > 0 && (
         <div className="flex flex-wrap gap-2 px-4 pt-3">
           {files.map((file, index) => (
