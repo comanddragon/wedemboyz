@@ -12,6 +12,9 @@ from apps.jobs.views import healthz
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Render's default health-check path. Keep /healthz for existing clients.
+    path("health", healthz, name="health"),
+    path("health/", healthz, name="health-slash"),
     path("healthz", healthz, name="healthz"),
     path("internal/jobs/", include("apps.jobs.urls")),
     # API v1
