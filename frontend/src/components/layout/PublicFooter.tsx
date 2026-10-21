@@ -6,11 +6,11 @@ import { BUSINESS } from "@/src/lib/constants";
 function LogoMark() {
   return (
     <Image
-      style={{ width: "auto", height: "auto" }}
       src="/icon-mark.png"
       alt=""
       width={44}
       height={54}
+      className="h-10 w-auto shrink-0 object-contain"
       priority
     />
   );
@@ -64,7 +64,6 @@ export function PublicFooter() {
             Reach us
           </p>
           <div className="mt-4 flex flex-col gap-2.5 text-sm text-ink-muted">
-            <span>hello@wedemboyz.example</span>
             <a
               href={BUSINESS.telHref}
               className="transition-colors hover:text-ink"

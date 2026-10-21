@@ -1,14 +1,11 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { FoldStackIllustration } from "@/src/components/marketing";
 import { CreaseDivider, EyebrowLabel } from "@/src/components/ui";
-
-const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 interface AuthShellProps {
   eyebrow: string[];
@@ -30,16 +27,6 @@ export function AuthShell({
   subtitle,
   children,
 }: AuthShellProps) {
-  const shouldReduceMotion = useReducedMotion();
-
-  const formMotion = shouldReduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 12 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.4, ease: EASE_OUT_EXPO },
-      };
-
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative flex flex-col justify-between overflow-hidden bg-navy px-6 py-6 text-white lg:sticky lg:top-0 lg:h-screen lg:px-12 lg:py-10">
@@ -91,7 +78,7 @@ export function AuthShell({
 
       {/* Form panel */}
       <div className="flex items-center justify-center bg-paper px-6 py-12 lg:px-12">
-        <motion.div className="w-full max-w-sm" {...formMotion}>
+        <div className="w-full max-w-sm">
           <EyebrowLabel words={eyebrow} />
           <h1 className="mt-2 text-balance font-display text-3xl font-bold text-navy">
             {title}
@@ -99,7 +86,7 @@ export function AuthShell({
           <p className="mt-2 text-sm text-ink-muted">{subtitle}</p>
           <CreaseDivider />
           {children}
-        </motion.div>
+        </div>
       </div>
     </div>
   );

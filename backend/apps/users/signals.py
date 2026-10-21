@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -12,6 +13,11 @@ def on_user_created(sender, instance, created, **kwargs):
         return
     UserProfile.objects.get_or_create(user=instance)
     LoyaltyAccount.objects.get_or_create(user=instance)
+
+    # Demo seeding creates non-routable contacts and must never enqueue
+    # provider traffic in an internet-facing environment.
+    if getattr(settings, "SEED_DATA_ACTIVE", False):
+        return
 
     from .tasks import send_welcome_sms
 

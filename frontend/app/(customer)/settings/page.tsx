@@ -45,7 +45,9 @@ function InlineMessage({
   return (
     <p
       className={`mt-3 text-xs ${
-        tone === "error" ? "text-status-cancelled-text" : "text-ok-green"
+        tone === "error"
+          ? "text-status-cancelled-text"
+          : "text-status-ready-text"
       }`}
     >
       {message}

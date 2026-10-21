@@ -1,13 +1,14 @@
-import Link from "next/link";
+import { AuthShell } from "@/src/components/auth/AuthShell";
+import { ForgotPasswordCard } from "@/src/components/auth/ForgotPasswordCard";
 
 export default function ResetPasswordPage() {
   return (
-    <main style={{ padding: 24 }}>
-      <h1>Reset Password</h1>
-      <p className="text-ink-muted">Backend has no /auth/password/reset/confirm/ endpoint yet.</p>
-      <p>
-        <Link href="/login">&larr; Back to login</Link>
-      </p>
-    </main>
+    <AuthShell
+      eyebrow={["ACCOUNT HELP"]}
+      title="Reset your password"
+      subtitle="Online password resets aren't available yet. Contact the team and we'll help you regain access securely."
+    >
+      <ForgotPasswordCard />
+    </AuthShell>
   );
 }

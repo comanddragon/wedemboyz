@@ -82,7 +82,7 @@ export function StampCard({
 
       {hasFreeWash && (
         <motion.div
-          initial={shouldReduceMotion ? undefined : { opacity: 0, y: 6 }}
+          initial={false}
           animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
           className="mt-4 flex flex-col items-start justify-between gap-3 rounded-lg border border-gold/30 bg-gold-50 p-4 sm:flex-row sm:items-center"

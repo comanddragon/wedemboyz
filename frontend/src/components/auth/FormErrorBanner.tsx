@@ -11,8 +11,10 @@ export function FormErrorBanner({ message }: { message: string }) {
     <motion.div
       role="alert"
       aria-live="assertive"
-      initial={shouldReduceMotion ? undefined : { opacity: 0, x: 0 }}
-      animate={shouldReduceMotion ? undefined : { opacity: 1, x: [0, -6, 6, -4, 4, 0] }}
+      initial={false}
+      animate={
+        shouldReduceMotion ? undefined : { opacity: 1, x: [0, -6, 6, -4, 4, 0] }
+      }
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="mb-4 flex items-start gap-2 rounded-md bg-status-cancelled-bg px-3 py-2.5 text-sm text-status-cancelled-text"
     >

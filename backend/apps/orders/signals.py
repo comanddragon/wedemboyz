@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
@@ -40,6 +41,8 @@ def on_order_status_changed(sender, instance, created, **kwargs):
 
     if previous_status is not None and previous_status != instance.status:
         OrderStatusHistory.objects.create(order=instance, status=instance.status)
+        if getattr(settings, "SEED_DATA_ACTIVE", False):
+            return
         safe_delay(send_status_update, instance.pk)
 
         if instance.status == OrderStatus.DELIVERED:

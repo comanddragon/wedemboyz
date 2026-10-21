@@ -1,15 +1,15 @@
 """
 Management command: seed_data
 
-Fills the database with a large, realistic, interconnected dataset across
-every app (users, orders, payments, discounts, finance, inventory, chat,
-notifications, staff) so the app can be exercised under real-ish load —
-pagination, filtering, dashboards, search, date-range reports, etc.
+Fills the database with a realistic, interconnected dataset sized for a
+small laundromat — 1 owner + 3 employees, ~80 regular customers and roughly
+4-5 orders a day over the last 90 days — across every app (users, orders,
+payments, discounts, finance, inventory, chat, notifications, staff).
 
 Usage
 -----
     python manage.py seed_data
-    python manage.py seed_data --customers 800 --orders 6000 --staff 20
+    python manage.py seed_data --customers 200 --orders 1500 --staff 6
     python manage.py seed_data --seed 42          # reproducible run
     python manage.py seed_data --clear            # wipe seedable tables, then reseed
     python manage.py seed_data --clear-only        # wipe seedable tables and exit
@@ -19,6 +19,7 @@ Only run this against a development/test database. `--clear` and
 pointing this at prod.
 """
 
+import os
 import random
 from datetime import timedelta, date
 from decimal import Decimal
@@ -119,25 +120,16 @@ ITEM_LABELS = [
 
 INVENTORY_ITEMS = [
     ("Omo Detergent Powder 5kg", InventoryCategory.DETERGENT, InventoryUnit.KG),
-    ("Ariel Detergent Powder 2kg", InventoryCategory.DETERGENT, InventoryUnit.KG),
     ("Liquid Detergent (bulk)", InventoryCategory.DETERGENT, InventoryUnit.L),
     ("Downy Fabric Softener 1L", InventoryCategory.SOFTENER, InventoryUnit.L),
-    ("Comfort Softener 2L", InventoryCategory.SOFTENER, InventoryUnit.L),
     ("Stain Remover Spray", InventoryCategory.DETERGENT, InventoryUnit.ML),
     ("Poly Garment Bags (100pc roll)", InventoryCategory.PACKAGING, InventoryUnit.PCS),
-    ("Wire Hangers (bundle)", InventoryCategory.PACKAGING, InventoryUnit.PCS),
     ("Plastic Hangers (bundle)", InventoryCategory.PACKAGING, InventoryUnit.PCS),
     ("Garment Tags", InventoryCategory.PACKAGING, InventoryUnit.PCS),
-    ("Laundry Twine", InventoryCategory.PACKAGING, InventoryUnit.PCS),
     ("Washing Machine Drive Belt", InventoryCategory.EQUIPMENT, InventoryUnit.PCS),
     ("Steam Iron", InventoryCategory.EQUIPMENT, InventoryUnit.PCS),
     ("Ironing Board Cover", InventoryCategory.EQUIPMENT, InventoryUnit.PCS),
-    ("Dryer Lint Filter", InventoryCategory.EQUIPMENT, InventoryUnit.PCS),
-    ("Industrial Sewing Thread", InventoryCategory.OTHER, InventoryUnit.PCS),
-    ("Delivery Fuel Voucher", InventoryCategory.OTHER, InventoryUnit.PCS),
     ("Whitening Bleach 1L", InventoryCategory.DETERGENT, InventoryUnit.L),
-    ("Starch Spray", InventoryCategory.DETERGENT, InventoryUnit.ML),
-    ("Perfume Fragrance Booster", InventoryCategory.SOFTENER, InventoryUnit.ML),
 ]
 
 CHAT_CUSTOMER_LINES = [
@@ -230,6 +222,15 @@ def rand_phone(used):
             return number
 
 
+def rand_test_phone(used):
+    """Return a syntactically valid but intentionally non-routable test number."""
+    while True:
+        number = "237000" + "".join(random.choices("0123456789", k=6))
+        if number not in used:
+            used.add(number)
+            return number
+
+
 def rand_address():
     return f"{random.choice(STREET_WORDS)} {random.randint(1, 200)}, {random.choice(NEIGHBORHOODS)}, {random.choice(CITIES)}"
 
@@ -286,12 +287,12 @@ def rand_inventory_note():
 
 
 class Command(BaseCommand):
-    help = "Seed the database with a large, heavily interconnected test dataset."
+    help = "Seed the database with a small-laundromat dataset (1 owner, 3 employees)."
 
     def add_arguments(self, parser):
-        parser.add_argument("--customers", type=int, default=350, help="Number of customer users to create.")
-        parser.add_argument("--staff", type=int, default=14, help="Number of staff users to create.")
-        parser.add_argument("--orders", type=int, default=1800, help="Number of orders to create.")
+        parser.add_argument("--customers", type=int, default=80, help="Number of customer users to create.")
+        parser.add_argument("--staff", type=int, default=4, help="Number of staff users to create (1 owner + 3 employees).")
+        parser.add_argument("--orders", type=int, default=400, help="Number of orders to create.")
         parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducible runs.")
         parser.add_argument(
             "--clear", action="store_true",
@@ -302,8 +303,13 @@ class Command(BaseCommand):
             help="Delete existing rows from seedable tables and exit without reseeding (requires DEBUG=True).",
         )
         parser.add_argument(
-            "--days-back", type=int, default=540,
-            help="Spread historical records over this many past days (default ~18 months).",
+            "--days-back", type=int, default=90,
+            help="Spread historical records over this many past days (default ~3 months).",
+        )
+        parser.add_argument(
+            "--allow-production",
+            action="store_true",
+            help="Explicitly allow non-destructive demo seeding when DEBUG=False.",
         )
 
     # -- helpers -------------------------------------------------------
@@ -330,6 +336,27 @@ class Command(BaseCommand):
     # -- main entrypoint -------------------------------------------------
 
     def handle(self, *args, **options):
+        production_seed = not settings.DEBUG
+        if production_seed and not options["allow_production"]:
+            raise CommandError(
+                "Refusing to seed with DEBUG=False without --allow-production."
+            )
+
+        seed_password = os.environ.get("SEED_USER_PASSWORD", "")
+        if production_seed and len(seed_password) < 12:
+            raise CommandError(
+                "Set SEED_USER_PASSWORD to at least 12 characters before production seeding."
+            )
+        if not seed_password:
+            seed_password = "Password123!"
+
+        if production_seed and User.objects.filter(
+            email__endswith="@seed.wedemboyz.invalid"
+        ).exists():
+            raise CommandError(
+                "Seed users already exist; refusing to create a duplicate production dataset."
+            )
+
         if options["seed"] is not None:
             random.seed(options["seed"])
             fake.seed_instance(options["seed"])
@@ -349,26 +376,38 @@ class Command(BaseCommand):
 
         used_phones = set(User.objects.values_list("phone_number", flat=True))
 
-        with transaction.atomic():
-            staff_users = self.seed_staff(n_staff, used_phones)
-            customers = self.seed_customers(n_customers, used_phones, days_back)
-            self.seed_notification_preferences(staff_users + customers)
-            promo_codes = self.seed_promo_codes(days_back)
-            self.seed_loyalty_rules()
-            self.seed_discount_campaigns(days_back)
-            inventory_items = self.seed_inventory(staff_users, days_back)
-            payment_methods = self.seed_payment_methods(customers)
-            orders = self.seed_orders(
-                n_orders, customers, staff_users, promo_codes, payment_methods, days_back
-            )
-            self.seed_chat(customers, staff_users, orders, days_back)
-            self.seed_subscriptions(customers, days_back)
-            self.seed_credit(customers, staff_users, orders, days_back)
-            total_revenue = Payment.objects.filter(
-                status=PaymentStatus.SUCCEEDED
-            ).aggregate(total=Sum("amount"))["total"] or Decimal(0)
-            self.seed_expenses(staff_users, days_back, total_revenue)
-            self.seed_staff_invites(staff_users, used_phones, days_back)
+        settings.SEED_DATA_ACTIVE = True
+        try:
+            with transaction.atomic():
+                staff_users = self.seed_staff(
+                    n_staff, used_phones, seed_password, production_seed
+                )
+                customers = self.seed_customers(
+                    n_customers, used_phones, days_back, seed_password, production_seed
+                )
+                self.seed_notification_preferences(
+                    staff_users + customers, production_seed
+                )
+                promo_codes = self.seed_promo_codes(days_back)
+                self.seed_loyalty_rules()
+                self.seed_discount_campaigns(days_back)
+                self.seed_inventory(staff_users, days_back)
+                payment_methods = self.seed_payment_methods(customers, production_seed)
+                orders = self.seed_orders(
+                    n_orders, customers, staff_users, promo_codes, payment_methods, days_back
+                )
+                self.seed_chat(customers, staff_users, orders, days_back)
+                self.seed_subscriptions(customers, days_back)
+                self.seed_credit(customers, staff_users, orders, days_back)
+                total_revenue = Payment.objects.filter(
+                    status=PaymentStatus.SUCCEEDED
+                ).aggregate(total=Sum("amount"))["total"] or Decimal(0)
+                self.seed_expenses(staff_users, days_back, total_revenue)
+                self.seed_staff_invites(
+                    staff_users, used_phones, days_back, production_seed
+                )
+        finally:
+            settings.SEED_DATA_ACTIVE = False
 
         self.print_summary()
 
@@ -407,22 +446,27 @@ class Command(BaseCommand):
 
     # -- users --------------------------------------------------------
 
-    def seed_staff(self, n_staff, used_phones):
+    def seed_staff(self, n_staff, used_phones, seed_password, production_seed):
         self.log(f"Creating {n_staff} staff users...")
-        roles = [StaffRole.MANAGER] * max(1, n_staff // 4) + \
-            [StaffRole.ATTENDANT] * max(0, n_staff - max(1, n_staff // 4))
+        # Default shop: the owner (MANAGER) plus three employees. Extra staff
+        # (if --staff is raised) are attendants.
+        roles = [StaffRole.MANAGER, StaffRole.ATTENDANT, StaffRole.ATTENDANT, StaffRole.CASHIER]
+        roles = roles[:n_staff]
         while len(roles) < n_staff:
             roles.append(StaffRole.ATTENDANT)
-        random.shuffle(roles)
 
         staff_users = []
         for i, role in enumerate(roles[:n_staff]):
             first, last = rand_name()
-            phone = rand_phone(used_phones)
+            phone = rand_test_phone(used_phones) if production_seed else rand_phone(used_phones)
             user = User.objects.create_user(
                 phone_number=phone,
-                password="Password123!",
-                email=f"{first.lower()}.{last.lower()}{i}@wedemboyz.cm",
+                password=seed_password,
+                email=(
+                    f"staff-{i}@seed.wedemboyz.invalid"
+                    if production_seed
+                    else f"{first.lower()}.{last.lower()}{i}@wedemboyz.cm"
+                ),
                 first_name=first,
                 last_name=last,
                 is_staff=True,
@@ -445,22 +489,32 @@ class Command(BaseCommand):
             profile = user.profile
             profile.city = random.choice(CITIES)
             profile.address_line = rand_address()
+            if production_seed:
+                profile.tags = ["seed-data", "owner-demo"]
             profiles.append(profile)
-        UserProfile.objects.bulk_update(profiles, ["city", "address_line"], batch_size=200)
+        UserProfile.objects.bulk_update(
+            profiles, ["city", "address_line", "tags"], batch_size=200
+        )
 
         return staff_users
 
-    def seed_customers(self, n_customers, used_phones, days_back):
+    def seed_customers(
+        self, n_customers, used_phones, days_back, seed_password, production_seed
+    ):
         self.log(f"Creating {n_customers} customer users...")
         customers = []
         for i in range(n_customers):
             first, last = rand_name()
-            phone = rand_phone(used_phones)
+            phone = rand_test_phone(used_phones) if production_seed else rand_phone(used_phones)
             has_email = random.random() < 0.55
             user = User.objects.create_user(
                 phone_number=phone,
-                password="Password123!",
-                email=f"{first.lower()}.{last.lower()}{i}@gmail.com" if has_email else None,
+                password=seed_password,
+                email=(
+                    f"customer-{i}@seed.wedemboyz.invalid"
+                    if production_seed
+                    else (f"{first.lower()}.{last.lower()}{i}@gmail.com" if has_email else None)
+                ),
                 first_name=first,
                 last_name=last,
                 is_phone_verified=random.random() < 0.85,
@@ -476,6 +530,8 @@ class Command(BaseCommand):
             profile.city = random.choice(CITIES)
             profile.address_line = rand_address()
             profile.preferred_language = weighted_choice([("en", 6), ("fr", 4)])
+            if production_seed:
+                profile.tags = ["seed-data", "owner-demo"]
             if random.random() < 0.4:
                 start = date(1965, 1, 1).toordinal()
                 end = date(2006, 1, 1).toordinal()
@@ -496,7 +552,9 @@ class Command(BaseCommand):
             loyalty_accounts.append(loyalty)
 
         UserProfile.objects.bulk_update(
-            profiles, ["city", "address_line", "preferred_language", "date_of_birth"], batch_size=300
+            profiles,
+            ["city", "address_line", "preferred_language", "date_of_birth", "tags"],
+            batch_size=300,
         )
         LoyaltyAccount.objects.bulk_update(
             loyalty_accounts, ["lifetime_points_earned", "points_balance", "tier"], batch_size=300
@@ -504,15 +562,15 @@ class Command(BaseCommand):
 
         return customers
 
-    def seed_notification_preferences(self, users):
+    def seed_notification_preferences(self, users, production_seed=False):
         self.log(f"Creating notification preferences for {len(users)} users...")
         prefs = [
             NotificationPreference(
                 user=u,
-                sms_enabled=random.random() < 0.9,
-                email_enabled=random.random() < 0.6,
-                push_enabled=random.random() < 0.75,
-                promo_opt_in=random.random() < 0.65,
+                sms_enabled=False if production_seed else random.random() < 0.9,
+                email_enabled=False if production_seed else random.random() < 0.6,
+                push_enabled=False if production_seed else random.random() < 0.75,
+                promo_opt_in=False if production_seed else random.random() < 0.65,
             )
             for u in users
         ]
@@ -526,13 +584,8 @@ class Command(BaseCommand):
         codes = []
         seeds = [
             ("WELCOME10", DiscountType.PERCENTAGE, Decimal("10")),
-            ("WELCOME15", DiscountType.PERCENTAGE, Decimal("15")),
             ("SAVE500", DiscountType.FIXED, Decimal("500")),
-            ("SAVE1000", DiscountType.FIXED, Decimal("1000")),
-            ("WEEKEND20", DiscountType.PERCENTAGE, Decimal("20")),
-            ("FIRSTWASH", DiscountType.PERCENTAGE, Decimal("25")),
             ("LOYALTY5", DiscountType.PERCENTAGE, Decimal("5")),
-            ("BULK2000", DiscountType.FIXED, Decimal("2000")),
         ]
         for code, dtype, value in seeds:
             codes.append(PromoCode(
@@ -541,14 +594,14 @@ class Command(BaseCommand):
                 discount_type=dtype,
                 value=value,
                 min_order_amount=Decimal(random.choice([0, 1000, 2000, 5000])),
-                max_uses=random.choice([None, 50, 100, 200]),
+                max_uses=random.choice([None, 20, 50]),
                 max_uses_per_user=random.choice([1, 1, 2, 3]),
-                valid_from=now - timedelta(days=random.randint(30, days_back)),
+                valid_from=now - timedelta(days=random.randint(10, days_back)),
                 valid_until=now + timedelta(days=random.randint(10, 120)),
                 is_active=random.random() < 0.85,
             ))
-        # A batch of expired/random extra codes for volume.
-        for i in range(12):
+        # A couple of expired/extra codes so expiry handling is exercised.
+        for i in range(2):
             dtype = random.choice(list(DiscountType))
             value = Decimal(random.choice([5, 10, 12, 15, 300, 500, 750])) if dtype == DiscountType.PERCENTAGE \
                 else Decimal(random.choice([300, 500, 750, 1000, 1500]))
@@ -560,9 +613,9 @@ class Command(BaseCommand):
                 min_order_amount=Decimal(random.choice([0, 500, 1000])),
                 max_uses=random.choice([None, 20, 50]),
                 max_uses_per_user=1,
-                valid_from=now - timedelta(days=random.randint(60, days_back)),
-                valid_until=now - timedelta(days=random.randint(1, 30)) if i % 3 == 0 else now + timedelta(days=60),
-                is_active=i % 3 != 0,
+                valid_from=now - timedelta(days=random.randint(10, days_back)),
+                valid_until=now - timedelta(days=random.randint(1, 5)) if i == 0 else now + timedelta(days=60),
+                is_active=i != 0,
             ))
         PromoCode.objects.bulk_create(codes, batch_size=100)
         return list(PromoCode.objects.all())
@@ -583,10 +636,7 @@ class Command(BaseCommand):
         now = timezone.now()
         campaigns = []
         names = [
-            "New Year Fresh Start", "Back to School Special", "Rainy Season Wash & Fold",
-            "Gold Member Appreciation", "Lapsed Customer Win-Back", "Independence Day Promo",
-            "Ramadan Special", "Christmas Cleaning Rush", "End of Month Payday Deal",
-            "Referral Bonus Week", "Dry Clean Weekend", "First Order Welcome Campaign",
+            "Rainy Season Wash & Fold", "End of Month Payday Deal", "First Order Welcome Campaign",
         ]
         segments = list(DiscountCampaign.Segment)
         for name in names:
@@ -601,7 +651,7 @@ class Command(BaseCommand):
                 value=value,
                 target_segment=random.choice(segments),
                 start_date=start,
-                end_date=start + timedelta(days=random.randint(7, 45)),
+                end_date=start + timedelta(days=random.randint(7, 30)),
                 is_active=random.random() < 0.5,
             ))
         DiscountCampaign.objects.bulk_create(campaigns, batch_size=50)
@@ -612,10 +662,10 @@ class Command(BaseCommand):
         self.log("Creating inventory items and transactions...")
         items = []
         for name, category, unit in INVENTORY_ITEMS:
-            qty = Decimal(random.randint(5, 500))
+            qty = Decimal(random.randint(5, 80))
             items.append(InventoryItem(
                 name=name, category=category, unit=unit, quantity=qty,
-                low_stock_threshold=Decimal(random.randint(5, 50)),
+                low_stock_threshold=Decimal(random.randint(3, 15)),
                 notes=rand_inventory_note(),
             ))
         InventoryItem.objects.bulk_create(items)
@@ -623,17 +673,17 @@ class Command(BaseCommand):
 
         transactions = []
         for item in items:
-            for _ in range(random.randint(6, 20)):
+            for _ in range(random.randint(3, 8)):
                 change_type = weighted_choice([
                     (InventoryTransaction.ChangeType.RESTOCK, 3),
                     (InventoryTransaction.ChangeType.USAGE, 6),
                     (InventoryTransaction.ChangeType.ADJUSTMENT, 1),
                 ])
                 if change_type == InventoryTransaction.ChangeType.RESTOCK:
-                    qty_change = Decimal(random.randint(10, 200))
+                    qty_change = Decimal(random.randint(5, 50))
                     reason = "Delivery received from supplier"
                 elif change_type == InventoryTransaction.ChangeType.USAGE:
-                    qty_change = -Decimal(random.randint(1, 30))
+                    qty_change = -Decimal(random.randint(1, 10))
                     reason = "Consumed in daily operations"
                 else:
                     qty_change = Decimal(random.choice([-5, -2, -1, 1, 2, 5]))
@@ -648,7 +698,7 @@ class Command(BaseCommand):
 
     # -- payment methods ------------------------------------------------
 
-    def seed_payment_methods(self, customers):
+    def seed_payment_methods(self, customers, production_seed=False):
         self.log("Creating payment methods...")
         methods = []
         by_user = {}
@@ -659,7 +709,12 @@ class Command(BaseCommand):
                 gateway = random.choice(list(PaymentGateway))
                 phone_number = ""
                 if gateway in (PaymentGateway.MTN_MOMO, PaymentGateway.ORANGE_MONEY):
-                    phone_number = f"237{random.choice(['65', '67', '69'])}{random.randint(1000000, 9999999)}"
+                    phone_number = (
+                        user.phone_number
+                        if production_seed
+                        else f"237{random.choice(['65', '67', '69'])}"
+                        f"{random.randint(1000000, 9999999)}"
+                    )
                 pm = PaymentMethod(
                     user=user,
                     gateway=gateway,
@@ -693,11 +748,9 @@ class Command(BaseCommand):
         all_order_items = []
         all_schedules = []
         all_payments = []
-        all_invoices = []
         all_refunds = []
         all_loyalty_txns = []
         all_promo_usages = []
-        invoice_counter = 1
 
         for i in range(n_orders):
             customer = random.choice(customers)
@@ -713,15 +766,15 @@ class Command(BaseCommand):
                 currency=Currency.XAF,
             )
 
-            # Build 1-5 line items for this order.
-            n_items = random.randint(1, 5)
+            # Build 1-3 line items for this order.
+            n_items = random.randint(1, 3)
             order_items = []
             subtotal = Decimal(0)
             for _ in range(n_items):
                 label, service_type = random.choice(ITEM_LABELS)
-                weight = Decimal(str(round(random.uniform(0.3, 6.0), 2)))
-                quantity = random.randint(1, 4)
-                unit_price = Decimal(random.choice([500, 750, 1000, 1250, 1500, 2000, 2500, 3500]))
+                weight = Decimal(str(round(random.uniform(1.0, 8.0), 2)))
+                quantity = random.randint(1, 3)
+                unit_price = Decimal(random.choice([500, 750, 1000, 1250, 1500, 2000]))
                 item_subtotal = unit_price * quantity
                 subtotal += item_subtotal
                 order_items.append(OrderItem(
@@ -812,15 +865,6 @@ class Command(BaseCommand):
         Payment.objects.bulk_create(all_payments, batch_size=500)
 
         for (order, order_dt, payment, final_status, customer) in orders:
-            if payment.status in (PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED) and random.random() < 0.85:
-                invoice_counter += 1
-                all_invoices.append(Invoice(
-                    order=order,
-                    invoice_number=f"INV-{order_dt.year}-{invoice_counter:06d}",
-                    amount_due=order.total_amount,
-                    amount_paid=order.total_amount if payment.status == PaymentStatus.SUCCEEDED
-                    else (order.total_amount * Decimal("0.5")).quantize(Decimal("1")),
-                ))
             if payment.status in (PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED, PaymentStatus.REFUNDED) \
                     and random.random() < 0.07:
                 refund_amount = (payment.amount * Decimal(random.choice(["0.25", "0.5", "1"]))).quantize(Decimal("1"))
@@ -848,7 +892,27 @@ class Command(BaseCommand):
                     ))
 
         PickupDeliverySchedule.objects.bulk_create(all_schedules, batch_size=500)
-        Invoice.objects.bulk_create(all_invoices, batch_size=500)
+        # Order creation already creates the one-to-one invoice through the
+        # payment reconciliation service. Update those records instead of
+        # attempting to insert a duplicate invoice for the same order.
+        invoices_by_order = {
+            invoice.order_id: invoice
+            for invoice in Invoice.objects.filter(order__in=[item[0] for item in orders])
+        }
+        invoice_updates = []
+        for order, _order_dt, payment, _final_status, _customer in orders:
+            invoice = invoices_by_order[order.pk]
+            invoice.amount_due = order.total_amount
+            invoice.amount_paid = (
+                payment.amount
+                if payment.status
+                in (PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED)
+                else Decimal(0)
+            )
+            invoice_updates.append(invoice)
+        Invoice.objects.bulk_update(
+            invoice_updates, ["amount_due", "amount_paid"], batch_size=500
+        )
         Refund.objects.bulk_create(all_refunds, batch_size=500)
         PromoUsage.objects.bulk_create(all_promo_usages, batch_size=500)
         LoyaltyTransaction.objects.bulk_create(all_loyalty_txns, batch_size=500)
@@ -894,7 +958,7 @@ class Command(BaseCommand):
         self.backdate(OrderItem, all_order_items, days_back, touch_updated=False)
         self.backdate(PickupDeliverySchedule, all_schedules, days_back, touch_updated=False)
         self.backdate(Payment, all_payments, days_back, touch_updated=False)
-        self.backdate(Invoice, all_invoices, days_back, touch_updated=False)
+        self.backdate(Invoice, invoice_updates, days_back, touch_updated=False)
         self.backdate(Refund, all_refunds, days_back, touch_updated=False)
         self.backdate(LoyaltyTransaction, all_loyalty_txns, days_back, touch_updated=False)
         self.backdate(PromoUsage, all_promo_usages, days_back, touch_updated=False)
@@ -919,13 +983,13 @@ class Command(BaseCommand):
         self.log("Creating chat rooms and messages...")
         rooms = []
         # Order-linked support chats for a slice of orders.
-        for order in (random.sample(orders, k=min(len(orders), max(1, len(orders) // 8))) if orders else []):
+        for order in (random.sample(orders, k=min(len(orders), max(1, len(orders) // 20))) if orders else []):
             rooms.append(ChatRoom(
                 customer=order.user, agent=random.choice(staff_users), order=order,
                 status=random.choice(list(ChatRoom.Status)),
             ))
         # Standalone general-support chats.
-        for _ in range(max(20, len(customers) // 5)):
+        for _ in range(max(5, len(customers) // 10)):
             rooms.append(ChatRoom(
                 customer=random.choice(customers),
                 agent=random.choice(staff_users) if random.random() < 0.9 else None,
@@ -937,7 +1001,7 @@ class Command(BaseCommand):
 
         messages = []
         for room in rooms:
-            n_messages = random.randint(2, 10)
+            n_messages = random.randint(2, 6)
             for i in range(n_messages):
                 is_customer_turn = i % 2 == 0
                 sender = room.customer if is_customer_turn or not room.agent else room.agent
@@ -1052,14 +1116,14 @@ class Command(BaseCommand):
                 ))
 
             # Rent: one charge a month.
-            add(ExpenseCategory.RENT, 150000, 350000)
+            add(ExpenseCategory.RENT, 100000, 200000)
 
             # Payroll is a dedicated ledger, not a generic expense category.
             for employee in staff_users:
                 PayrollEntry.objects.create(
                     employee=employee,
                     pay_period=month_end.date().replace(day=1),
-                    amount=Decimal(random.randint(40000, 150000)),
+                    amount=Decimal(random.randint(60000, 120000)),
                     currency=Currency.XAF,
                     status=PayrollEntry.Status.PAID,
                     paid_on=rand_date_in_month(month_end),
@@ -1069,19 +1133,19 @@ class Command(BaseCommand):
 
             # Utilities: a couple of bills a month.
             for _ in range(random.randint(1, 3)):
-                add(ExpenseCategory.UTILITIES, 15000, 60000)
+                add(ExpenseCategory.UTILITIES, 15000, 45000)
 
             # Supplies: restocking happens fairly often.
-            for _ in range(random.randint(2, 6)):
-                add(ExpenseCategory.SUPPLIES, 8000, 60000)
+            for _ in range(random.randint(1, 3)):
+                add(ExpenseCategory.SUPPLIES, 8000, 40000)
 
             # Maintenance: occasional repairs.
             for _ in range(random.randint(0, 2)):
                 add(ExpenseCategory.MAINTENANCE, 5000, 80000)
 
             # Other: small odds and ends.
-            for _ in range(random.randint(1, 4)):
-                add(ExpenseCategory.OTHER, 2000, 25000)
+            for _ in range(random.randint(1, 2)):
+                add(ExpenseCategory.OTHER, 2000, 15000)
 
         # Scale the batch so total expenses sit at a believable fraction of
         # actual seeded revenue (a 25-45% profit margin), instead of the
@@ -1098,13 +1162,13 @@ class Command(BaseCommand):
 
     # -- staff invites --------------------------------------------------
 
-    def seed_staff_invites(self, staff_users, used_phones, days_back):
+    def seed_staff_invites(self, staff_users, used_phones, days_back, production_seed):
         self.log("Creating staff invites...")
         invites = []
         owner = staff_users[0]
-        for _ in range(20):
+        for _ in range(2):
             first, last = rand_name()
-            phone = rand_phone(used_phones)
+            phone = rand_test_phone(used_phones) if production_seed else rand_phone(used_phones)
             status = weighted_choice([
                 (StaffInvite.Status.ACCEPTED, 4), (StaffInvite.Status.PENDING, 3),
                 (StaffInvite.Status.EXPIRED, 2), (StaffInvite.Status.REVOKED, 1),
@@ -1130,7 +1194,7 @@ class Command(BaseCommand):
             ("customer_contacted", "Called a customer about a delayed order"),
         ]
         logs = []
-        for _ in range(1500):
+        for _ in range(150):
             action, description = random.choice(actions)
             logs.append(StaffActivityLog(staff=random.choice(staff_users), action=action, description=description))
         StaffActivityLog.objects.bulk_create(logs, batch_size=500)

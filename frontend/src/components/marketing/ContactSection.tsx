@@ -1,18 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import type { FormEvent } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  Clock,
-  Mail,
-  MapPin,
-  Phone,
-  Send,
-  MessageCircle,
-} from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Phone, MessageCircle } from "lucide-react";
 
 import {
   Button,
@@ -43,13 +34,6 @@ const CONTACT_INFO = [
     href: BUSINESS.telHref,
   },
   {
-    icon: Mail,
-    accent: "turquoise",
-    label: "Email us",
-    value: "hello@wedemboyz.example",
-    href: "mailto:hello@wedemboyz.example",
-  },
-  {
     icon: MapPin,
     accent: "sun",
     label: "Find us",
@@ -67,7 +51,6 @@ const CONTACT_INFO = [
 const ACCENT_CLASSES: Record<(typeof CONTACT_INFO)[number]["accent"], string> =
   {
     coral: "bg-coral-50 text-coral",
-    turquoise: "bg-turquoise-50 text-turquoise",
     sun: "bg-sun-50 text-sun-600",
     clothesline: "bg-clothesline-50 text-clothesline",
   };
@@ -86,7 +69,7 @@ export function ContactSplit() {
     shouldReduceMotion
       ? { initial: { opacity: 1, y: 0 }, animate: { opacity: 1, y: 0 } }
       : {
-          initial: { opacity: 0, y: 16 },
+          initial: false as const,
           whileInView: { opacity: 1, y: 0 },
           viewport: { once: true, margin: "-80px" },
           transition: { delay, duration: 0.5, ease: EASE_OUT_EXPO },
@@ -157,9 +140,9 @@ export function ContactSplit() {
               <h1 className="mt-3 text-balance font-display text-4xl font-bold leading-tight text-navy md:text-5xl">
                 Got a question? Just ask.
               </h1>
-              <h1 className="mt-3 text-balance font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] leading-tight text-gold md:text-3xl">
+              <p className="mt-3 text-balance font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] text-gold sm:text-[2rem] md:text-3xl">
                 Contact us with just a click.
-              </h1>
+              </p>
               <p className="mt-4 text-base text-ink-muted">
                 No call centers, no chatbots pretending to be human. Reach out
                 and someone from the team will get back to you — usually the
@@ -239,48 +222,18 @@ export function ContactSplit() {
 }
 
 function ContactForm() {
-  const shouldReduceMotion = useReducedMotion();
-  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
-
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus("sending");
-    // No backend endpoint wired up yet — this simulates a send so the
-    // interaction feels real. Swap for a real submit handler when ready.
-    window.setTimeout(() => setStatus("sent"), 700);
-  }
+    const data = new FormData(event.currentTarget);
+    const message = [
+      `Hello Wedemboyz, I'm ${String(data.get("name") ?? "").trim()}.`,
+      `My contact is ${String(data.get("contact") ?? "").trim()}.`,
+      String(data.get("message") ?? "").trim(),
+    ].join("\n\n");
+    const url = `${BUSINESS.whatsappHref}?text=${encodeURIComponent(message)}`;
+    const whatsappWindow = window.open(url, "_blank", "noopener,noreferrer");
 
-  if (status === "sent") {
-    return (
-      <motion.div
-        initial={
-          shouldReduceMotion
-            ? { opacity: 1, scale: 1 }
-            : { opacity: 0, scale: 0.9 }
-        }
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{
-          duration: shouldReduceMotion ? 0.15 : 0.4,
-          ease: EASE_OUT_EXPO,
-        }}
-        className="flex items-start gap-3 rounded-card border border-clothesline-50 bg-clothesline-50 p-5"
-        role="status"
-      >
-        <CheckCircle2
-          className="mt-0.5 h-5 w-5 shrink-0 text-clothesline"
-          aria-hidden="true"
-        />
-        <div>
-          <p className="text-sm font-medium text-ink">
-            Message sent — thank you!
-          </p>
-          <p className="mt-1 text-sm text-ink-muted">
-            We&apos;ll get back to you soon. If it&apos;s urgent, call or
-            WhatsApp us instead.
-          </p>
-        </div>
-      </motion.div>
-    );
+    if (!whatsappWindow) window.location.assign(url);
   }
 
   return (
@@ -301,14 +254,13 @@ function ContactForm() {
       <Field label="Message">
         <Textarea name="message" placeholder="How can we help?" required />
       </Field>
-      <Button
-        type="submit"
-        disabled={status === "sending"}
-        className="w-full sm:w-auto"
-      >
-        <Send className="h-4 w-4" aria-hidden="true" />
-        {status === "sending" ? "Sending…" : "Send message"}
+      <Button type="submit" className="w-full sm:w-auto">
+        <MessageCircle className="h-4 w-4" aria-hidden="true" />
+        Continue in WhatsApp
       </Button>
+      <p className="mt-2 text-xs text-ink-muted">
+        Opens WhatsApp with your message ready to review and send.
+      </p>
     </form>
   );
 }

@@ -11,7 +11,7 @@
     "build": "bun --bun next build",
     "start": "bun --bun next start",
     "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy:cloudflare": "CLOUDFLARE_ACCOUNT_ID=63ad8f7a09a0e810e0b56974d94ba483 opennextjs-cloudflare build && CLOUDFLARE_ACCOUNT_ID=63ad8f7a09a0e810e0b56974d94ba483 opennextjs-cloudflare deploy",
+    "deploy:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "tsc": "bun x tsc --noEmit",
     "lint": "bun --bun eslint ."

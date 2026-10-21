@@ -41,8 +41,8 @@ function formatDayLabel(iso: string): string {
 function ConnectionPill({ status }: { status: string }) {
   if (status === "open") {
     return (
-      <span className="flex items-center gap-1.5 text-xs text-ok-green">
-        <span className="h-1.5 w-1.5 rounded-full bg-ok-green" />
+      <span className="flex items-center gap-1.5 text-xs text-status-ready-text">
+        <span className="h-1.5 w-1.5 rounded-full bg-status-ready-text" />
         Live
       </span>
     );

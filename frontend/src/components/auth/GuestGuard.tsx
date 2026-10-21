@@ -18,7 +18,6 @@ export function GuestGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isHydrated, accessToken, router]);
 
-  if (!isHydrated) return null;
   if (accessToken) return null;
 
   return <>{children}</>;

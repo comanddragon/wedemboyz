@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { profileApi } from "@/src/lib/api";
+import { GuardLoading } from "@/src/components/auth/GuardLoading";
 import { queryKeys } from "@/src/lib/query-keys";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
 import { canAccess, requiredPermissionForPath } from "@/src/lib/admin-rbac";
@@ -69,8 +70,10 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isHydrated, accessToken, isFetched, isError, isStaff, router]);
 
-  if (!isHydrated || !accessToken) return null;
-  if (!isFetched && !isError) return null; // still confirming against the live profile
+  if (!isHydrated || !accessToken) return <GuardLoading />;
+  if (!isFetched && !isError) {
+    return <GuardLoading label="Confirming staff access" />;
+  }
   if (!isStaff) return null;
 
   if (!isAllowed) {

@@ -20,11 +20,11 @@ export function PublicNav() {
           className="flex items-center font-display text-base font-bold tracking-tight text-navy"
         >
           <Image
-            style={{ width: "auto", height: "auto" }}
             src="/icon-mark.png"
             alt="Wedemboyz Lavomatique logo"
             width={32}
             height={50}
+            className="h-10 w-auto shrink-0 object-contain sm:h-11"
             priority
           />
           Wedemboyz Lavomatique
@@ -38,30 +38,28 @@ export function PublicNav() {
           </Link>
         </div>
 
-        {isHydrated && (
-          <div className="font-display hidden justify-end items-center gap-3 md:flex">
-            {isAuthenticated ? (
-              <Link href="/dashboard">
-                <span className={buttonStyles({ variant: "gold" })}>
-                  Dashboard
-                </span>
+        <div className="font-display hidden items-center justify-end gap-3 md:flex">
+          {isHydrated && isAuthenticated ? (
+            <Link href="/dashboard">
+              <span className={buttonStyles({ variant: "gold" })}>
+                Dashboard
+              </span>
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-sm text-ink-muted hover:text-ink"
+              >
+                Log in
               </Link>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="text-sm text-ink-muted hover:text-ink"
-                >
-                  Log in
-                </Link>
 
-                <Link href="/register">
-                  <span className={buttonStyles()}>Get started</span>
-                </Link>
-              </>
-            )}
-          </div>
-        )}
+              <Link href="/register">
+                <span className={buttonStyles()}>Get started</span>
+              </Link>
+            </>
+          )}
+        </div>
 
         <button
           type="button"
@@ -75,7 +73,7 @@ export function PublicNav() {
       </nav>
 
       {open && (
-        <div className="fixed inset-0 top-[calc(4rem+env(safe-area-inset-top))] z-50 bg-paper px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-8 md:hidden">
+        <div className="absolute inset-x-0 top-full z-50 h-[calc(100dvh-4rem-env(safe-area-inset-top))] bg-white px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-8 sm:h-[calc(100dvh-4.5rem-env(safe-area-inset-top))] md:hidden">
           <div className="font-display flex h-full flex-col text-ink-muted">
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.16em] text-gold-600">
               Explore Wedemboyz Lavomatique
@@ -96,42 +94,40 @@ export function PublicNav() {
               Contact
               <ArrowRight className="h-5 w-5 text-gold" />
             </Link>
-            {isHydrated && (
-              <div className="mt-auto grid gap-3 pt-8">
-                {isAuthenticated ? (
+            <div className="mt-auto grid gap-3 pt-8">
+              {isHydrated && isAuthenticated ? (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setOpen(false)}
+                  className={buttonStyles({
+                    variant: "gold",
+                    className: "min-h-12 w-full",
+                  })}
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <>
                   <Link
-                    href="/dashboard"
+                    href="/register"
+                    onClick={() => setOpen(false)}
+                    className={buttonStyles({ className: "min-h-12 w-full" })}
+                  >
+                    Get started
+                  </Link>
+                  <Link
+                    href="/login"
                     onClick={() => setOpen(false)}
                     className={buttonStyles({
-                      variant: "gold",
+                      variant: "secondary",
                       className: "min-h-12 w-full",
                     })}
                   >
-                    Dashboard
+                    Log in
                   </Link>
-                ) : (
-                  <>
-                    <Link
-                      href="/register"
-                      onClick={() => setOpen(false)}
-                      className={buttonStyles({ className: "min-h-12 w-full" })}
-                    >
-                      Get started
-                    </Link>
-                    <Link
-                      href="/login"
-                      onClick={() => setOpen(false)}
-                      className={buttonStyles({
-                        variant: "secondary",
-                        className: "min-h-12 w-full",
-                      })}
-                    >
-                      Log in
-                    </Link>
-                  </>
-                )}
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

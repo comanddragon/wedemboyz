@@ -1,59 +1,58 @@
 # Product
 
-## Register
+<!-- impeccable:product-schema 1 -->
 
-product
+## Platform
+
+web
 
 ## Users
 
-Two audiences share this codebase under one visual system:
-
-- **Customers** in Yaoundé booking laundry pickup/delivery, comparing Wedemboyz Lavomatique against DIY laundry or an informal
-  option — mostly mobile, price-sensitive, need quick trust signals (see PRODUCT.md context below).
-- **Staff/admin** (ops, dispatch, support) running the business day-to-day: triaging orders, resolving payment/refund
-  issues, staffing the chat inbox. They're in a task, at a desk, repeatedly — familiarity and speed matter more than
-  persuasion.
-
-This file's admin scope is the staff-facing surface at `/admin/*`.
+- **Customers** in Yaoundé booking laundry pickup and delivery, often on mobile and comparing Wedemboyz Lavomatique with doing laundry themselves or using an informal provider. They need clear prices, trust signals, and a quick booking path.
+- **Owner and staff/admin users** managing operations remotely: reviewing and updating orders, handling payments and refunds, monitoring inventory and finance, managing staff, and responding to customer chat.
 
 ## Product Purpose
 
-Wedemboyz Lavomatique is a pickup-and-delivery laundry service. The admin surface exists so staff can run operations:
-see and update order status, keep an eye on payments/refunds, staff the customer chat inbox. Success looks like a staff
-member finding what they need in one glance and completing an action (update a status, jump into a chat) in one or two
-clicks — without needing training.
+Wedemboyz Lavomatique is a pickup-and-delivery laundry service. The customer experience supports discovery, booking, payment, and order follow-up. The admin experience supports daily operations and should let the owner or a staff member find what needs attention and complete routine actions with minimal training.
 
-## Brand Personality
+## Positioning
 
-Inherited from the customer-facing brand (friendly, local, warm, "the neighborhood laundry spot"), but the admin surface
-is a tool, not a pitch: it should feel calm, orderly, and fast. The warmth shows up in restraint and craft (the same
-navy/gold/Fold-Line vocabulary as the rest of the site), not in persuasive copy or celebratory motion — staff don't need
-to be sold on booking a pickup.
+The product combines a customer-facing laundry pickup service with a connected operational workspace for the business owner and staff, keeping booking, garment processing, delivery, payment, customer support, inventory, and business records in one system.
 
-## Anti-references
+## Operating Context
 
-- Generic gray SaaS admin templates (the interface shouldn't abandon the brand's navy/gold/crease identity just because
-  it's "just the admin").
-- Anything that borrows the customer site's celebratory/marketing motion for routine staff actions (confetti on a status
-  update, etc.) — that belongs to booking, not ops.
-- Fabricated data or endpoints: several admin sections (analytics, customers, staff management, discount campaigns) have
-  no backend yet. Never invent numbers or actions that aren't real; design honest, well-crafted empty/"not yet
-  available" states instead.
+- Customers primarily access the service remotely, with mobile use treated as a first-class context.
+- The owner uses the deployed admin workspace remotely to test and manage the site's functionality before full live operation.
+- Staff/admin work is repetitive and task-focused: triaging orders, resolving payment or refund issues, managing operational records, and staffing the customer chat inbox.
+- `/admin/*` is the staff-facing operational surface; customer and public routes share the same product and brand system.
 
-## Design Principles
+## Capabilities and Constraints
 
-1. **Reuse, don't reinvent.** The `src/components` design system (Card, Button, StatusBadge, Field, CreaseDivider,
-   ServiceIcon, EyebrowLabel) and the dashboard patterns (StatCard, sidebar nav) already exist and are on-brand — admin
-   pages extend them rather than introducing a parallel visual language.
-2. **Honesty over polish-by-fabrication.** Where a backend capability doesn't exist yet, say so clearly and design a
-   good "not yet" state rather than faking data.
-3. **Task speed over delight.** Staff repeat these screens daily; optimize for scan-ability, clear status vocabulary,
-   and minimal clicks over any decorative flourish.
-4. **One consistent shell.** Admin should feel like a sibling of the customer dashboard (same shell logic, same sidebar
-   mechanics) — not a different product bolted on.
+- The application includes customer accounts, booking and scheduling, orders, payments and refunds, subscriptions, discounts and loyalty, notifications, chat, staff operations, finance, inventory, and administrative reporting.
+- Seeded production data is demonstration/test data for the owner. It must remain distinguishable from real customer activity and must not trigger real payment, email, SMS, WhatsApp, or push-provider actions.
+- Do not fabricate unsupported endpoints or capabilities in the interface. Where a backend capability is unavailable, use an honest unavailable or empty state.
+
+## Brand Commitments
+
+- Product name: **Wedemboyz Lavomatique**.
+- The established personality is friendly, local, warm, and orderly—the neighborhood laundry service presented with professional operational discipline.
+- Existing logo assets and the navy/gold identity are authoritative brand assets.
+- The admin workspace should feel calm and efficient rather than promotional, while remaining visibly part of the same brand.
+
+## Evidence on Hand
+
+- Brand assets: `public/logo.png` and `public/icon-mark.png`.
+- Existing public, customer, and admin interfaces in the application are the current functional and content evidence.
+- The repository contains an interconnected Django seed-data command for exercising supported workflows. Seed records are illustrative operational data, not customer testimonials or proof of real transactions.
+
+## Product Principles
+
+1. **Operational truth over fabricated polish.** Show real system states and supported actions; label test data clearly.
+2. **Fast routine work.** Repeated owner and staff tasks should be scannable and require few steps.
+3. **One connected service.** Customer booking and back-office operations should behave as parts of one coherent workflow.
+4. **Remote-ready management.** The owner must be able to test and manage core functionality reliably away from the physical business.
+5. **Brand consistency without operational distraction.** Preserve the friendly Wedemboyz identity while keeping admin work calm and focused.
 
 ## Accessibility & Inclusion
 
-Standard WCAG 2.1 AA (per CLAUDE.md): body text ≥4.5:1 contrast, visible focus states with the same care as hover
-states, `prefers-reduced-motion` respected, never color-alone for status meaning (StatusBadge already pairs color with
-text label).
+Target WCAG 2.1 AA: body text must meet 4.5:1 contrast, focus states must be visible, reduced-motion preferences must be respected, and status meaning must never rely on color alone.

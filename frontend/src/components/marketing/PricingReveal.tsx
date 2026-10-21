@@ -26,7 +26,7 @@ export function Reveal({
   return (
     <motion.div
       className={className}
-      initial={shouldReduceMotion ? undefined : { opacity: 0, y }}
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.65, delay, ease: EASE_OUT }}
@@ -50,7 +50,7 @@ export function StaggerGroup({
   return (
     <motion.div
       className={className}
-      initial="hidden"
+      initial="show"
       whileInView="show"
       viewport={{ once: true, margin: "-80px" }}
       variants={{
@@ -80,7 +80,11 @@ export function StaggerItem({
       className={className}
       variants={{
         hidden: shouldReduceMotion ? {} : { opacity: 0, y },
-        show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: EASE_OUT } },
+        show: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.55, ease: EASE_OUT },
+        },
       }}
     >
       {children}

@@ -97,11 +97,7 @@ export function FoldStackIllustration() {
                 return (
                     <motion.g
                         key={index}
-                        initial={
-                            shouldReduceMotion
-                                ? undefined
-                                : { opacity: 0, y: -26, rotate: panel.rotate * 1.6 }
-                        }
+                        initial={false}
                         animate={{ opacity: 1, y: 0, rotate: panel.rotate }}
                         transition={panelTransition(index)}
                         style={{ transformOrigin: `${cx}px ${cy}px` }}
@@ -139,7 +135,7 @@ export function FoldStackIllustration() {
                             y2={cy - 1.5}
                             stroke={creaseStroke}
                             strokeWidth={1}
-                            initial={shouldReduceMotion ? undefined : { pathLength: 0, opacity: 0 }}
+                            initial={false}
                             animate={{ pathLength: 1, opacity: 1 }}
                             transition={creaseTransition(index)}
                         />
@@ -150,7 +146,7 @@ export function FoldStackIllustration() {
                             y2={cy + 2.5}
                             stroke={creaseStroke}
                             strokeWidth={1}
-                            initial={shouldReduceMotion ? undefined : { pathLength: 0, opacity: 0 }}
+                            initial={false}
                             animate={{ pathLength: 1, opacity: 1 }}
                             transition={creaseTransition(index)}
                         />

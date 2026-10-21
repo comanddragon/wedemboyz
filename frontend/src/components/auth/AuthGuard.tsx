@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import React from "react";
+import { GuardLoading } from "@/src/components/auth/GuardLoading";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
 
 /**
@@ -26,8 +27,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Render nothing until hydration finishes, to avoid a flash of protected
   // content for a user who turns out to be logged out.
-  if (!isHydrated) return null;
-  if (!accessToken) return null;
+  if (!isHydrated || !accessToken) return <GuardLoading />;
 
   return <>{children}</>;
 }
