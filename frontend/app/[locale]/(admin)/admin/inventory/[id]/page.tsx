@@ -5,6 +5,7 @@ import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 import {
   TableContainer,
@@ -51,6 +52,7 @@ const CHANGE_TYPE_LABELS: Record<InventoryChangeType, string> = {
 };
 
 export default function AdminInventoryDetailPage() {
+  const { locale, t } = useI18n();
   const params = useParams<{ id: string }>();
   const itemId = Number(params.id);
   const router = useRouter();
@@ -83,7 +85,7 @@ export default function AdminInventoryDetailPage() {
   });
 
   function handleDelete() {
-    if (window.confirm(`Archive "${item?.name}"? Its transaction history will remain available.`)) {
+    if (window.confirm(t("adminInventory.archiveConfirm"))) {
       deleteMutation.mutate();
     }
   }
@@ -91,7 +93,7 @@ export default function AdminInventoryDetailPage() {
   if (isLoading) {
     return (
       <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9 text-sm text-ink-muted">
-        Loading...
+        {t("adminCommon.loading")}
       </main>
     );
   }
@@ -104,7 +106,7 @@ export default function AdminInventoryDetailPage() {
           className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to inventory
+          {t("adminInventory.backToInventory")}
         </Link>
         <p className="text-sm text-status-cancelled-text">
           {getApiErrorMessage(error)}
@@ -120,7 +122,7 @@ export default function AdminInventoryDetailPage() {
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to inventory
+        {t("adminInventory.backToInventory")}
       </Link>
 
       <div className="mb-6 flex items-start justify-between gap-4">
@@ -129,13 +131,13 @@ export default function AdminInventoryDetailPage() {
             {item.name}
           </h1>
           <p className="mt-0.5 text-xs text-ink-muted">
-            {CATEGORY_LABELS[item.category]}
+            {t(`adminInventory.categories.${item.category}`)}
           </p>
         </div>
         {item.is_low_stock ? (
-          <StatusBadge label="Low stock" tone="cancelled" />
+          <StatusBadge label={t("adminInventory.lowStock")} tone="cancelled" />
         ) : (
-          <StatusBadge label="OK" tone="ready" />
+          <StatusBadge label={t("adminInventory.badgeOk")} tone="ready" />
         )}
       </div>
 
@@ -149,7 +151,7 @@ export default function AdminInventoryDetailPage() {
               </span>
             </p>
             <p className="mt-0.5 text-xs text-ink-muted">
-              Low-stock threshold: {item.low_stock_threshold} {item.unit}
+              {t("adminInventory.thresholdNotice")} {item.low_stock_threshold} {item.unit}
             </p>
           </div>
           <Button
@@ -157,7 +159,7 @@ export default function AdminInventoryDetailPage() {
             onClick={() => setShowAdjustForm((v) => !v)}
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Adjust stock
+            {t("adminInventory.adjustStock")}
           </Button>
         </div>
         {item.notes && (
@@ -167,19 +169,19 @@ export default function AdminInventoryDetailPage() {
         )}
         <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-crease pt-4 text-xs sm:grid-cols-4">
           <div>
-            <dt className="text-ink-muted">Average cost</dt>
+            <dt className="text-ink-muted">{t("adminInventory.colCost")}</dt>
             <dd className="mt-1 font-semibold tabular-nums text-ink">{formatCurrency(item.average_cost)}</dd>
           </div>
           <div>
-            <dt className="text-ink-muted">Stock value</dt>
+            <dt className="text-ink-muted">{t("adminInventory.colStockValue")}</dt>
             <dd className="mt-1 font-semibold tabular-nums text-ink">{formatCurrency(item.stock_value)}</dd>
           </div>
           <div>
-            <dt className="text-ink-muted">Supplier</dt>
+            <dt className="text-ink-muted">{t("adminInventory.colSupplier")}</dt>
             <dd className="mt-1 font-medium text-ink">{item.supplier_detail?.name ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-ink-muted">Location</dt>
+            <dt className="text-ink-muted">{t("adminInventory.location")}</dt>
             <dd className="mt-1 font-medium text-ink">{item.storage_location || "—"}</dd>
           </div>
         </dl>
@@ -197,7 +199,7 @@ export default function AdminInventoryDetailPage() {
       <div className="mb-6 flex items-center gap-2">
         <Button variant="ghost" onClick={() => setShowEditForm((v) => !v)}>
           <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-          {showEditForm ? "Close" : "Edit details"}
+          {showEditForm ? t("adminInventory.closeForm") : t("adminInventory.editDetails")}
         </Button>
         <Button
           variant="ghost"
@@ -205,7 +207,7 @@ export default function AdminInventoryDetailPage() {
           disabled={deleteMutation.isPending}
         >
           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-          {deleteMutation.isPending ? "Archiving…" : "Archive item"}
+          {deleteMutation.isPending ? t("adminInventory.archiving") : t("adminInventory.archiveItem")}
         </Button>
       </div>
 
@@ -223,15 +225,15 @@ export default function AdminInventoryDetailPage() {
       )}
 
       <h2 className="font-display mb-3 text-sm font-medium text-ink">
-        Transaction history
+        {t("adminInventory.txHistoryHeading")}
       </h2>
       <TableContainer>
         <THead>
-          <Th>Type</Th>
-          <Th align="right">Change</Th>
-          <Th>Reason</Th>
-          <Th>By</Th>
-          <Th align="right">When</Th>
+          <Th>{t("adminInventory.colType")}</Th>
+          <Th align="right">{t("adminInventory.colChange")}</Th>
+          <Th>{t("adminInventory.colReason")}</Th>
+          <Th>{t("adminInventory.colBy")}</Th>
+          <Th align="right">{t("adminInventory.colWhen")}</Th>
         </THead>
         <TBody>
           {transactionsLoading && <TableSkeleton columns={5} />}
@@ -239,7 +241,7 @@ export default function AdminInventoryDetailPage() {
             transactions &&
             transactions.results.length === 0 && (
               <TableEmptyRow colSpan={5}>
-                No stock changes recorded yet.
+                {t("adminInventory.noStockChanges")}
               </TableEmptyRow>
             )}
           {!transactionsLoading &&
@@ -247,7 +249,7 @@ export default function AdminInventoryDetailPage() {
               const change = Number(tx.quantity_change);
               return (
                 <Tr key={tx.id}>
-                  <Td>{CHANGE_TYPE_LABELS[tx.change_type]}</Td>
+                  <Td>{t(`adminInventory.changeTypes.${tx.change_type}`)}</Td>
                   <Td
                     align="right"
                     className={`tabular-nums ${change >= 0 ? "text-status-ready-text" : "text-status-cancelled-text"}`}
@@ -265,7 +267,7 @@ export default function AdminInventoryDetailPage() {
                     align="right"
                     className="whitespace-nowrap text-ink-muted"
                   >
-                    {new Date(tx.created_at).toLocaleString()}
+                    {new Date(tx.created_at).toLocaleString(locale)}
                   </Td>
                 </Tr>
               );

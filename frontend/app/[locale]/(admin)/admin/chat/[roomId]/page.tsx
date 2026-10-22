@@ -20,32 +20,39 @@ import { clearRoomUnread } from "@/src/lib/chat-cache";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
 import { useChatStore } from "@/src/lib/stores/chat.store";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type { ChatMessage } from "@/src/types";
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+function formatTime(iso: string, locale: string): string {
+  return new Date(iso).toLocaleTimeString(
+    locale === "fr" ? "fr-FR" : "en-US",
+    {
+      hour: "numeric",
+      minute: "2-digit",
+    },
+  );
 }
 
-function formatDayLabel(iso: string): string {
+function formatDayLabel(iso: string, locale: string, t: (k: string) => string): string {
   const date = new Date(iso);
   const today = new Date();
   const isToday = date.toDateString() === today.toDateString();
-  if (isToday) return "Today";
+  if (isToday) return t("adminChat.today");
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-  return date.toLocaleDateString(undefined, { month: "long", day: "numeric" });
+  if (date.toDateString() === yesterday.toDateString()) return t("adminChat.yesterday");
+  return date.toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", {
+    month: "long",
+    day: "numeric",
+  });
 }
 
-function ConnectionPill({ status }: { status: string }) {
+function ConnectionPill({ status, t }: { status: string; t: (k: string) => string }) {
   if (status === "open") {
     return (
       <span className="flex items-center gap-1.5 text-xs text-status-ready-text">
         <span className="h-1.5 w-1.5 rounded-full bg-status-ready-text" />
-        Live
+        {t("adminChat.live")}
       </span>
     );
   }
@@ -53,16 +60,14 @@ function ConnectionPill({ status }: { status: string }) {
     return (
       <span className="flex items-center gap-1.5 text-xs text-ink-muted">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold" />
-        Connecting…
+        {t("adminChat.connecting")}
       </span>
     );
   }
-  // "closed" / "error" / "idle" — chat still works via REST send, so keep
-  // this reassuring rather than alarming.
   return (
     <span className="flex items-center gap-1.5 text-xs text-ink-muted">
       <span className="h-1.5 w-1.5 rounded-full bg-ink-muted/50" />
-      Messages send normally
+      {t("adminChat.messagesSendNormally")}
     </span>
   );
 }
@@ -89,6 +94,7 @@ export default function AdminChatRoomPage() {
   const roomId = Number(params.roomId);
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { locale, t } = useI18n();
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -205,10 +211,17 @@ export default function AdminChatRoomPage() {
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
-          <CustomerAvatar name={customerName || `Customer ${roomId}`} size="sm" />
+          <CustomerAvatar
+            name={
+              customerName ||
+              t("adminChat.customerHash").replace("{id}", String(roomId))
+            }
+            size="sm"
+          />
           <div>
             <p className="text-sm font-semibold text-navy">
-              {customerName || `Conversation #${roomId}`}
+              {customerName ||
+                t("adminChat.conversationHash").replace("{id}", String(roomId))}
             </p>
             <p className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
               {room?.order && (
@@ -216,12 +229,15 @@ export default function AdminChatRoomPage() {
                   href={`/admin/orders/${room.order.id}`}
                   className="inline-flex items-center gap-1 hover:text-navy"
                 >
-                  Order #{room.order.id}
+                  {t("adminChat.orderHash").replace(
+                    "{id}",
+                    String(room.order.id),
+                  )}
                   <ExternalLink className="h-3 w-3" />
                 </Link>
               )}
               {room?.customer && <span>{room.customer.phone_number}</span>}
-              <ConnectionPill status={status} />
+              <ConnectionPill status={status} t={t} />
             </p>
           </div>
         </div>
@@ -238,9 +254,9 @@ export default function AdminChatRoomPage() {
                 )
               }
               className="w-36 py-1.5 text-xs"
-              aria-label="Assigned staff member"
+              aria-label={t("adminChat.assignedStaff")}
             >
-              <option value="">Unassigned</option>
+              <option value="">{t("adminChat.unassigned")}</option>
               {staffQuery.data?.map((person) => {
                 const name =
                   `${person.user.first_name} ${person.user.last_name}`.trim() ||
@@ -258,7 +274,7 @@ export default function AdminChatRoomPage() {
                 variant="secondary"
                 onClick={() => roomActionMutation.mutate("claim")}
               >
-                Claim
+                {t("adminChat.claim")}
               </Button>
             )}
             <Button
@@ -270,10 +286,16 @@ export default function AdminChatRoomPage() {
                 )
               }
             >
-              {room.status === "OPEN" ? "Close" : "Reopen"}
+              {room.status === "OPEN"
+                ? t("adminChat.close")
+                : t("adminChat.reopen")}
             </Button>
             <StatusBadge
-              label={room.status}
+              label={
+                room.status === "OPEN"
+                  ? t("adminChat.open")
+                  : t("adminChat.closed")
+              }
               tone={room.status === "OPEN" ? "ready" : "pending"}
             />
           </div>
@@ -288,8 +310,7 @@ export default function AdminChatRoomPage() {
 
       {roomQuery.isError && (
         <p className="border-b border-crease bg-status-cancelled-bg px-6 py-2 text-xs text-status-cancelled-text">
-          Couldn&apos;t load conversation details — messages below may still
-          work.
+          {t("adminChat.roomDetailsError")}
         </p>
       )}
 
@@ -301,7 +322,7 @@ export default function AdminChatRoomPage() {
             <div className="space-y-1 px-4 py-6 sm:px-8">
               {messages.length === 0 && (
                 <p className="py-12 text-center text-sm text-ink-muted">
-                  No messages yet — say hello.
+                  {t("adminChat.noMessagesSayHello")}
                 </p>
               )}
               {messages.map((message: ChatMessage, i) => {
@@ -321,17 +342,30 @@ export default function AdminChatRoomPage() {
                   <div key={message.id || i}>
                     {showDayLabel && (
                       <p className="my-4 text-center text-xs font-medium uppercase tracking-wide text-ink-muted/60">
-                        {formatDayLabel(message.created_at)}
+                        {formatDayLabel(message.created_at, locale, t)}
                       </p>
                     )}
                     <div className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
-                      {!isMine && showSenderName ? <CustomerAvatar name={message.sender_name || customerName || "Customer"} size="sm" /> : !isMine ? <span className="w-9 shrink-0" /> : null}
+                      {!isMine && showSenderName ? (
+                        <CustomerAvatar
+                          name={
+                            message.sender_name ||
+                            customerName ||
+                            t("adminChat.customer")
+                          }
+                          size="sm"
+                        />
+                      ) : !isMine ? (
+                        <span className="w-9 shrink-0" />
+                      ) : null}
                       <div
                         className={`max-w-[75%] ${isMine ? "items-end" : "items-start"} flex flex-col`}
                       >
                         {showSenderName && (
                           <span className="mb-1 px-1 text-xs text-ink-muted">
-                            {message.sender_name || customerName || "Customer"}
+                            {message.sender_name ||
+                              customerName ||
+                              t("adminChat.customer")}
                           </span>
                         )}
                         <div
@@ -350,7 +384,7 @@ export default function AdminChatRoomPage() {
                           )}
                         </div>
                         <span className="mt-1 px-1 text-[0.7rem] text-ink-muted/70">
-                          {formatTime(message.created_at)}
+                          {formatTime(message.created_at, locale)}
                         </span>
                       </div>
                     </div>

@@ -5,6 +5,7 @@ import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Award, Check } from "lucide-react";
 
+import { useI18n } from "@/src/i18n/I18nProvider";
 import { buttonStyles } from "@/src/components/ui";
 import { cn } from "@/src/lib/utils";
 
@@ -45,6 +46,21 @@ const TIER: Record<
   },
 };
 
+const PLAN_TAGLINES: Record<PlanId, { en: string; fr: string }> = {
+  ESSENTIEL: {
+    en: "One or two people keeping up with the basics.",
+    fr: "Une ou deux personnes pour l'essentiel du linge.",
+  },
+  CONFORT: {
+    en: "A full household's weekly rotation, handled.",
+    fr: "La rotation hebdomadaire d'un foyer complet, sans contrainte.",
+  },
+  FAMILLE: {
+    en: "Big households, guests and heavier loads.",
+    fr: "Grandes familles, invités et charges volumineuses.",
+  },
+};
+
 function BillingToggle({
   value,
   onChange,
@@ -52,10 +68,11 @@ function BillingToggle({
   value: Billing;
   onChange: (v: Billing) => void;
 }) {
+  const { t } = useI18n();
   const layoutId = useId();
   const options: { id: Billing; label: string }[] = [
-    { id: "ONE_TIME", label: "Pay once" },
-    { id: "MONTHLY", label: "Auto-renew" },
+    { id: "ONE_TIME", label: t("pricingPage.payOnce") },
+    { id: "MONTHLY", label: t("pricingPage.autoRenew") },
   ];
   return (
     <div
@@ -93,8 +110,10 @@ function BillingToggle({
 }
 
 function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
+  const { t, locale } = useI18n();
   const tier = TIER[plan.id];
   const headingId = `plan-${plan.id.toLowerCase()}`;
+  const tagline = PLAN_TAGLINES[plan.id]?.[locale] ?? plan.tagline;
 
   return (
     <article
@@ -120,7 +139,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
               tier.badge,
             )}
           >
-            Most popular
+            {t("pricingPage.mostPopular")}
           </span>
         ) : (
           <Award className="h-6 w-6" aria-hidden="true" />
@@ -131,27 +150,30 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
         <p className="font-display text-4xl font-semibold tabular-nums text-navy">
           {plan.kg} kg
           <span className="ml-1.5 text-base font-normal text-ink-muted">
-            per month
+            {t("pricingPage.perMonth")}
           </span>
         </p>
-        <p className="mt-1 text-sm text-ink-muted">{plan.tagline}</p>
+        <p className="mt-1 text-sm text-ink-muted">{tagline}</p>
 
         <div className="mt-6 rounded-xl border border-crease-soft bg-mist p-4">
           <p className="text-sm text-ink-faint">
-            <span className="sr-only">Standard price </span>
+            <span className="sr-only">{t("pricingPage.standardPrice")} </span>
             <s>{formatAmount(plan.standard)} FCFA</s>
           </p>
           <p className="mt-0.5 flex items-baseline gap-1.5 text-navy">
             <span className="font-display text-3xl font-semibold tabular-nums">
               {formatAmount(plan.monthly)}
             </span>
-            <span className="text-sm font-medium">FCFA / month</span>
+            <span className="text-sm font-medium">
+              {t("pricingPage.fcfaPerMonth")}
+            </span>
           </p>
           <p className="mt-2 inline-flex rounded-full bg-gold-50 px-2.5 py-1 text-xs font-semibold text-gold-600">
-            You save {formatAmount(monthlySaving(plan))} FCFA every month
+            {t("pricingPage.savePrefix")} {formatAmount(monthlySaving(plan))}{" "}
+            {t("pricingPage.saveSuffix")}
           </p>
           <p className="mt-2 text-xs text-ink-muted">
-            {formatAmount(pricePerKg(plan))} FCFA per kg
+            {formatAmount(pricePerKg(plan))} {t("pricingPage.perKgSuffix")}
           </p>
         </div>
 
@@ -161,27 +183,27 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
               className="mt-0.5 h-4 w-4 shrink-0 text-gold-600"
               aria-hidden="true"
             />
-            {plan.kg} kg of laundry covered every month
+            {plan.kg} {t("pricingPage.kilosCovered")}
           </li>
           <li className="flex items-start gap-2.5">
             <Check
               className="mt-0.5 h-4 w-4 shrink-0 text-gold-600"
               aria-hidden="true"
             />
-            Washing, spinning, drying, ironing and plastic wrap
+            {t("pricingPage.allServicesIncluded")}
           </li>
           <li className="flex items-start gap-2.5">
             <Check
               className="mt-0.5 h-4 w-4 shrink-0 text-gold-600"
               aria-hidden="true"
             />
-            No commitment, cancel anytime
+            {t("pricingPage.noCommitment")}
           </li>
         </ul>
 
         {billing === "MONTHLY" && (
           <p className="mt-5 text-xs text-ink-muted">
-            Billed automatically every 30 days by PayPal.
+            {t("pricingPage.paypalNote")}
           </p>
         )}
 
@@ -192,7 +214,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
             className: "mt-6 w-full",
           })}
         >
-          Choose {plan.name}
+          {t("pricingPage.choosePlan")} {plan.name}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </div>
@@ -231,6 +253,7 @@ function HeroVideo() {
 
 /** Navy hero with the three plan cards pulled up over its lower edge. */
 export function PricingPlans() {
+  const { t } = useI18n();
   const [billing, setBilling] = useState<Billing>("ONE_TIME");
   const reduceMotion = useReducedMotion();
 
@@ -242,12 +265,10 @@ export function PricingPlans() {
           <div className="mx-auto max-w-6xl">
             <div>
               <h1 className="max-w-2xl text-4xl font-semibold leading-[1.05] md:text-6xl">
-                Your laundry, covered every month
+                {t("pricingPage.heroTitle")}
               </h1>
               <p className="mt-5 max-w-xl text-base text-white/75 md:text-lg">
-                Choose the kilos you need. Washing, spinning, drying, ironing
-                and plastic wrap are all included, and every plan costs less
-                than paying as you go.
+                {t("pricingPage.heroDescription")}
               </p>
               <div className="mt-8">
                 <BillingToggle value={billing} onChange={setBilling} />

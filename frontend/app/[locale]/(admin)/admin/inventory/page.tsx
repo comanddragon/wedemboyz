@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronRight, Package, Plus, ScrollText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
 import { SearchInput } from "@/src/components/admin/SearchInput";
@@ -55,6 +56,7 @@ const CATEGORY_FILTER_OPTIONS: {
 type SortKey = "name" | "category" | "quantity" | "average_cost" | "updated_at";
 
 export default function AdminInventoryPage() {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<
@@ -62,6 +64,17 @@ export default function AdminInventoryPage() {
   >("ALL");
   const [showAddForm, setShowAddForm] = useState(false);
   const [showUsageForm, setShowUsageForm] = useState(false);
+
+  const categoryFilterOptions: {
+    value: InventoryCategory | "ALL";
+    label: string;
+  }[] = [
+    { value: "ALL", label: t("adminInventory.allCategories") },
+    ...(Object.keys(CATEGORY_LABELS) as InventoryCategory[]).map((cat) => ({
+      value: cat,
+      label: t(`adminInventory.categories.${cat}`),
+    })),
+  ];
 
   const listParams = {
     category: categoryFilter === "ALL" ? undefined : categoryFilter,
@@ -113,17 +126,17 @@ export default function AdminInventoryPage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
-        title="Inventory"
-        description="Supplies, costs, usage, and reorder decisions in one ledger."
+        title={t("adminInventory.title")}
+        description={t("adminInventory.description")}
         action={
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setShowUsageForm((v) => !v)}>
               <ScrollText className="h-4 w-4" aria-hidden="true" />
-              Log usage
+              {t("adminInventory.logUsage")}
             </Button>
             <Button variant="gold" onClick={() => setShowAddForm((v) => !v)}>
               <Plus className="h-4 w-4" aria-hidden="true" />
-              Add item
+              {t("adminInventory.addItem")}
             </Button>
           </div>
         }
@@ -131,7 +144,7 @@ export default function AdminInventoryPage() {
 
       {valuation && (
         <div className="mb-5 flex items-baseline justify-between border-y border-crease py-3">
-          <p className="text-sm text-ink-muted">Current stock valuation</p>
+          <p className="text-sm text-ink-muted">{t("adminInventory.currentValuation")}</p>
           <p className="text-lg font-semibold tabular-nums text-navy">
             {formatCurrency(valuation.total_value)}
           </p>
@@ -146,8 +159,7 @@ export default function AdminInventoryPage() {
             </span>
             <div>
               <p className="text-sm font-medium text-status-cancelled-text">
-                {lowStock.results.length} item
-                {lowStock.results.length === 1 ? "" : "s"} low on stock
+                {lowStock.results.length} {t("adminInventory.itemsLowStockBanner")}
               </p>
               <p className="mt-1 text-xs text-status-cancelled-text/80">
                 {lowStock.results.map((i) => i.name).join(", ")}
@@ -171,11 +183,11 @@ export default function AdminInventoryPage() {
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
-          placeholder="Search by name"
+          placeholder={t("adminInventory.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="sm:max-w-xs"
-          aria-label="Search inventory items"
+          aria-label={t("adminInventory.searchPlaceholder")}
         />
         <Select
           value={categoryFilter}
@@ -183,9 +195,9 @@ export default function AdminInventoryPage() {
             setCategoryFilter(e.target.value as InventoryCategory | "ALL")
           }
           className="sm:w-48"
-          aria-label="Filter by category"
+          aria-label={t("adminInventory.allCategories")}
         >
-          {CATEGORY_FILTER_OPTIONS.map((opt) => (
+          {categoryFilterOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -193,7 +205,7 @@ export default function AdminInventoryPage() {
         </Select>
         {items && (
           <p className="text-xs text-ink-muted sm:ml-auto">
-            {filtered?.length ?? 0} of {items.results.length} items
+            {filtered?.length ?? 0} {t("adminInventory.itemsRatioOf")} {items.results.length}
           </p>
         )}
       </div>
@@ -207,36 +219,36 @@ export default function AdminInventoryPage() {
       <TableContainer>
         <THead>
           <SortableTh
-            label="Name"
+            label={t("adminInventory.name")}
             active={directionFor("name") !== null}
             direction={directionFor("name")}
             onSort={() => toggle("name")}
           />
           <SortableTh
-            label="Category"
+            label={t("adminInventory.colCategory")}
             active={directionFor("category") !== null}
             direction={directionFor("category")}
             onSort={() => toggle("category")}
           />
           <SortableTh
-            label="Quantity"
+            label={t("adminInventory.colQuantity")}
             align="right"
             active={directionFor("quantity") !== null}
             direction={directionFor("quantity")}
             onSort={() => toggle("quantity")}
           />
           <SortableTh
-            label="Average cost"
+            label={t("adminInventory.colCost")}
             align="right"
             active={directionFor("average_cost") !== null}
             direction={directionFor("average_cost")}
             onSort={() => toggle("average_cost")}
           />
-          <Th align="right">Stock value</Th>
-          <Th>Supplier</Th>
-          <Th>Status</Th>
+          <Th align="right">{t("adminInventory.colStockValue")}</Th>
+          <Th>{t("adminInventory.colSupplier")}</Th>
+          <Th>{t("adminInventory.colStatus")}</Th>
           <SortableTh
-            label="Updated"
+            label={t("adminInventory.colUpdated")}
             active={directionFor("updated_at") !== null}
             direction={directionFor("updated_at")}
             onSort={() => toggle("updated_at")}
@@ -248,8 +260,8 @@ export default function AdminInventoryPage() {
           {!isLoading && sorted && sorted.length === 0 && (
             <TableEmptyRow colSpan={9}>
               {items && items.results.length === 0
-                ? "No inventory items yet."
-                : "No items match your search or filter."}
+                ? t("adminInventory.noItems")
+                : t("adminInventory.noMatch")}
             </TableEmptyRow>
           )}
           {!isLoading &&
@@ -266,7 +278,7 @@ export default function AdminInventoryPage() {
                   {item.name}
                 </Td>
                 <Td className="text-ink-muted">
-                  {CATEGORY_LABELS[item.category]}
+                  {t(`adminInventory.categories.${item.category}`)}
                 </Td>
                 <Td align="right" className="tabular-nums">
                   {item.quantity} {item.unit}
@@ -282,13 +294,13 @@ export default function AdminInventoryPage() {
                 </Td>
                 <Td>
                   {item.is_low_stock ? (
-                    <StatusBadge label="Low stock" tone="cancelled" />
+                    <StatusBadge label={t("adminInventory.lowStock")} tone="cancelled" />
                   ) : (
-                    <StatusBadge label="OK" tone="ready" />
+                    <StatusBadge label={t("adminInventory.badgeOk")} tone="ready" />
                   )}
                 </Td>
                 <Td className="whitespace-nowrap text-ink-muted">
-                  {new Date(item.updated_at).toLocaleDateString()}
+                  {new Date(item.updated_at).toLocaleDateString(locale)}
                 </Td>
                 <Td>
                   <ChevronRight

@@ -20,18 +20,12 @@ import { Card, Select, StatusBadge, staffRoleTone } from "@/src/components/ui";
 import { staffApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type {
   EmploymentStatus,
   StaffRole,
   UpdateStaffProfileInput,
 } from "@/src/types";
-
-const ROLE_LABELS: Record<StaffRole, string> = {
-  MANAGER: "Manager",
-  ATTENDANT: "Attendant",
-  CASHIER: "Cashier",
-  DRIVER: "Driver",
-};
 
 const ROLE_OPTIONS: StaffRole[] = ["ATTENDANT", "CASHIER", "DRIVER", "MANAGER"];
 const EMPLOYMENT_OPTIONS: EmploymentStatus[] = [
@@ -45,7 +39,22 @@ export default function AdminStaffDetailPage() {
   const params = useParams<{ id: string }>();
   const staffProfileId = Number(params.id);
   const queryClient = useQueryClient();
+  const { locale, t } = useI18n();
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const roleLabels: Record<StaffRole, string> = {
+    MANAGER: t("adminCommon.roles.manager"),
+    ATTENDANT: t("adminCommon.roles.attendant"),
+    CASHIER: t("adminCommon.roles.cashier"),
+    DRIVER: t("adminOrders.driver"),
+  };
+
+  const employmentLabels: Record<EmploymentStatus, string> = {
+    ACTIVE: t("adminStaff.employmentStatuses.ACTIVE"),
+    ON_LEAVE: t("adminStaff.employmentStatuses.ON_LEAVE"),
+    SUSPENDED: t("adminStaff.employmentStatuses.SUSPENDED"),
+    TERMINATED: t("adminStaff.employmentStatuses.TERMINATED"),
+  };
 
   const {
     data: staff,
@@ -75,7 +84,7 @@ export default function AdminStaffDetailPage() {
   if (isLoading) {
     return (
       <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9 text-sm text-ink-muted">
-        Loading...
+        {t("common.loading")}
       </main>
     );
   }
@@ -88,7 +97,7 @@ export default function AdminStaffDetailPage() {
           className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to staff
+          {t("adminStaff.backToStaff")}
         </Link>
         <p className="text-sm text-status-cancelled-text">
           {getApiErrorMessage(error)}
@@ -112,7 +121,7 @@ export default function AdminStaffDetailPage() {
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to staff
+        {t("adminStaff.backToStaff")}
       </Link>
 
       <div className="mb-6 flex items-start justify-between gap-4">
@@ -121,11 +130,16 @@ export default function AdminStaffDetailPage() {
             {fullName}
           </h1>
           <p className="mt-0.5 text-xs text-ink-muted">
-            Joined {new Date(staff.joined_at).toLocaleDateString()}
+            {t("adminStaff.joinedOn").replace(
+              "{date}",
+              new Date(staff.joined_at).toLocaleDateString(
+                locale === "fr" ? "fr-FR" : "en-US",
+              ),
+            )}
           </p>
         </div>
         <StatusBadge
-          label={ROLE_LABELS[staff.role]}
+          label={roleLabels[staff.role]}
           tone={staffRoleTone(staff.role)}
         />
       </div>
@@ -133,7 +147,7 @@ export default function AdminStaffDetailPage() {
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <Card>
           <h2 className="font-display mb-3 text-sm font-medium text-ink">
-            Contact
+            {t("adminStaff.contact")}
           </h2>
           <div className="space-y-2 text-sm text-ink-muted">
             <p className="flex items-center gap-2">
@@ -146,13 +160,17 @@ export default function AdminStaffDetailPage() {
                 {staff.user.email}
               </p>
             )}
-            {invitedByName && <p>Invited by {invitedByName}</p>}
+            {invitedByName && (
+              <p>
+                {t("adminStaff.invitedBy").replace("{name}", invitedByName)}
+              </p>
+            )}
           </div>
         </Card>
 
         <Card>
           <h2 className="font-display mb-3 text-sm font-medium text-ink">
-            Access
+            {t("adminStaff.access")}
           </h2>
           <div className="space-y-4">
             <div>
@@ -160,7 +178,7 @@ export default function AdminStaffDetailPage() {
                 className="mb-1 block text-xs font-medium text-ink-muted"
                 htmlFor="staff-role"
               >
-                Role
+                {t("adminStaff.role")}
               </label>
               <Select
                 id="staff-role"
@@ -172,7 +190,7 @@ export default function AdminStaffDetailPage() {
               >
                 {ROLE_OPTIONS.map((role) => (
                   <option key={role} value={role}>
-                    {ROLE_LABELS[role]}
+                    {roleLabels[role]}
                   </option>
                 ))}
               </Select>
@@ -187,22 +205,21 @@ export default function AdminStaffDetailPage() {
                   updateMutation.mutate({ is_active: e.target.checked })
                 }
               />
-              Active — can sign in to the admin
+              {t("adminStaff.activeLabel")}
             </label>
 
             {saveError && (
               <p className="text-sm text-status-cancelled-text">{saveError}</p>
             )}
             <p className="text-xs text-ink-muted">
-              Role and access changes require owner or manager permissions and
-              take effect immediately.
+              {t("adminStaff.accessHint")}
             </p>
           </div>
         </Card>
 
         <Card>
           <h2 className="font-display mb-3 text-sm font-medium text-ink">
-            Operations
+            {t("adminStaff.operations")}
           </h2>
           <div className="space-y-3">
             <div>
@@ -210,7 +227,7 @@ export default function AdminStaffDetailPage() {
                 className="mb-1 block text-xs font-medium text-ink-muted"
                 htmlFor="employment-status"
               >
-                Employment status
+                {t("adminStaff.employmentStatus")}
               </label>
               <Select
                 id="employment-status"
@@ -224,17 +241,23 @@ export default function AdminStaffDetailPage() {
               >
                 {EMPLOYMENT_OPTIONS.map((value) => (
                   <option key={value} value={value}>
-                    {value.replaceAll("_", " ")}
+                    {employmentLabels[value]}
                   </option>
                 ))}
               </Select>
             </div>
             <label className="flex items-center justify-between gap-3 rounded-xl bg-mist px-3 py-2.5 text-sm text-ink">
               <span>
-                <span className="block font-medium">Available for chat</span>
+                <span className="block font-medium">
+                  {t("adminStaff.availableForChat")}
+                </span>
                 <span className="block text-xs text-ink-muted">
-                  {staff.open_chat_count} open assignment
-                  {staff.open_chat_count === 1 ? "" : "s"}
+                  {staff.open_chat_count === 1
+                    ? t("adminStaff.openAssignments").replace("{count}", "1")
+                    : t("adminStaff.openAssignmentsPlural").replace(
+                        "{count}",
+                        String(staff.open_chat_count),
+                      )}
                 </span>
               </span>
               <input
@@ -249,10 +272,12 @@ export default function AdminStaffDetailPage() {
               />
             </label>
             <p className="text-xs text-ink-muted">
-              Last login:{" "}
+              {t("adminStaff.lastLogin")}{" "}
               {staff.user.last_login
-                ? new Date(staff.user.last_login).toLocaleString()
-                : "Never"}
+                ? new Date(staff.user.last_login).toLocaleString(
+                    locale === "fr" ? "fr-FR" : "en-US",
+                  )
+                : t("adminStaff.never")}
             </p>
           </div>
         </Card>
@@ -260,11 +285,11 @@ export default function AdminStaffDetailPage() {
 
       <Card className="mt-3">
         <h2 className="font-display mb-3 text-sm font-medium text-ink">
-          Employment details
+          {t("adminStaff.employmentDetails")}
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="text-xs font-medium text-ink-muted">
-            Hire date
+            {t("adminStaff.hireDate")}
             <input
               type="date"
               className="ui-control mt-1"
@@ -275,7 +300,7 @@ export default function AdminStaffDetailPage() {
             />
           </label>
           <label className="text-xs font-medium text-ink-muted">
-            Base salary (XAF)
+            {t("adminStaff.baseSalary")}
             <input
               type="number"
               min="0"
@@ -289,7 +314,7 @@ export default function AdminStaffDetailPage() {
             />
           </label>
           <label className="text-xs font-medium text-ink-muted sm:col-span-2">
-            Address
+            {t("adminStaff.address")}
             <input
               className="ui-control mt-1"
               defaultValue={staff.address}
@@ -299,7 +324,7 @@ export default function AdminStaffDetailPage() {
             />
           </label>
           <label className="text-xs font-medium text-ink-muted">
-            Emergency contact
+            {t("adminStaff.emergencyContact")}
             <input
               className="ui-control mt-1"
               defaultValue={staff.emergency_contact_name}
@@ -311,7 +336,7 @@ export default function AdminStaffDetailPage() {
             />
           </label>
           <label className="text-xs font-medium text-ink-muted">
-            Emergency phone
+            {t("adminStaff.emergencyPhone")}
             <input
               type="tel"
               className="ui-control mt-1"
@@ -324,7 +349,7 @@ export default function AdminStaffDetailPage() {
             />
           </label>
           <label className="text-xs font-medium text-ink-muted sm:col-span-2">
-            Internal notes
+            {t("adminStaff.internalNotes")}
             <textarea
               className="ui-control mt-1 min-h-20"
               defaultValue={staff.notes}
@@ -337,18 +362,20 @@ export default function AdminStaffDetailPage() {
       </Card>
 
       <h2 className="font-display mb-3 mt-8 text-sm font-medium text-ink">
-        Activity
+        {t("adminStaff.activity")}
       </h2>
       <TableContainer>
         <THead>
-          <Th>Action</Th>
-          <Th>Details</Th>
-          <Th align="right">When</Th>
+          <Th>{t("adminStaff.colAction")}</Th>
+          <Th>{t("adminStaff.colDetails")}</Th>
+          <Th align="right">{t("adminStaff.colWhen")}</Th>
         </THead>
         <TBody>
           {activityLoading && <TableSkeleton columns={3} />}
           {!activityLoading && activity && activity.results.length === 0 && (
-            <TableEmptyRow colSpan={3}>No activity recorded yet.</TableEmptyRow>
+            <TableEmptyRow colSpan={3}>
+              {t("adminStaff.noActivity")}
+            </TableEmptyRow>
           )}
           {!activityLoading &&
             activity?.results.map((entry) => (
@@ -358,7 +385,9 @@ export default function AdminStaffDetailPage() {
                   {entry.description || <span>—</span>}
                 </Td>
                 <Td align="right" className="whitespace-nowrap text-ink-muted">
-                  {new Date(entry.created_at).toLocaleString()}
+                  {new Date(entry.created_at).toLocaleString(
+                    locale === "fr" ? "fr-FR" : "en-US",
+                  )}
                 </Td>
               </Tr>
             ))}

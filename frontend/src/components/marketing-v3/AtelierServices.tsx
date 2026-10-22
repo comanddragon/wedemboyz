@@ -15,92 +15,86 @@ import {
 } from "lucide-react";
 
 import type { ServiceType } from "@/src/types";
-
+import { useI18n } from "@/src/i18n/I18nProvider";
 import { Reveal } from "./Reveal";
 
-const SERVICES: {
-  type: ServiceType;
-  icon: typeof Droplets;
-  label: string;
-  description: string;
-  price: number;
-  perKg: boolean;
-}[] = [
-  {
-    type: "TSHIRT",
-    icon: Shirt,
-    label: "T-Shirt",
-    description:
-      "Everyday wear, washed to fabric-appropriate settings and folded to a consistent standard — not just clean, but presentable.",
-    price: 500,
-    perKg: false,
-  },
-  {
-    type: "CHEMISE",
-    icon: Wind,
-    label: "Chemise (Shirt)",
-    description:
-      "The complete cycle for shirts, uniforms, and workwear that need to leave the bag ready to put on.",
-    price: 600,
-    perKg: false,
-  },
-  {
-    type: "VESTE",
-    icon: Layers,
-    label: "Veste (Jacket)",
-    description: "Structured outerwear, cleaned and pressed to hold its shape.",
-    price: 2000,
-    perKg: false,
-  },
-  {
-    type: "ROBE",
-    icon: Sparkles,
-    label: "Robe (Dress)",
-    description:
-      "Dresses and evening wear that need careful handling, not a standard wash cycle.",
-    price: 2500,
-    perKg: false,
-  },
-  {
-    type: "DRAPS_COMPLET",
-    icon: RotateCw,
-    label: "Draps Complet",
-    description:
-      "Full bed sheet sets, washed and pressed as one flat-priced line.",
-    price: 1500,
-    perKg: false,
-  },
-  {
-    type: "LAVAGE_ESSORAGE",
-    icon: WashingMachine,
-    label: "Lavage et Essorage",
-    description:
-      "Drop in a load at the storefront and let the machine do the wash-and-spin cycle on its own.",
-    price: 600,
-    perKg: true,
-  },
-  {
-    type: "LAVAGE_SECHAGE",
-    icon: Fan,
-    label: "Lavage, Essorage et Séchage",
-    description:
-      "Tumble-dried until fully dry and ready to fold — no line-drying wait required.",
-    price: 1000,
-    perKg: true,
-  },
-  {
-    type: "REPASSAGE_PLASTIF",
-    icon: Flame,
-    label: "Repassage et Plastification",
-    description:
-      "Storefront pressing station with protective plastic wrap, so pieces stay crisp on the way home.",
-    price: 1000,
-    perKg: true,
-  },
-];
-
 export function AtelierServices() {
+  const { t, locale } = useI18n();
   const shouldReduceMotion = useReducedMotion();
+
+  const services: {
+    type: ServiceType;
+    icon: typeof Droplets;
+    label: string;
+    description: string;
+    price: number;
+    perKg: boolean;
+  }[] = [
+    {
+      type: "TSHIRT",
+      icon: Shirt,
+      label: "T-Shirt",
+      description: t("marketing.serviceTshirtDesc"),
+      price: 500,
+      perKg: false,
+    },
+    {
+      type: "CHEMISE",
+      icon: Wind,
+      label: locale === "fr" ? "Chemise" : "Chemise (Shirt)",
+      description: t("marketing.serviceChemiseDesc"),
+      price: 600,
+      perKg: false,
+    },
+    {
+      type: "VESTE",
+      icon: Layers,
+      label: locale === "fr" ? "Veste" : "Veste (Jacket)",
+      description: t("marketing.serviceVesteDesc"),
+      price: 2000,
+      perKg: false,
+    },
+    {
+      type: "ROBE",
+      icon: Sparkles,
+      label: locale === "fr" ? "Robe" : "Robe (Dress)",
+      description: t("marketing.serviceRobeDesc"),
+      price: 2500,
+      perKg: false,
+    },
+    {
+      type: "DRAPS_COMPLET",
+      icon: RotateCw,
+      label: locale === "fr" ? "Draps complet" : "Draps Complet",
+      description: t("marketing.serviceDrapsDesc"),
+      price: 1500,
+      perKg: false,
+    },
+    {
+      type: "LAVAGE_ESSORAGE",
+      icon: WashingMachine,
+      label: "Lavage et Essorage",
+      description: t("marketing.serviceLavageEssorageDesc"),
+      price: 600,
+      perKg: true,
+    },
+    {
+      type: "LAVAGE_SECHAGE",
+      icon: Fan,
+      label: "Lavage, Essorage et Séchage",
+      description: t("marketing.serviceLavageSechageDesc"),
+      price: 1000,
+      perKg: true,
+    },
+    {
+      type: "REPASSAGE_PLASTIF",
+      icon: Flame,
+      label: "Repassage et Plastification",
+      description: t("marketing.serviceRepassagePlastifDesc"),
+      price: 1000,
+      perKg: true,
+    },
+  ];
 
   return (
     <section className="border-t border-[var(--at-line)] bg-[var(--at-panel)] px-4 py-14 sm:px-6 sm:py-20 md:py-28">
@@ -109,10 +103,10 @@ export function AtelierServices() {
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end md:max-w-2xl">
             <Reveal className="max-w-xl">
               <span className="at-display text-xs font-semibold uppercase tracking-[0.24em] text-[var(--at-brass-bright)]">
-                The service lines
+                {t("marketing.servicesEyebrow")}
               </span>
               <h2 className="at-display mt-2 text-2xl font-bold leading-tight text-[var(--at-ivory)] sm:mt-3 sm:text-3xl md:text-4xl">
-                Flat-priced by the piece, or by the kilo.
+                {t("marketing.servicesTitle")}
               </h2>
             </Reveal>
 
@@ -124,7 +118,7 @@ export function AtelierServices() {
                   <div className="relative aspect-[4/5] overflow-hidden rounded-[2px]">
                     <Image
                       src="/images/services-laundry-basket.jpg"
-                      alt="A basket of freshly laundered clothes beside the washer"
+                      alt=""
                       fill
                       sizes="112px"
                       className="object-cover"
@@ -135,7 +129,9 @@ export function AtelierServices() {
                   className="mt-1.5 text-[10px] uppercase tracking-[0.16em] text-[var(--at-slate)]"
                   style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                 >
-                  Plate 05 — sorted, before the wash
+                  {locale === "fr"
+                    ? "Planche 05 — trié avant lavage"
+                    : "Plate 05 — sorted, before the wash"}
                 </figcaption>
               </figure>
             </Reveal>
@@ -145,13 +141,12 @@ export function AtelierServices() {
             delay={0.1}
             className="max-w-sm text-sm text-[var(--at-slate)]"
           >
-            1,000 XAF minimum on per-kilo lines. Pickup and delivery is a flat
-            1,500 XAF — the total is confirmed before we collect.
+            {t("marketing.servicesDescription")}
           </Reveal>
         </div>
 
         <div className="mt-8 grid grid-cols-1 divide-y divide-[var(--at-line)] border-y border-[var(--at-line)] sm:mt-14 md:grid-cols-2 md:divide-x md:divide-y-0">
-          {SERVICES.map((service, i) => {
+          {services.map((service, i) => {
             const Icon = service.icon;
             return (
               <Reveal key={service.type} delay={i * 0.08}>
@@ -172,9 +167,9 @@ export function AtelierServices() {
                       <Icon className="h-5 w-5" aria-hidden="true" />
                     </span>
                     <span className="at-serif-num order-3 text-right text-sm font-bold text-[var(--at-ivory)] sm:order-none sm:text-xl">
-                      {service.price.toLocaleString("en-US")}
+                      {service.price.toLocaleString(locale === "fr" ? "fr-FR" : "en-US")}
                       <span className="ml-1 text-xs font-medium text-[var(--at-slate)]">
-                        {service.perKg ? "XAF/kg" : "XAF"}
+                        {service.perKg ? (locale === "fr" ? "FCFA / kg" : "XAF/kg") : (locale === "fr" ? "FCFA" : "XAF")}
                       </span>
                     </span>
                   </div>

@@ -2,6 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 import {
   Button,
@@ -46,6 +47,7 @@ export function QuickSaleItems({
   onAdd: (item: QuickSaleLineItem) => void;
   onRemove: (clientId: string) => void;
 }) {
+  const { t } = useI18n();
   const [serviceType, setServiceType] = useState<ServiceType>("TSHIRT");
   const [label, setLabel] = useState("");
   const [weightKg, setWeightKg] = useState("1");
@@ -75,7 +77,7 @@ export function QuickSaleItems({
         className="rounded-card border border-crease bg-steam/40 p-4"
       >
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
-          <Field label="Service" htmlFor="qs-service">
+          <Field label={t("adminQuickSale.service")} htmlFor="qs-service">
             <Select
               id="qs-service"
               value={serviceType}
@@ -88,18 +90,18 @@ export function QuickSaleItems({
               ))}
             </Select>
           </Field>
-          <Field label="Item label (optional)" htmlFor="qs-label">
+          <Field label={t("adminQuickSale.itemLabelOptional")} htmlFor="qs-label">
             <Input
               id="qs-label"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="e.g. 3 shirts"
+              placeholder={t("adminQuickSale.itemLabelPlaceholder")}
             />
           </Field>
         </div>
 
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
-          <Field label="Weight (kg)" htmlFor="qs-weight">
+          <Field label={t("adminQuickSale.weightKg")} htmlFor="qs-weight">
             <Input
               id="qs-weight"
               type="number"
@@ -109,7 +111,7 @@ export function QuickSaleItems({
               onChange={(e) => setWeightKg(e.target.value)}
             />
           </Field>
-          <Field label="Quantity" htmlFor="qs-quantity">
+          <Field label={t("adminQuickSale.quantity")} htmlFor="qs-quantity">
             <Input
               id="qs-quantity"
               type="number"
@@ -119,9 +121,9 @@ export function QuickSaleItems({
             />
           </Field>
           <Field
-            label="Price override (optional)"
+            label={t("adminQuickSale.priceOverrideOptional")}
             htmlFor="qs-price"
-            hint="Leave blank to auto-price"
+            hint={t("adminQuickSale.priceOverrideHint")}
           >
             <Input
               id="qs-price"
@@ -136,15 +138,15 @@ export function QuickSaleItems({
         </div>
 
         <Button type="submit" variant="secondary" className="w-full">
-          Add item
+          {t("adminQuickSale.addItemBtn")}
         </Button>
       </form>
 
       <h2 className="mb-3 mt-6 text-sm font-medium text-ink">
-        Items ({items.length})
+        {t("adminQuickSale.itemsCount")} ({items.length})
       </h2>
       {items.length === 0 && (
-        <p className="text-sm text-ink-muted">No items added yet.</p>
+        <p className="text-sm text-ink-muted">{t("adminQuickSale.itemsNone")}</p>
       )}
       <ul className="space-y-2">
         {items.map((item) => (
@@ -161,14 +163,14 @@ export function QuickSaleItems({
                   {serviceLabel(item.service_type)} — {item.weight_kg ?? 1}kg x
                   {item.quantity ?? 1}
                   {item.unit_price != null && (
-                    <> — {formatCurrency(item.unit_price)} (manual)</>
+                    <> — {formatCurrency(item.unit_price)} ({t("adminQuickSale.manualPriceTag")})</>
                   )}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => onRemove(item.clientId)}
-                aria-label="Remove item"
+                aria-label={t("adminQuickSale.removeItem")}
                 className="text-ink-muted hover:text-status-cancelled-text"
               >
                 <Trash2 className="h-4 w-4" />

@@ -1,3 +1,5 @@
+"use client";
+
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import {
   ChevronDown,
@@ -15,9 +17,9 @@ import {
 import { ServiceIcon, buttonStyles, serviceLabel } from "@/src/components/ui";
 import { BUSINESS } from "@/src/lib/constants";
 import { cn } from "@/src/lib/utils";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 import {
-  INCLUDED_SERVICES,
   KG_SERVICES,
   MINIMUM_PER_KG_LINE,
   PICKUP_DELIVERY_FEE,
@@ -30,31 +32,17 @@ import {
 
 const SERVICE_ICONS = [WashingMachine, Droplets, Wind, Flame, PackageCheck];
 
-const FAQ = [
-  {
-    q: "Do unused kilos carry over to the next month?",
-    a: "No. Kilos you do not use are not carried over, so pick the plan that matches a normal month.",
-  },
-  {
-    q: "What happens if I go over my kilos?",
-    a: "The extra kilos are billed at the current rate grid. You are never blocked from using the service.",
-  },
-  {
-    q: "Is there a commitment?",
-    a: "No. Plans have no commitment and you can cancel anytime.",
-  },
-  {
-    q: "How do I pay?",
-    a: "By cash, PayPal, MTN Mobile Money or Orange Money. Auto-renew is available with PayPal.",
-  },
-  {
-    q: "Do you deliver?",
-    a: `Yes. Home delivery is available. Pickup and delivery is a flat ${formatAmount(PICKUP_DELIVERY_FEE)} FCFA per order.`,
-  },
-];
-
 /** The five services every plan covers, as one quiet row under the cards. */
 export function PricingIncluded() {
+  const { t } = useI18n();
+  const includedServices = [
+    t("pricingPage.services.washing"),
+    t("pricingPage.services.spinning"),
+    t("pricingPage.services.drying"),
+    t("pricingPage.services.ironing"),
+    t("pricingPage.services.plasticWrap"),
+  ];
+
   return (
     <section aria-labelledby="included-heading" className="px-6 pt-20">
       <div className="mx-auto max-w-6xl">
@@ -62,10 +50,10 @@ export function PricingIncluded() {
           id="included-heading"
           className="font-display text-xl font-semibold text-navy"
         >
-          Every plan includes
+          {t("pricingPage.includedHeading")}
         </h2>
         <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {INCLUDED_SERVICES.map((label, i) => {
+          {includedServices.map((label, i) => {
             const Icon = SERVICE_ICONS[i];
             return (
               <li
@@ -86,10 +74,12 @@ export function PricingIncluded() {
 }
 
 export function PricingComparison() {
+  const { t } = useI18n();
+
   const rows: { label: string; cell: (i: number) => React.ReactNode }[] = [
-    { label: "Kilos per month", cell: (i) => `${PLANS[i].kg} kg` },
+    { label: t("pricingPage.rowKilos"), cell: (i) => `${PLANS[i].kg} kg` },
     {
-      label: "Monthly price",
+      label: t("pricingPage.rowMonthlyPrice"),
       cell: (i) => (
         <span className="font-display text-base font-semibold text-navy">
           {formatAmount(PLANS[i].monthly)} FCFA
@@ -97,11 +87,11 @@ export function PricingComparison() {
       ),
     },
     {
-      label: "Standard price",
+      label: t("pricingPage.rowStandardPrice"),
       cell: (i) => <s>{formatAmount(PLANS[i].standard)} FCFA</s>,
     },
     {
-      label: "You save",
+      label: t("pricingPage.rowSavings"),
       cell: (i) => (
         <span className="font-semibold text-gold-600">
           {formatAmount(monthlySaving(PLANS[i]))} FCFA
@@ -109,12 +99,17 @@ export function PricingComparison() {
       ),
     },
     {
-      label: "Price per kg",
+      label: t("pricingPage.rowPricePerKg"),
       cell: (i) => `${formatAmount(pricePerKg(PLANS[i]))} FCFA`,
     },
-    { label: "Services included", cell: () => "All five" },
-    { label: "Unused kilos", cell: () => "Not carried over" },
-    { label: "Extra kilos", cell: () => "Billed at the current rate grid" },
+    {
+      label: t("pricingPage.rowIncluded"),
+      cell: () => t("pricingPage.allServicesIncluded"),
+    },
+    {
+      label: t("pricingPage.rowCommitment"),
+      cell: () => t("pricingPage.noneCancelAnytime"),
+    },
   ];
 
   return (
@@ -124,12 +119,15 @@ export function PricingComparison() {
           id="compare-heading"
           className="font-display text-2xl font-semibold text-navy md:text-3xl"
         >
-          Compare the plans
+          {t("pricingPage.comparisonHeading")}
         </h2>
+        <p className="mt-2 text-ink-muted">
+          {t("pricingPage.comparisonSubtitle")}
+        </p>
         <div className="mt-6 overflow-x-auto rounded-card border border-crease bg-white shadow-card-sm">
           <table className="w-full min-w-[40rem] border-collapse text-left text-sm tabular-nums">
             <caption className="sr-only">
-              Monthly plans compared by kilos, price and savings
+              {t("pricingPage.comparisonHeading")}
             </caption>
             <thead>
               <tr className="border-b border-crease">
@@ -234,6 +232,23 @@ function LedgerRow({
 }
 
 export function PricingPayAsYouGo() {
+  const { t, locale } = useI18n();
+
+  const kgServicesTranslated: Record<string, string> = {
+    LAVAGE_ESSORAGE:
+      locale === "fr"
+        ? "Lavage et essorage en machine."
+        : "Self-service wash and spin cycle.",
+    LAVAGE_SECHAGE:
+      locale === "fr"
+        ? "Lavage, essorage et séchage complet."
+        : "Wash, spin and tumble dry.",
+    REPASSAGE_PLASTIF:
+      locale === "fr"
+        ? "Repassage soigné et sous housse."
+        : "Storefront pressing with protective wrap.",
+  };
+
   return (
     <section
       aria-labelledby="payg-heading"
@@ -245,50 +260,56 @@ export function PricingPayAsYouGo() {
             id="payg-heading"
             className="font-display text-2xl font-semibold text-navy md:text-3xl"
           >
-            Prefer to pay as you go?
+            {t("pricingPage.payAsYouGoHeading")}
           </h2>
           <p className="mt-3 max-w-md text-ink-muted">
-            No plan needed. You pay for what you bring, at the same rate every
-            time.
+            {t("pricingPage.payAsYouGoSubtitle")}
           </p>
           <dl className="mt-6 space-y-4 text-sm">
             <div>
               <dt className="font-medium text-ink">
-                {formatAmount(MINIMUM_PER_KG_LINE)} FCFA minimum per kilo line
+                {formatAmount(MINIMUM_PER_KG_LINE)} FCFA{" "}
+                {locale === "fr" ? "minimum par ligne" : "minimum per line"}
               </dt>
               <dd className="mt-0.5 text-ink-muted">
-                If a per-kilo line comes to less, we charge the minimum.
-                Per-piece items are flat-priced.
+                {t("pricingPage.byTheKgHelp")}
               </dd>
             </div>
             <div>
               <dt className="font-medium text-ink">
-                {formatAmount(PICKUP_DELIVERY_FEE)} FCFA pickup and delivery
+                {formatAmount(PICKUP_DELIVERY_FEE)} FCFA{" "}
+                {locale === "fr" ? "collecte et livraison" : "pickup and delivery"}
               </dt>
               <dd className="mt-0.5 text-ink-muted">
-                One flat fee per order, shown before you confirm.
+                {t("pricingPage.deliveryNotice")}
               </dd>
             </div>
           </dl>
         </div>
 
         <div className="grid gap-10 md:grid-cols-[1.15fr_1fr]">
-          <Ledger title="By the kilo" note="Billed by weight.">
+          <Ledger
+            title={t("pricingPage.byTheKg")}
+            note={t("pricingPage.byTheKgHelp")}
+          >
             {KG_SERVICES.map((s) => (
               <LedgerRow
                 key={s.type}
                 type={s.type}
-                price={`${formatAmount(s.perKg)} / kg`}
-                description={s.description}
+                price={`${formatAmount(s.perKg)} FCFA / kg`}
+                description={kgServicesTranslated[s.type] ?? s.description}
               />
             ))}
           </Ledger>
-          <Ledger title="By the piece" note="Flat price per item, any weight.">
+          <Ledger
+            title={t("pricingPage.byThePiece")}
+            note={t("pricingPage.byThePieceHelp")}
+          >
             {PIECE_SERVICES.map((s) => (
               <LedgerRow
                 key={s.type}
                 type={s.type}
-                price={formatAmount(s.price)}
+                price={`${formatAmount(s.price)} FCFA`}
               />
             ))}
           </Ledger>
@@ -299,6 +320,16 @@ export function PricingPayAsYouGo() {
 }
 
 export function PricingFaq() {
+  const { t } = useI18n();
+
+  const faqs = [
+    { q: t("pricingPage.faqQ1"), a: t("pricingPage.faqA1") },
+    { q: t("pricingPage.faqQ2"), a: t("pricingPage.faqA2") },
+    { q: t("pricingPage.faqQ3"), a: t("pricingPage.faqA3") },
+    { q: t("pricingPage.faqQ4"), a: t("pricingPage.faqA4") },
+    { q: t("pricingPage.faqQ5"), a: t("pricingPage.faqA5") },
+  ];
+
   return (
     <section aria-labelledby="faq-heading" className="px-6 pt-20">
       <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_1.6fr]">
@@ -306,10 +337,10 @@ export function PricingFaq() {
           id="faq-heading"
           className="font-display text-2xl font-semibold text-navy md:text-3xl"
         >
-          Questions about plans
+          {t("pricingPage.faqHeading")}
         </h2>
         <div className="border-t border-crease">
-          {FAQ.map(({ q, a }) => (
+          {faqs.map(({ q, a }) => (
             <details key={q} className="group border-b border-crease py-4">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-md font-display text-base font-medium text-navy focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-gold/30 [&::-webkit-details-marker]:hidden">
                 {q}
@@ -328,6 +359,8 @@ export function PricingFaq() {
 }
 
 export function PricingContact() {
+  const { t } = useI18n();
+
   return (
     <section aria-labelledby="cta-heading" className="px-6 py-20">
       <div className="hero-navy mx-auto grid max-w-6xl gap-10 rounded-card p-8 text-white md:p-12 lg:grid-cols-[1.2fr_1fr] lg:items-center">
@@ -336,22 +369,23 @@ export function PricingContact() {
             id="cta-heading"
             className="font-display text-3xl font-semibold md:text-4xl"
           >
-            Start with the plan that fits your month
+            {t("pricingPage.contactHeading")}
           </h2>
           <p className="mt-3 max-w-md text-white/75">
-            Not sure how many kilos you wash? Message us and we will help you
-            pick.
+            {t("pricingPage.contactSubtitle")}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="#plans" className={buttonStyles({ variant: "gold" })}>
-              Choose a plan
+              {t("pricingPage.choosePlan")}
             </Link>
             <a
               href={BUSINESS.whatsappHref}
+              target="_blank"
+              rel="noopener noreferrer"
               className={buttonStyles({ variant: "secondary" })}
             >
               <MessageCircle className="h-4 w-4" aria-hidden="true" />
-              Ask on WhatsApp
+              {t("pricingPage.whatsappUs")}
             </a>
           </div>
         </div>
@@ -371,7 +405,7 @@ export function PricingContact() {
               className="mt-0.5 h-4 w-4 shrink-0 text-gold"
               aria-hidden="true"
             />
-            <a href={BUSINESS.mapsUrl} className="hover:underline">
+            <a href={BUSINESS.mapsUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
               {BUSINESS.address}
             </a>
           </li>

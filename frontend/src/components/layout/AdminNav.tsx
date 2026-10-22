@@ -27,11 +27,12 @@ import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import { useI18n } from "@/src/i18n/I18nProvider";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { LogoutButton } from "@/src/components/auth/LogoutButton";
 import { useLockBodyScroll } from "@/src/hooks/useLockBodyScroll";
 import {
   canAccess,
-  ROLE_LABELS,
   type AdminPermission,
   type AdminRole,
 } from "@/src/lib/admin-rbac";
@@ -167,6 +168,7 @@ const GROUPS: {
 ];
 
 export function AdminNav() {
+  const { t } = useI18n();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
@@ -175,8 +177,29 @@ export function AdminNav() {
   const name =
     [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
     user?.phone_number ||
-    "Staff member";
+    t("common.staff");
   useLockBodyScroll(open);
+
+  const navLabels: Record<string, string> = {
+    Overview: "nav.dashboard",
+    "Quick sale": "nav.quickSale",
+    Orders: "nav.orders",
+    Payments: "nav.payments",
+    "Chat inbox": "nav.inbox",
+    Customers: "nav.customers",
+    Inventory: "nav.inventory",
+    "Customer credit": "nav.credit",
+    Discounts: "nav.discounts",
+    Loyalty: "nav.loyalty",
+    Subscriptions: "adminSubscriptions.title",
+    Analytics: "nav.analytics",
+    Expenses: "adminExpenses.title",
+    "Cash close": "adminFinance.cashClose",
+    "Staff & access": "nav.staff",
+    Payroll: "nav.payroll",
+    Settings: "nav.settings",
+    "Audit log": "adminAudit.title",
+  };
 
   const nav = (
     <aside className="flex h-full w-[272px] flex-col border-r border-crease bg-white text-ink-soft">
@@ -198,7 +221,7 @@ export function AdminNav() {
             <p className="font-display text-base font-semibold tracking-tight">
               Wedemboyz Lavomatique
             </p>
-            <p className="text-xs text-ink-muted">Operations console</p>
+            <p className="text-xs text-ink-muted">{t("adminCommon.adminConsole")}</p>
           </div>
         </Link>
         <button
@@ -239,7 +262,7 @@ export function AdminNav() {
                       className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${active ? "bg-dashboard-blue text-white shadow-nav-active" : "text-ink-soft hover:bg-dashboard-blue-50 hover:text-dashboard-blue"}`}
                     >
                       <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
-                      <span className="font-medium">{label}</span>
+                      <span className="font-medium">{t(navLabels[label] ?? label)}</span>
                     </Link>
                   );
                 })}
@@ -250,6 +273,9 @@ export function AdminNav() {
       </nav>
 
       <div className="border-t border-crease p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <LanguageSwitcher compact />
+        </div>
         <div className="mb-3 flex items-center gap-3 rounded-lg bg-mist p-3">
           <span className="grid h-9 w-9 place-items-center rounded-md bg-gold text-sm font-bold text-navy">
             {name.charAt(0).toUpperCase()}
@@ -259,7 +285,7 @@ export function AdminNav() {
               {name}
             </p>
             <p className="text-xs font-medium text-dashboard-blue">
-              {role ? ROLE_LABELS[role] : "Staff"}
+              {role ? t(`adminCommon.roles.${role.toLowerCase()}`) : t("common.staff")}
             </p>
           </div>
         </div>
@@ -268,7 +294,7 @@ export function AdminNav() {
             href="/dashboard"
             className="text-xs font-medium text-ink-muted hover:text-dashboard-blue"
           >
-            Customer view
+            {t("adminCommon.customerView")}
           </Link>
           <LogoutButton />
         </div>

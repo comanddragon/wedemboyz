@@ -1,5 +1,7 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+"use client";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import { Button } from "@/src/components/ui";
 
 export function Pagination({
@@ -11,12 +13,13 @@ export function Pagination({
   numPages: number;
   onPageChange: (page: number) => void;
 }) {
+  const { t } = useI18n();
   if (numPages <= 1) return null;
 
   return (
     <div className="mt-4 flex items-center justify-between">
       <p className="text-xs text-ink-muted">
-        Page {currentPage} of {numPages}
+        {t("adminCommon.page")} {currentPage} {t("adminCommon.of")} {numPages}
       </p>
       <div className="flex items-center gap-2">
         <Button
@@ -24,7 +27,7 @@ export function Pagination({
           className="px-2.5 py-1.5"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
-          aria-label="Previous page"
+          aria-label={t("adminCommon.previousPage")}
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         </Button>
@@ -33,7 +36,7 @@ export function Pagination({
           className="px-2.5 py-1.5"
           disabled={currentPage >= numPages}
           onClick={() => onPageChange(currentPage + 1)}
-          aria-label="Next page"
+          aria-label={t("adminCommon.nextPage")}
         >
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </Button>

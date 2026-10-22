@@ -6,15 +6,8 @@ import { useState } from "react";
 import { Button, Field, Input, Select, Textarea } from "@/src/components/ui";
 import { financeApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type { ExpenseCategory } from "@/src/types";
-
-const CATEGORY_OPTIONS: { value: ExpenseCategory; label: string }[] = [
-  { value: "SUPPLIES", label: "Supplies" },
-  { value: "UTILITIES", label: "Utilities" },
-  { value: "MAINTENANCE", label: "Maintenance" },
-  { value: "RENT", label: "Rent" },
-  { value: "OTHER", label: "Other" },
-];
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -22,10 +15,19 @@ function todayIso(): string {
 
 export function AddExpenseForm({ onDone }: { onDone: () => void }) {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [category, setCategory] = useState<ExpenseCategory>("SUPPLIES");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(todayIso());
   const [notes, setNotes] = useState("");
+
+  const categoryOptions: { value: ExpenseCategory; label: string }[] = [
+    { value: "SUPPLIES", label: t("adminExpenses.categories.SUPPLIES") },
+    { value: "UTILITIES", label: t("adminExpenses.categories.UTILITIES") },
+    { value: "MAINTENANCE", label: t("adminExpenses.categories.MAINTENANCE") },
+    { value: "RENT", label: t("adminExpenses.categories.RENT") },
+    { value: "OTHER", label: t("adminExpenses.categories.OTHER") },
+  ];
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -60,20 +62,20 @@ export function AddExpenseForm({ onDone }: { onDone: () => void }) {
       className="rounded-card border border-crease bg-steam/40 p-4"
     >
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
-        <Field label="Category" htmlFor="expense-category">
+        <Field label={t("adminExpenses.category")} htmlFor="expense-category">
           <Select
             id="expense-category"
             value={category}
             onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
           >
-            {CATEGORY_OPTIONS.map((opt) => (
+            {categoryOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}
           </Select>
         </Field>
-        <Field label="Amount (XAF)" htmlFor="expense-amount">
+        <Field label={t("adminExpenses.amount")} htmlFor="expense-amount">
           <Input
             id="expense-amount"
             type="number"
@@ -85,7 +87,7 @@ export function AddExpenseForm({ onDone }: { onDone: () => void }) {
             onChange={(e) => setAmount(e.target.value)}
           />
         </Field>
-        <Field label="Date" htmlFor="expense-date">
+        <Field label={t("adminExpenses.date")} htmlFor="expense-date">
           <Input
             id="expense-date"
             type="date"
@@ -95,10 +97,10 @@ export function AddExpenseForm({ onDone }: { onDone: () => void }) {
         </Field>
       </div>
 
-      <Field label="Notes (optional)" htmlFor="expense-notes">
+      <Field label={t("adminExpenses.notesOptional")} htmlFor="expense-notes">
         <Textarea
           id="expense-notes"
-          placeholder="e.g. detergent restock from Casino"
+          placeholder={t("adminExpenses.notesPlaceholder")}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
@@ -116,10 +118,12 @@ export function AddExpenseForm({ onDone }: { onDone: () => void }) {
           variant="primary"
           disabled={!isValid || createMutation.isPending}
         >
-          {createMutation.isPending ? "Saving…" : "Save expense"}
+          {createMutation.isPending
+            ? t("adminExpenses.saving")
+            : t("adminExpenses.saveExpense")}
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
-          Cancel
+          {t("adminExpenses.cancel")}
         </Button>
       </div>
     </form>

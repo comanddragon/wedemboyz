@@ -15,55 +15,49 @@ import {
 } from "@/src/components/ui";
 import { cn } from "@/src/lib/utils";
 import { BUSINESS } from "@/src/lib/constants";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
-const CONTACT_INFO = [
-  {
-    icon: MessageCircle,
-    accent: "coral",
-    label: "WhatsApp",
-    value: BUSINESS.phoneDisplay,
-    href: BUSINESS.whatsappHref,
-  },
-  {
-    icon: Phone,
-    accent: "coral",
-    label: "Call",
-    value: BUSINESS.phoneDisplay,
-    href: BUSINESS.telHref,
-  },
-  {
-    icon: MapPin,
-    accent: "sun",
-    label: "Find us",
-    value: BUSINESS.address,
-    href: BUSINESS.mapsUrl,
-  },
-  {
-    icon: Clock,
-    accent: "clothesline",
-    label: "Open hours",
-    value: BUSINESS.hours,
-  },
-] as const;
+const ACCENT_CLASSES = {
+  coral: "bg-coral-50 text-coral",
+  sun: "bg-sun-50 text-sun-600",
+  clothesline: "bg-clothesline-50 text-clothesline",
+} as const;
 
-const ACCENT_CLASSES: Record<(typeof CONTACT_INFO)[number]["accent"], string> =
-  {
-    coral: "bg-coral-50 text-coral",
-    sun: "bg-sun-50 text-sun-600",
-    clothesline: "bg-clothesline-50 text-clothesline",
-  };
-
-/**
- * Split-screen Contact section. Left half is a full-bleed map of the
- * Yaoundé service area; right half is the contact copy + form. The map's
- * right edge fades through a soft gradient so it dissolves into the
- * contact panel's background instead of meeting it at a hard seam —
- * the two halves read as one continuous surface rather than a divider.
- */
 export function ContactSplit() {
+  const { t, tArray } = useI18n();
   const shouldReduceMotion = useReducedMotion();
+
+  const contactInfo = [
+    {
+      icon: MessageCircle,
+      accent: "coral" as const,
+      label: t("contactPage.whatsapp"),
+      value: BUSINESS.phoneDisplay,
+      href: BUSINESS.whatsappHref,
+    },
+    {
+      icon: Phone,
+      accent: "coral" as const,
+      label: t("contactPage.call"),
+      value: BUSINESS.phoneDisplay,
+      href: BUSINESS.telHref,
+    },
+    {
+      icon: MapPin,
+      accent: "sun" as const,
+      label: t("contactPage.findUs"),
+      value: BUSINESS.address,
+      href: BUSINESS.mapsUrl,
+    },
+    {
+      icon: Clock,
+      accent: "clothesline" as const,
+      label: t("contactPage.openHours"),
+      value: BUSINESS.hours,
+    },
+  ];
 
   const fadeUp = (delay = 0) =>
     shouldReduceMotion
@@ -88,9 +82,6 @@ export function ContactSplit() {
             referrerPolicy="no-referrer-when-downgrade"
           />
 
-          {/* Fade toward the contact panel — desktop: right edge (map sits to the
-              left of the contact panel); mobile: top edge (map sits below the
-              contact panel, so the seam to soften is at the top of the map). */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 right-0 hidden w-2/3 bg-linear-to-r from-transparent via-paper/60 to-paper lg:block"
@@ -100,7 +91,7 @@ export function ContactSplit() {
             className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-paper to-transparent lg:hidden"
           />
 
-          {/* Small locator badge, echoes the EyebrowLabel treatment */}
+          {/* Small locator badge */}
           <a
             href={BUSINESS.mapsUrl}
             target="_blank"
@@ -121,10 +112,9 @@ export function ContactSplit() {
             className="absolute right-6 top-6 z-10 inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted transition-colors hover:text-ink sm:right-10 sm:top-8 lg:right-16 lg:top-10"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Back to home
+            {t("contactPage.backToHome")}
           </Link>
 
-          {/* Soft decorative color, kept behind content and out of reading flow */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-turquoise-50 opacity-60 blur-3xl"
@@ -136,17 +126,21 @@ export function ContactSplit() {
 
           <div className="relative max-w-md">
             <motion.div {...fadeUp(0)}>
-              <EyebrowLabel words={["REACH US", "REAL PEOPLE", "REAL FAST"]} />
+              <EyebrowLabel
+                words={
+                  tArray("contactPage.eyebrowWords").length
+                    ? tArray("contactPage.eyebrowWords")
+                    : ["REACH US", "REAL PEOPLE", "REAL FAST"]
+                }
+              />
               <h1 className="mt-3 text-balance font-display text-4xl font-bold leading-tight text-navy md:text-5xl">
-                Got a question? Just ask.
+                {t("contactPage.title")}
               </h1>
               <p className="mt-3 text-balance font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] text-gold sm:text-[2rem] md:text-3xl">
-                Contact us with just a click.
+                {t("contactPage.subtitle")}
               </p>
               <p className="mt-4 text-base text-ink-muted">
-                No call centers, no chatbots pretending to be human. Reach out
-                and someone from the team will get back to you — usually the
-                same day.
+                {t("contactPage.description")}
               </p>
             </motion.div>
 
@@ -154,7 +148,7 @@ export function ContactSplit() {
               {...fadeUp(0.08)}
               className="mt-8 grid gap-5 sm:grid-cols-2"
             >
-              {CONTACT_INFO.map(
+              {contactInfo.map(
                 ({ icon: Icon, accent, label, value, ...rest }) => {
                   const href = "href" in rest ? rest.href : undefined;
                   const content = (
@@ -222,12 +216,14 @@ export function ContactSplit() {
 }
 
 function ContactForm() {
+  const { t } = useI18n();
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const message = [
-      `Hello Wedemboyz, I'm ${String(data.get("name") ?? "").trim()}.`,
-      `My contact is ${String(data.get("contact") ?? "").trim()}.`,
+      `${t("contactPage.prefillHello")} ${String(data.get("name") ?? "").trim()}.`,
+      `${t("contactPage.prefillContact")} ${String(data.get("contact") ?? "").trim()}.`,
       String(data.get("message") ?? "").trim(),
     ].join("\n\n");
     const url = `${BUSINESS.whatsappHref}?text=${encodeURIComponent(message)}`;
@@ -239,27 +235,36 @@ function ContactForm() {
   return (
     <form onSubmit={handleSubmit}>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Your name">
-          <Input name="name" type="text" placeholder="Your name" required />
+        <Field label={t("contactPage.nameLabel")}>
+          <Input
+            name="name"
+            type="text"
+            placeholder={t("contactPage.namePlaceholder")}
+            required
+          />
         </Field>
-        <Field label="Phone or email">
+        <Field label={t("contactPage.contactLabel")}>
           <Input
             name="contact"
             type="text"
-            placeholder="+237 6XX XXX XXX"
+            placeholder={t("contactPage.contactPlaceholder")}
             required
           />
         </Field>
       </div>
-      <Field label="Message">
-        <Textarea name="message" placeholder="How can we help?" required />
+      <Field label={t("contactPage.messageLabel")}>
+        <Textarea
+          name="message"
+          placeholder={t("contactPage.messagePlaceholder")}
+          required
+        />
       </Field>
       <Button type="submit" className="w-full sm:w-auto">
         <MessageCircle className="h-4 w-4" aria-hidden="true" />
-        Continue in WhatsApp
+        {t("contactPage.submitButton")}
       </Button>
       <p className="mt-2 text-xs text-ink-muted">
-        Opens WhatsApp with your message ready to review and send.
+        {t("contactPage.helperText")}
       </p>
     </form>
   );

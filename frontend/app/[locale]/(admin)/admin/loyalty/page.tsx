@@ -10,6 +10,7 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { useI18n } from "@/src/i18n/I18nProvider";
+import type { LoyaltyProgramSettings, LoyaltyReward } from "@/src/types";
 
 export default function LoyaltySettingsPage() {
   const { t } = useI18n();
@@ -17,23 +18,48 @@ export default function LoyaltySettingsPage() {
   const { user } = useAuth();
   const [rewardTrack, setRewardTrack] = useState<"CREDIT" | "BADGE">("CREDIT");
   const isOwner = Boolean(user?.is_superuser);
+
   const settings = useQuery({
     queryKey: ["loyalty", "admin", "settings"],
     queryFn: discountsApi.getLoyaltyProgramSettings,
     enabled: isOwner,
   });
+
   const rewards = useQuery({
     queryKey: ["loyalty", "admin", "rewards"],
     queryFn: discountsApi.listLoyaltyRewards,
     enabled: isOwner,
   });
+
   const settingsMutation = useMutation({
     mutationFn: discountsApi.updateLoyaltyProgramSettings,
-    onSuccess: () =>
+    onMutate: async (newSettings) => {
+      await queryClient.cancelQueries({ queryKey: ["loyalty", "admin", "settings"] });
+      const previousSettings = queryClient.getQueryData<LoyaltyProgramSettings>([
+        "loyalty",
+        "admin",
+        "settings",
+      ]);
+      if (previousSettings) {
+        queryClient.setQueryData<LoyaltyProgramSettings>(["loyalty", "admin", "settings"], {
+          ...previousSettings,
+          ...newSettings,
+        });
+      }
+      return { previousSettings };
+    },
+    onError: (_err, _newSettings, context) => {
+      if (context?.previousSettings) {
+        queryClient.setQueryData(["loyalty", "admin", "settings"], context.previousSettings);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["loyalty", "admin", "settings"],
-      }),
+      });
+    },
   });
+
   const rewardMutation = useMutation({
     mutationFn: discountsApi.createLoyaltyReward,
     onSuccess: () =>
@@ -41,14 +67,37 @@ export default function LoyaltySettingsPage() {
         queryKey: ["loyalty", "admin", "rewards"],
       }),
   });
+
   const rewardToggleMutation = useMutation({
     mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) =>
       discountsApi.updateLoyaltyReward(id, { is_active }),
-    onSuccess: () =>
+    onMutate: async ({ id, is_active }) => {
+      await queryClient.cancelQueries({ queryKey: ["loyalty", "admin", "rewards"] });
+      const previousRewards = queryClient.getQueryData<LoyaltyReward[]>([
+        "loyalty",
+        "admin",
+        "rewards",
+      ]);
+      if (previousRewards) {
+        queryClient.setQueryData<LoyaltyReward[]>(
+          ["loyalty", "admin", "rewards"],
+          previousRewards.map((reward) => (reward.id === id ? { ...reward, is_active } : reward)),
+        );
+      }
+      return { previousRewards };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousRewards) {
+        queryClient.setQueryData(["loyalty", "admin", "rewards"], context.previousRewards);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["loyalty", "admin", "rewards"],
-      }),
+      });
+    },
   });
+
   const error =
     settings.error ||
     rewards.error ||
@@ -142,11 +191,17 @@ export default function LoyaltySettingsPage() {
                     role="switch"
                     aria-checked={enabled}
                     aria-label={`${enabled ? t("adminPrograms.disable") : t("adminPrograms.enable")} ${label}`}
+                    disabled={settingsMutation.isPending}
                     onClick={() => settingsMutation.mutate({ [key]: !enabled })}
-                    className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${enabled ? "bg-navy" : "bg-crease-strong"}`}
+                    className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      enabled ? "bg-navy" : "bg-crease-strong"
+                    }`}
                   >
                     <span
-                      className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`}
+                      aria-hidden="true"
+                      className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                        enabled ? "translate-x-5" : "translate-x-0"
+                      }`}
                     />
                   </button>
                 </div>
@@ -199,18 +254,42 @@ export default function LoyaltySettingsPage() {
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    rewardToggleMutation.mutate({
-                      id: reward.id,
-                      is_active: !reward.is_active,
-                    })
-                  }
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${reward.is_active ? "bg-status-ready-bg text-status-ready-text" : "bg-steam text-ink-muted"}`}
-                >
-                  {reward.is_active ? t("adminPrograms.active") : t("adminPrograms.paused")}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={reward.is_active}
+                    aria-label={`${reward.is_active ? t("adminPrograms.disable") : t("adminPrograms.enable")} ${reward.name}`}
+                    disabled={rewardToggleMutation.isPending}
+                    onClick={() =>
+                      rewardToggleMutation.mutate({
+                        id: reward.id,
+                        is_active: !reward.is_active,
+                      })
+                    }
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      reward.is_active ? "bg-navy" : "bg-crease-strong"
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                        reward.is_active ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                  <span
+                    className={`text-xs font-semibold ${
+                      reward.is_active
+                        ? "text-status-ready-text"
+                        : "text-ink-muted"
+                    }`}
+                  >
+                    {reward.is_active
+                      ? t("adminPrograms.active")
+                      : t("adminPrograms.paused")}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

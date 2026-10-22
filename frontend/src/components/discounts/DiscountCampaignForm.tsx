@@ -7,23 +7,12 @@ import { Button, Field, Input, Select, Textarea } from "@/src/components/ui";
 import { discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type {
   DiscountCampaign,
   DiscountCampaignSegment,
   DiscountType,
 } from "@/src/types";
-
-const DISCOUNT_TYPE_OPTIONS: { value: DiscountType; label: string }[] = [
-  { value: "PERCENTAGE", label: "Percentage off" },
-  { value: "FIXED", label: "Fixed amount off" },
-];
-
-const SEGMENT_OPTIONS: { value: DiscountCampaignSegment; label: string }[] = [
-  { value: "ALL", label: "All customers" },
-  { value: "NEW_CUSTOMERS", label: "New customers" },
-  { value: "LAPSED", label: "Lapsed customers" },
-  { value: "LOYALTY_GOLD", label: "Gold-tier loyalty members" },
-];
 
 /** YYYY-MM-DD for a date input's value, defaulting to today. */
 function todayInputValue(): string {
@@ -44,6 +33,7 @@ export function DiscountCampaignForm({
   onDone: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [name, setName] = useState(campaign?.name ?? "");
   const [description, setDescription] = useState(campaign?.description ?? "");
   const [discountType, setDiscountType] = useState<DiscountType>(
@@ -59,6 +49,18 @@ export function DiscountCampaignForm({
   const [endDate, setEndDate] = useState(
     campaign?.end_date ?? todayInputValue(),
   );
+
+  const discountTypeOptions: { value: DiscountType; label: string }[] = [
+    { value: "PERCENTAGE", label: t("adminDiscounts.percentageOff") },
+    { value: "FIXED", label: t("adminDiscounts.fixedOff") },
+  ];
+
+  const segmentOptions: { value: DiscountCampaignSegment; label: string }[] = [
+    { value: "ALL", label: t("adminDiscounts.segments.ALL") },
+    { value: "NEW_CUSTOMERS", label: t("adminDiscounts.segments.NEW_CUSTOMERS") },
+    { value: "LAPSED", label: t("adminDiscounts.segments.LAPSED") },
+    { value: "LOYALTY_GOLD", label: t("adminDiscounts.goldLoyalty") },
+  ];
 
   const saveMutation = useMutation({
     mutationFn: () => {
@@ -104,15 +106,15 @@ export function DiscountCampaignForm({
       className="rounded-card border border-crease bg-steam/40 p-4"
     >
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Field label="Campaign name" htmlFor="campaign-name">
+        <Field label={t("adminDiscounts.campaignName")} htmlFor="campaign-name">
           <Input
             id="campaign-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Back-to-school 10%"
+            placeholder={t("adminDiscounts.campaignNamePlaceholder")}
           />
         </Field>
-        <Field label="Target segment" htmlFor="campaign-segment">
+        <Field label={t("adminDiscounts.targetSegment")} htmlFor="campaign-segment">
           <Select
             id="campaign-segment"
             value={segment}
@@ -120,7 +122,7 @@ export function DiscountCampaignForm({
               setSegment(e.target.value as DiscountCampaignSegment)
             }
           >
-            {SEGMENT_OPTIONS.map((opt) => (
+            {segmentOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
@@ -130,13 +132,13 @@ export function DiscountCampaignForm({
       </div>
 
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Field label="Discount type" htmlFor="campaign-type">
+        <Field label={t("adminDiscounts.discountType")} htmlFor="campaign-type">
           <Select
             id="campaign-type"
             value={discountType}
             onChange={(e) => setDiscountType(e.target.value as DiscountType)}
           >
-            {DISCOUNT_TYPE_OPTIONS.map((opt) => (
+            {discountTypeOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
@@ -144,7 +146,11 @@ export function DiscountCampaignForm({
           </Select>
         </Field>
         <Field
-          label={discountType === "PERCENTAGE" ? "Value (%)" : "Value (XAF)"}
+          label={
+            discountType === "PERCENTAGE"
+              ? t("adminDiscounts.valuePercent")
+              : t("adminDiscounts.valueAmount")
+          }
           htmlFor="campaign-value"
         >
           <Input
@@ -153,7 +159,9 @@ export function DiscountCampaignForm({
             min="0"
             step={discountType === "PERCENTAGE" ? "1" : "50"}
             placeholder={
-              discountType === "PERCENTAGE" ? "e.g. 10" : "e.g. 1000"
+              discountType === "PERCENTAGE"
+                ? t("adminDiscounts.valuePercentPlaceholder")
+                : t("adminDiscounts.valueAmountPlaceholder")
             }
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -162,7 +170,7 @@ export function DiscountCampaignForm({
       </div>
 
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Field label="Start date" htmlFor="campaign-start">
+        <Field label={t("adminDiscounts.startDate")} htmlFor="campaign-start">
           <Input
             id="campaign-start"
             type="date"
@@ -171,11 +179,11 @@ export function DiscountCampaignForm({
           />
         </Field>
         <Field
-          label="End date"
+          label={t("adminDiscounts.endDate")}
           htmlFor="campaign-end"
           error={
             endDate && startDate && endDate < startDate
-              ? "End date must be after the start date."
+              ? t("adminDiscounts.endDateError")
               : undefined
           }
         >
@@ -188,12 +196,15 @@ export function DiscountCampaignForm({
         </Field>
       </div>
 
-      <Field label="Description (optional)" htmlFor="campaign-description">
+      <Field
+        label={t("adminDiscounts.descriptionOptional")}
+        htmlFor="campaign-description"
+      >
         <Textarea
           id="campaign-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Internal note about who this campaign is for or why it exists."
+          placeholder={t("adminDiscounts.campaignDescPlaceholder")}
         />
       </Field>
 
@@ -210,13 +221,13 @@ export function DiscountCampaignForm({
           disabled={!isValid || saveMutation.isPending}
         >
           {saveMutation.isPending
-            ? "Saving…"
+            ? t("adminDiscounts.saving")
             : campaign
-              ? "Save changes"
-              : "Create campaign"}
+              ? t("adminDiscounts.saveChanges")
+              : t("adminDiscounts.createCampaign")}
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
-          Cancel
+          {t("adminDiscounts.cancel")}
         </Button>
       </div>
     </form>

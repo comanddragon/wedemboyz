@@ -26,22 +26,24 @@ import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import type { Refund, RefundStatus } from "@/src/types";
-
-const STATUS_OPTIONS: { value: RefundStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "All statuses" },
-  { value: "PENDING", label: "Pending" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "PROCESSED", label: "Processed" },
-  { value: "REJECTED", label: "Rejected" },
-];
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 type SortKey = "id" | "payment" | "amount" | "status" | "created_at";
 
 export default function AdminRefundsPage() {
+  const { locale, t } = useI18n();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RefundStatus | "ALL">("ALL");
+
+  const statusOptions: { value: RefundStatus | "ALL"; label: string }[] = [
+    { value: "ALL", label: t("adminRefunds.statuses.ALL") },
+    { value: "PENDING", label: t("adminRefunds.statuses.PENDING") },
+    { value: "APPROVED", label: t("adminRefunds.statuses.APPROVED") },
+    { value: "PROCESSED", label: t("adminRefunds.statuses.PROCESSED") },
+    { value: "REJECTED", label: t("adminRefunds.statuses.REJECTED") },
+  ];
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.payments.refunds(page),
@@ -95,25 +97,25 @@ export default function AdminRefundsPage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
-        title="Payments"
-        description="Every payment attempt across all customers."
+        title={t("adminFinance.payments")}
+        description={t("adminFinance.paymentsBody")}
       />
 
       <Tabs
         items={[
-          { href: "/admin/payments", label: "Payments" },
-          { href: "/admin/payments/refunds", label: "Refunds" },
-          { href: "/admin/payments/invoices", label: "Invoices" },
+          { href: "/admin/payments", label: t("adminFinance.payments") },
+          { href: "/admin/payments/refunds", label: t("adminFinance.refunds") },
+          { href: "/admin/payments/invoices", label: t("adminFinance.invoices") },
         ]}
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
-          placeholder="Search this page by refund # or payment #"
+          placeholder={t("adminRefunds.searchThisPage")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="sm:max-w-xs"
-          aria-label="Search refunds on this page"
+          aria-label={t("adminRefunds.searchAria")}
         />
         <Select
           value={statusFilter}
@@ -121,9 +123,9 @@ export default function AdminRefundsPage() {
             setStatusFilter(e.target.value as RefundStatus | "ALL")
           }
           className="sm:w-52"
-          aria-label="Filter by status"
+          aria-label={t("adminRefunds.filterStatusAria")}
         >
-          {STATUS_OPTIONS.map((opt) => (
+          {statusOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -131,8 +133,10 @@ export default function AdminRefundsPage() {
         </Select>
         {data && (
           <p className="text-xs text-ink-muted sm:ml-auto">
-            {filtered?.length ?? 0} of {data.results.length} on this page ·{" "}
-            {data.count} total
+            {t("adminRefunds.pageCount")
+              .replace("{shown}", String(filtered?.length ?? 0))
+              .replace("{pageTotal}", String(data.results.length))
+              .replace("{total}", String(data.count))}
           </p>
         )}
       </div>
@@ -146,34 +150,34 @@ export default function AdminRefundsPage() {
       <TableContainer>
         <THead>
           <SortableTh
-            label="Refund"
+            label={t("adminRefunds.colRefund")}
             active={directionFor("id") !== null}
             direction={directionFor("id")}
             onSort={() => toggle("id")}
           />
-          <Th align="right">Actions</Th>
+          <Th align="right">{t("adminRefunds.colActions")}</Th>
           <SortableTh
-            label="Payment"
+            label={t("adminRefunds.colPayment")}
             active={directionFor("payment") !== null}
             direction={directionFor("payment")}
             onSort={() => toggle("payment")}
           />
-          <Th>Reason</Th>
+          <Th>{t("adminRefunds.colReason")}</Th>
           <SortableTh
-            label="Amount"
+            label={t("adminRefunds.colAmount")}
             align="right"
             active={directionFor("amount") !== null}
             direction={directionFor("amount")}
             onSort={() => toggle("amount")}
           />
           <SortableTh
-            label="Status"
+            label={t("adminRefunds.colStatus")}
             active={directionFor("status") !== null}
             direction={directionFor("status")}
             onSort={() => toggle("status")}
           />
           <SortableTh
-            label="Requested"
+            label={t("adminRefunds.colRequested")}
             active={directionFor("created_at") !== null}
             direction={directionFor("created_at")}
             onSort={() => toggle("created_at")}
@@ -185,8 +189,8 @@ export default function AdminRefundsPage() {
           {!isLoading && sorted && sorted.length === 0 && (
             <TableEmptyRow colSpan={7}>
               {data && data.results.length === 0
-                ? "No refunds requested yet."
-                : "No refunds match your search or filter."}
+                ? t("adminRefunds.noRefundsYet")
+                : t("adminRefunds.noRefundsMatch")}
             </TableEmptyRow>
           )}
 
@@ -194,6 +198,40 @@ export default function AdminRefundsPage() {
             sorted?.map((refund) => (
               <Tr key={refund.id}>
                 <Td className="font-medium">#{refund.id}</Td>
+                <Td align="right">
+                  <div className="flex justify-end gap-1.5">
+                    {refund.status === "PENDING" && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={actionMutation.isPending}
+                          onClick={() => actionMutation.mutate({ id: refund.id, action: "approve" })}
+                        >
+                          {t("adminRefunds.approve")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={actionMutation.isPending}
+                          onClick={() => actionMutation.mutate({ id: refund.id, action: "reject" })}
+                        >
+                          {t("adminRefunds.reject")}
+                        </Button>
+                      </>
+                    )}
+                    {refund.status === "APPROVED" && (
+                      <Button
+                        size="sm"
+                        variant="gold"
+                        disabled={actionMutation.isPending}
+                        onClick={() => actionMutation.mutate({ id: refund.id, action: "process" })}
+                      >
+                        {t("adminRefunds.markRefunded")}
+                      </Button>
+                    )}
+                  </div>
+                </Td>
                 <Td>
                   <Link
                     href={`/admin/payments/${refund.payment}`}
@@ -213,41 +251,7 @@ export default function AdminRefundsPage() {
                   />
                 </Td>
                 <Td className="whitespace-nowrap text-ink-muted">
-                  {new Date(refund.created_at).toLocaleDateString()}
-                </Td>
-                <Td align="right">
-                  <div className="flex justify-end gap-1.5">
-                    {refund.status === "PENDING" && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={actionMutation.isPending}
-                          onClick={() => actionMutation.mutate({ id: refund.id, action: "approve" })}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={actionMutation.isPending}
-                          onClick={() => actionMutation.mutate({ id: refund.id, action: "reject" })}
-                        >
-                          Reject
-                        </Button>
-                      </>
-                    )}
-                    {refund.status === "APPROVED" && (
-                      <Button
-                        size="sm"
-                        variant="gold"
-                        disabled={actionMutation.isPending}
-                        onClick={() => actionMutation.mutate({ id: refund.id, action: "process" })}
-                      >
-                        Mark refunded
-                      </Button>
-                    )}
-                  </div>
+                  {new Date(refund.created_at).toLocaleDateString(locale)}
                 </Td>
               </Tr>
             ))}

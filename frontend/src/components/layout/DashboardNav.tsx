@@ -161,6 +161,7 @@ const CUSTOMER_LINKS: NavItem[] = [
 const MAX_INLINE = 7;
 
 function NavMore({ items, pathname }: { items: NavItem[]; pathname: string }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const hasActive = items.some((item) => isActive(pathname, item.href));
@@ -192,7 +193,7 @@ function NavMore({ items, pathname }: { items: NavItem[]; pathname: string }) {
         className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-all duration-200 ${hasActive ? "bg-navy text-white" : open ? "bg-steam text-navy" : "text-ink-soft hover:bg-steam hover:text-navy"}`}
       >
         <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-        More
+        {t("common.more")}
         <ChevronDown
           className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
           aria-hidden="true"
@@ -363,10 +364,10 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                   </p>
                   <p className="mt-0.5 text-xs text-ink-muted">
                     {admin && role
-                      ? ROLE_LABELS[role]
+                      ? t(`adminCommon.roles.${role.toLowerCase()}`)
                       : user?.is_guest
-                        ? "Guest — not saved to an account"
-                        : "Customer account"}
+                        ? t("adminCommon.guestAccount")
+                        : t("adminCommon.customerAccount")}
                   </p>
                 </div>
               </div>
@@ -375,7 +376,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                   href={admin ? "/dashboard" : "/admin"}
                   className="mt-1 block rounded-lg px-3 py-2 text-sm text-ink-soft hover:bg-mist"
                 >
-                  {admin ? "Customer view" : "Admin console"}
+                  {admin ? t("adminCommon.customerView") : t("adminCommon.adminConsole")}
                 </Link>
               )}
               <LogoutButton className="w-full justify-start" />
@@ -480,7 +481,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                           ) : (
                             <UserCog className="h-[18px] w-[18px]" />
                           )}
-                          {admin ? "Customer view" : "Admin console"}
+                          {admin ? t("adminCommon.customerView") : t("adminCommon.adminConsole")}
                         </Link>
                       )}
                       <div className="mb-2 flex items-center gap-3 px-2">
@@ -491,10 +492,10 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                           </p>
                           <p className="text-xs text-ink-muted">
                             {admin && role
-                              ? ROLE_LABELS[role]
+                              ? t(`adminCommon.roles.${role.toLowerCase()}`)
                               : user?.is_guest
-                                ? "Guest — not saved to an account"
-                                : "Customer account"}
+                                ? t("adminCommon.guestAccount")
+                                : t("adminCommon.customerAccount")}
                           </p>
                         </div>
                       </div>

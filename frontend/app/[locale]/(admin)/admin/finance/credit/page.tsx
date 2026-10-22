@@ -24,6 +24,7 @@ import { financeApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type { ListCreditAccountsParams } from "@/src/types";
 
 type SortKey = "balance" | "updated_at";
@@ -41,6 +42,7 @@ const SORT_TO_ORDERING: Record<
 
 export default function AdminCreditAccountsPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -88,17 +90,17 @@ export default function AdminCreditAccountsPage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
-        title="Clients à crédit"
-        description="Customers with a running tab — charge, track, and settle balances."
+        title={t("adminCredit.title")}
+        description={t("adminCredit.description")}
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
-          placeholder="Search by name or phone"
+          placeholder={t("adminCredit.searchPlaceholder")}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           className="sm:max-w-xs"
-          aria-label="Search credit accounts"
+          aria-label={t("adminCredit.searchPlaceholder")}
         />
         <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-muted">
           <input
@@ -109,11 +111,13 @@ export default function AdminCreditAccountsPage() {
               setPage(1);
             }}
           />
-          Outstanding only
+          {t("adminCredit.outstandingOnly")}
         </label>
         {data && (
           <p className="text-xs text-ink-muted sm:ml-auto">
-            {data.results.length} of {data.count} total
+            {t("adminCredit.pageCount")
+              .replace("{count}", String(data.results.length))
+              .replace("{total}", String(data.count))}
           </p>
         )}
       </div>
@@ -126,18 +130,18 @@ export default function AdminCreditAccountsPage() {
 
       <TableContainer>
         <THead>
-          <Th>Customer</Th>
-          <Th>Phone</Th>
+          <Th>{t("adminCredit.colCustomer")}</Th>
+          <Th>{t("adminCredit.colPhone")}</Th>
           <SortableTh
-            label="Balance owed"
+            label={t("adminCredit.colBalanceOwed")}
             align="right"
             active={directionFor("balance") !== null}
             direction={directionFor("balance")}
             onSort={() => toggleSort("balance")}
           />
-          <Th align="right">Credit limit</Th>
+          <Th align="right">{t("adminCredit.colCreditLimit")}</Th>
           <SortableTh
-            label="Last activity"
+            label={t("adminCredit.colLastActivity")}
             align="right"
             active={directionFor("updated_at") !== null}
             direction={directionFor("updated_at")}
@@ -151,10 +155,10 @@ export default function AdminCreditAccountsPage() {
           {!isLoading && data && data.results.length === 0 && (
             <TableEmptyRow colSpan={6}>
               {search
-                ? "No credit accounts match your search."
+                ? t("adminCredit.noAccountsSearch")
                 : outstandingOnly
-                  ? "No customers currently owe a balance."
-                  : "No credit accounts yet."}
+                  ? t("adminCredit.noAccountsOwe")
+                  : t("adminCredit.noAccountsYet")}
             </TableEmptyRow>
           )}
 
@@ -167,7 +171,19 @@ export default function AdminCreditAccountsPage() {
                 }
               >
                 <Td className="font-medium">
-                  <span className="flex items-center gap-2"><CustomerAvatar name={`${account.user.first_name} ${account.user.last_name}`.trim() || account.user.phone_number} size="sm" /><span>{`${account.user.first_name} ${account.user.last_name}`.trim() || `Customer #${account.user.id}`}</span></span>
+                  <span className="flex items-center gap-2">
+                    <CustomerAvatar
+                      name={
+                        `${account.user.first_name} ${account.user.last_name}`.trim() ||
+                        account.user.phone_number
+                      }
+                      size="sm"
+                    />
+                    <span>
+                      {`${account.user.first_name} ${account.user.last_name}`.trim() ||
+                        `Customer #${account.user.id}`}
+                    </span>
+                  </span>
                 </Td>
                 <Td className="text-ink-muted">{account.user.phone_number}</Td>
                 <Td align="right" className="tabular-nums">
@@ -186,8 +202,11 @@ export default function AdminCreditAccountsPage() {
                   {account.days_since_last_activity === null
                     ? "—"
                     : account.days_since_last_activity === 0
-                      ? "Today"
-                      : `${account.days_since_last_activity}d ago`}
+                      ? t("adminCredit.today")
+                      : t("adminCredit.daysAgo").replace(
+                          "{days}",
+                          String(account.days_since_last_activity),
+                        )}
                 </Td>
                 <Td>
                   <ChevronRight
@@ -208,8 +227,7 @@ export default function AdminCreditAccountsPage() {
         outstandingOnly && (
           <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
             <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
-            Accounts show up here once a charge is recorded — from a
-            customer&apos;s fiche or a pay-later quick sale.
+            {t("adminCredit.accountsNotice")}
           </p>
         )}
 

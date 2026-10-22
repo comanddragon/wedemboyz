@@ -32,50 +32,8 @@ import { discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type { DiscountCampaign, DiscountCampaignSegment } from "@/src/types";
-
-const SEGMENT_LABELS: Record<DiscountCampaignSegment, string> = {
-  ALL: "All customers",
-  NEW_CUSTOMERS: "New customers",
-  LAPSED: "Lapsed customers",
-  LOYALTY_GOLD: "Gold-tier loyalty",
-};
-
-const SEGMENT_FILTER_OPTIONS: {
-  value: DiscountCampaignSegment | "ALL_SEGMENTS";
-  label: string;
-}[] = [
-  { value: "ALL_SEGMENTS", label: "All segments" },
-  ...(
-    Object.entries(SEGMENT_LABELS) as [DiscountCampaignSegment, string][]
-  ).map(([value, label]) => ({
-    value,
-    label,
-  })),
-];
-
-const ACTIVE_FILTER_OPTIONS: {
-  value: "ALL" | "ACTIVE" | "PAUSED";
-  label: string;
-}[] = [
-  { value: "ALL", label: "All statuses" },
-  { value: "ACTIVE", label: "Active" },
-  { value: "PAUSED", label: "Paused" },
-];
-
-/** Derives a display status from is_active plus the date range, since a
- * campaign can be flagged active but not yet started, or active but expired. */
-function campaignStatus(campaign: DiscountCampaign): {
-  label: string;
-  tone: StatusTone;
-} {
-  if (!campaign.is_active) return { label: "Paused", tone: "cancelled" };
-  const today = new Date().toISOString().slice(0, 10);
-  if (today < campaign.start_date)
-    return { label: "Scheduled", tone: "pending" };
-  if (today > campaign.end_date) return { label: "Ended", tone: "cancelled" };
-  return { label: "Active", tone: "ready" };
-}
 
 function formatDiscountValue(campaign: DiscountCampaign): string {
   return campaign.discount_type === "PERCENTAGE"
@@ -88,6 +46,7 @@ type SortKey =
 
 export default function AdminDiscountsPage() {
   const router = useRouter();
+  const { locale, t } = useI18n();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [segmentFilter, setSegmentFilter] = useState<
@@ -98,9 +57,49 @@ export default function AdminDiscountsPage() {
   );
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // The backend view only paginates — it doesn't accept segment/active/search
-  // query params — so those filters apply client-side over this page's rows,
-  // same as the orders and inventory pages do for their page-local search.
+  const segmentLabels: Record<DiscountCampaignSegment, string> = {
+    ALL: t("adminDiscounts.segments.ALL"),
+    NEW_CUSTOMERS: t("adminDiscounts.segments.NEW_CUSTOMERS"),
+    LAPSED: t("adminDiscounts.segments.LAPSED"),
+    LOYALTY_GOLD: t("adminDiscounts.segments.LOYALTY_GOLD"),
+  };
+
+  const segmentFilterOptions: {
+    value: DiscountCampaignSegment | "ALL_SEGMENTS";
+    label: string;
+  }[] = [
+    { value: "ALL_SEGMENTS", label: t("adminDiscounts.allSegments") },
+    ...(
+      Object.entries(segmentLabels) as [DiscountCampaignSegment, string][]
+    ).map(([value, label]) => ({
+      value,
+      label,
+    })),
+  ];
+
+  const activeFilterOptions: {
+    value: "ALL" | "ACTIVE" | "PAUSED";
+    label: string;
+  }[] = [
+    { value: "ALL", label: t("adminDiscounts.allStatuses") },
+    { value: "ACTIVE", label: t("adminDiscounts.activeStatus") },
+    { value: "PAUSED", label: t("adminDiscounts.pausedStatus") },
+  ];
+
+  function getCampaignStatus(campaign: DiscountCampaign): {
+    label: string;
+    tone: StatusTone;
+  } {
+    if (!campaign.is_active)
+      return { label: t("adminDiscounts.pausedStatus"), tone: "cancelled" };
+    const today = new Date().toISOString().slice(0, 10);
+    if (today < campaign.start_date)
+      return { label: t("adminDiscounts.scheduledStatus"), tone: "pending" };
+    if (today > campaign.end_date)
+      return { label: t("adminDiscounts.endedStatus"), tone: "cancelled" };
+    return { label: t("adminDiscounts.activeStatus"), tone: "ready" };
+  }
+
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.discounts.campaigns.list(page),
     queryFn: () => discountsApi.listDiscountCampaigns({ page }),
@@ -140,20 +139,20 @@ export default function AdminDiscountsPage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
-        title="Discounts"
-        description="Staff-managed promo campaigns. Customers redeem individual codes at checkout separately from this list."
+        title={t("adminDiscounts.title")}
+        description={t("adminDiscounts.campaignsSubtitle")}
         action={
           <Button variant="gold" onClick={() => setShowCreateForm((v) => !v)}>
             <Plus className="h-4 w-4" aria-hidden="true" />
-            New campaign
+            {t("adminDiscounts.newCampaign")}
           </Button>
         }
       />
 
       <Tabs
         items={[
-          { href: "/admin/discounts", label: "Campaigns" },
-          { href: "/admin/discounts/codes", label: "Promo codes" },
+          { href: "/admin/discounts", label: t("adminDiscounts.campaignsTab") },
+          { href: "/admin/discounts/codes", label: t("adminDiscounts.codesTab") },
         ]}
       />
 
@@ -165,11 +164,11 @@ export default function AdminDiscountsPage() {
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
-          placeholder="Search by campaign name"
+          placeholder={t("adminDiscounts.searchCampaignsPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="sm:max-w-xs"
-          aria-label="Search campaigns"
+          aria-label={t("adminDiscounts.searchCampaignsPlaceholder")}
         />
         <Select
           value={segmentFilter}
@@ -179,9 +178,9 @@ export default function AdminDiscountsPage() {
             )
           }
           className="sm:w-52"
-          aria-label="Filter by target segment"
+          aria-label={t("adminDiscounts.colSegment")}
         >
-          {SEGMENT_FILTER_OPTIONS.map((opt) => (
+          {segmentFilterOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -193,9 +192,9 @@ export default function AdminDiscountsPage() {
             setActiveFilter(e.target.value as "ALL" | "ACTIVE" | "PAUSED")
           }
           className="sm:w-40"
-          aria-label="Filter by status"
+          aria-label={t("adminDiscounts.colStatus")}
         >
-          {ACTIVE_FILTER_OPTIONS.map((opt) => (
+          {activeFilterOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -203,8 +202,10 @@ export default function AdminDiscountsPage() {
         </Select>
         {data && (
           <p className="text-xs text-ink-muted sm:ml-auto">
-            {filtered?.length ?? 0} of {data.results.length} on this page ·{" "}
-            {data.count} total
+            {t("adminDiscounts.pageCount")
+              .replace("{filtered}", String(filtered?.length ?? 0))
+              .replace("{total}", String(data.results.length))
+              .replace("{overall}", String(data.count))}
           </p>
         )}
       </div>
@@ -218,32 +219,32 @@ export default function AdminDiscountsPage() {
       <TableContainer>
         <THead>
           <SortableTh
-            label="Name"
+            label={t("adminDiscounts.colName")}
             active={directionFor("name") !== null}
             direction={directionFor("name")}
             onSort={() => toggle("name")}
           />
           <SortableTh
-            label="Discount"
+            label={t("adminDiscounts.colDiscount")}
             active={directionFor("discount") !== null}
             direction={directionFor("discount")}
             onSort={() => toggle("discount")}
           />
           <SortableTh
-            label="Segment"
+            label={t("adminDiscounts.colSegment")}
             active={directionFor("target_segment") !== null}
             direction={directionFor("target_segment")}
             onSort={() => toggle("target_segment")}
           />
-          <Th>Status</Th>
+          <Th>{t("adminDiscounts.colStatus")}</Th>
           <SortableTh
-            label="Starts"
+            label={t("adminDiscounts.colStarts")}
             active={directionFor("start_date") !== null}
             direction={directionFor("start_date")}
             onSort={() => toggle("start_date")}
           />
           <SortableTh
-            label="Ends"
+            label={t("adminDiscounts.colEnds")}
             active={directionFor("end_date") !== null}
             direction={directionFor("end_date")}
             onSort={() => toggle("end_date")}
@@ -256,14 +257,14 @@ export default function AdminDiscountsPage() {
           {!isLoading && sorted && sorted.length === 0 && (
             <TableEmptyRow colSpan={7}>
               {data && data.results.length === 0
-                ? "No campaigns yet. Create one to get started."
-                : "No campaigns match your search or filters."}
+                ? t("adminDiscounts.noCampaignsYet")
+                : t("adminDiscounts.noCampaignsMatch")}
             </TableEmptyRow>
           )}
 
           {!isLoading &&
             sorted?.map((campaign) => {
-              const status = campaignStatus(campaign);
+              const status = getCampaignStatus(campaign);
               return (
                 <Tr
                   key={campaign.id}
@@ -280,16 +281,20 @@ export default function AdminDiscountsPage() {
                     {formatDiscountValue(campaign)}
                   </Td>
                   <Td className="text-ink-muted">
-                    {SEGMENT_LABELS[campaign.target_segment]}
+                    {segmentLabels[campaign.target_segment]}
                   </Td>
                   <Td>
                     <StatusBadge label={status.label} tone={status.tone} />
                   </Td>
                   <Td className="whitespace-nowrap text-ink-muted">
-                    {new Date(campaign.start_date).toLocaleDateString()}
+                    {new Date(campaign.start_date).toLocaleDateString(
+                      locale === "fr" ? "fr-FR" : "en-US",
+                    )}
                   </Td>
                   <Td className="whitespace-nowrap text-ink-muted">
-                    {new Date(campaign.end_date).toLocaleDateString()}
+                    {new Date(campaign.end_date).toLocaleDateString(
+                      locale === "fr" ? "fr-FR" : "en-US",
+                    )}
                   </Td>
                   <Td>
                     <ChevronRight

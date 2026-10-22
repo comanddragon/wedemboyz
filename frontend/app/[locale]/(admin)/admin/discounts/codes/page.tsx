@@ -32,33 +32,8 @@ import { discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type { PromoCode } from "@/src/types";
-
-const ACTIVE_FILTER_OPTIONS: {
-  value: "ALL" | "ACTIVE" | "PAUSED";
-  label: string;
-}[] = [
-  { value: "ALL", label: "All statuses" },
-  { value: "ACTIVE", label: "Active" },
-  { value: "PAUSED", label: "Paused" },
-];
-
-/** Derives a display status from is_active, the validity window, and usage,
- * since is_active alone doesn't tell the whole story (a code can be flagged
- * active but expired, or active but used up). */
-function promoCodeStatus(promo: PromoCode): {
-  label: string;
-  tone: StatusTone;
-} {
-  if (!promo.is_active) return { label: "Paused", tone: "cancelled" };
-  if (promo.max_uses != null && promo.times_used >= promo.max_uses) {
-    return { label: "Exhausted", tone: "cancelled" };
-  }
-  const today = new Date().toISOString().slice(0, 10);
-  if (today < promo.valid_from) return { label: "Scheduled", tone: "pending" };
-  if (today > promo.valid_until) return { label: "Expired", tone: "cancelled" };
-  return { label: "Active", tone: "ready" };
-}
 
 function formatDiscountValue(promo: PromoCode): string {
   return promo.discount_type === "PERCENTAGE"
@@ -70,6 +45,7 @@ type SortKey = "code" | "discount" | "times_used" | "valid_until";
 
 export default function AdminPromoCodesPage() {
   const router = useRouter();
+  const { locale, t } = useI18n();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<"ALL" | "ACTIVE" | "PAUSED">(
@@ -77,8 +53,32 @@ export default function AdminPromoCodesPage() {
   );
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // Same as campaigns — the backend only paginates this list, so search and
-  // status filtering happen client-side over the current page.
+  const activeFilterOptions: {
+    value: "ALL" | "ACTIVE" | "PAUSED";
+    label: string;
+  }[] = [
+    { value: "ALL", label: t("adminDiscounts.allStatuses") },
+    { value: "ACTIVE", label: t("adminDiscounts.activeStatus") },
+    { value: "PAUSED", label: t("adminDiscounts.pausedStatus") },
+  ];
+
+  function getPromoCodeStatus(promo: PromoCode): {
+    label: string;
+    tone: StatusTone;
+  } {
+    if (!promo.is_active)
+      return { label: t("adminDiscounts.pausedStatus"), tone: "cancelled" };
+    if (promo.max_uses != null && promo.times_used >= promo.max_uses) {
+      return { label: t("adminDiscounts.exhaustedStatus"), tone: "cancelled" };
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    if (today < promo.valid_from)
+      return { label: t("adminDiscounts.scheduledStatus"), tone: "pending" };
+    if (today > promo.valid_until)
+      return { label: t("adminDiscounts.expiredStatus"), tone: "cancelled" };
+    return { label: t("adminDiscounts.activeStatus"), tone: "ready" };
+  }
+
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.discounts.promoCodes.list(page),
     queryFn: () => discountsApi.listPromoCodes({ page }),
@@ -114,20 +114,20 @@ export default function AdminPromoCodesPage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
-        title="Discounts"
-        description="Promo codes customers redeem themselves at checkout."
+        title={t("adminDiscounts.title")}
+        description={t("adminDiscounts.codesSubtitle")}
         action={
           <Button variant="gold" onClick={() => setShowCreateForm((v) => !v)}>
             <Plus className="h-4 w-4" aria-hidden="true" />
-            New code
+            {t("adminDiscounts.newCode")}
           </Button>
         }
       />
 
       <Tabs
         items={[
-          { href: "/admin/discounts", label: "Campaigns" },
-          { href: "/admin/discounts/codes", label: "Promo codes" },
+          { href: "/admin/discounts", label: t("adminDiscounts.campaignsTab") },
+          { href: "/admin/discounts/codes", label: t("adminDiscounts.codesTab") },
         ]}
       />
 
@@ -139,11 +139,11 @@ export default function AdminPromoCodesPage() {
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
-          placeholder="Search by code"
+          placeholder={t("adminDiscounts.searchCodesPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="sm:max-w-xs"
-          aria-label="Search promo codes"
+          aria-label={t("adminDiscounts.searchCodesPlaceholder")}
         />
         <Select
           value={activeFilter}
@@ -151,9 +151,9 @@ export default function AdminPromoCodesPage() {
             setActiveFilter(e.target.value as "ALL" | "ACTIVE" | "PAUSED")
           }
           className="sm:w-40"
-          aria-label="Filter by status"
+          aria-label={t("adminDiscounts.colStatus")}
         >
-          {ACTIVE_FILTER_OPTIONS.map((opt) => (
+          {activeFilterOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -161,8 +161,10 @@ export default function AdminPromoCodesPage() {
         </Select>
         {data && (
           <p className="text-xs text-ink-muted sm:ml-auto">
-            {filtered?.length ?? 0} of {data.results.length} on this page ·{" "}
-            {data.count} total
+            {t("adminDiscounts.pageCount")
+              .replace("{filtered}", String(filtered?.length ?? 0))
+              .replace("{total}", String(data.results.length))
+              .replace("{overall}", String(data.count))}
           </p>
         )}
       </div>
@@ -176,28 +178,28 @@ export default function AdminPromoCodesPage() {
       <TableContainer>
         <THead>
           <SortableTh
-            label="Code"
+            label={t("adminDiscounts.colCode")}
             active={directionFor("code") !== null}
             direction={directionFor("code")}
             onSort={() => toggle("code")}
           />
           <SortableTh
-            label="Discount"
+            label={t("adminDiscounts.colDiscount")}
             active={directionFor("discount") !== null}
             direction={directionFor("discount")}
             onSort={() => toggle("discount")}
           />
-          <Th>Min. order</Th>
+          <Th>{t("adminDiscounts.colMinOrder")}</Th>
           <SortableTh
-            label="Uses"
+            label={t("adminDiscounts.colUses")}
             align="right"
             active={directionFor("times_used") !== null}
             direction={directionFor("times_used")}
             onSort={() => toggle("times_used")}
           />
-          <Th>Status</Th>
+          <Th>{t("adminDiscounts.colStatus")}</Th>
           <SortableTh
-            label="Expires"
+            label={t("adminDiscounts.colExpires")}
             active={directionFor("valid_until") !== null}
             direction={directionFor("valid_until")}
             onSort={() => toggle("valid_until")}
@@ -210,14 +212,14 @@ export default function AdminPromoCodesPage() {
           {!isLoading && sorted && sorted.length === 0 && (
             <TableEmptyRow colSpan={7}>
               {data && data.results.length === 0
-                ? "No promo codes yet. Create one to get started."
-                : "No codes match your search or filters."}
+                ? t("adminDiscounts.noCodesYet")
+                : t("adminDiscounts.noCodesMatch")}
             </TableEmptyRow>
           )}
 
           {!isLoading &&
             sorted?.map((promo) => {
-              const status = promoCodeStatus(promo);
+              const status = getPromoCodeStatus(promo);
               return (
                 <Tr
                   key={promo.id}
@@ -249,7 +251,9 @@ export default function AdminPromoCodesPage() {
                     <StatusBadge label={status.label} tone={status.tone} />
                   </Td>
                   <Td className="whitespace-nowrap text-ink-muted">
-                    {new Date(promo.valid_until).toLocaleDateString()}
+                    {new Date(promo.valid_until).toLocaleDateString(
+                      locale === "fr" ? "fr-FR" : "en-US",
+                    )}
                   </Td>
                   <Td>
                     <ChevronRight

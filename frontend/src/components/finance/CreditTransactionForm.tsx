@@ -7,27 +7,10 @@ import { Button, Field, Input, Textarea } from "@/src/components/ui";
 import { financeApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type { CreditAccountDetail } from "@/src/types";
 
 type Mode = "charge" | "pay";
-
-const MODE_COPY: Record<
-  Mode,
-  { title: string; hint: string; cta: string; pending: string }
-> = {
-  charge: {
-    title: "Add a charge",
-    hint: "Records goods/services taken on credit — increases what the customer owes.",
-    cta: "Record charge",
-    pending: "Recording…",
-  },
-  pay: {
-    title: "Record a payment",
-    hint: "Records a repayment against the balance — decreases what the customer owes.",
-    cta: "Record payment",
-    pending: "Recording…",
-  },
-};
 
 export function CreditTransactionForm({
   userId,
@@ -39,9 +22,31 @@ export function CreditTransactionForm({
   onDone: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const copy = MODE_COPY[mode];
+
+  const modeCopy: Record<
+    Mode,
+    { title: string; hint: string; cta: string; pending: string; placeholder: string }
+  > = {
+    charge: {
+      title: t("adminCredit.chargeTitle"),
+      hint: t("adminCredit.chargeHint"),
+      cta: t("adminCredit.chargeCta"),
+      pending: t("adminCredit.chargePending"),
+      placeholder: t("adminCredit.chargePlaceholder"),
+    },
+    pay: {
+      title: t("adminCredit.payTitle"),
+      hint: t("adminCredit.payHint"),
+      cta: t("adminCredit.payCta"),
+      pending: t("adminCredit.payPending"),
+      placeholder: t("adminCredit.payPlaceholder"),
+    },
+  };
+
+  const copy = modeCopy[mode];
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -79,7 +84,11 @@ export function CreditTransactionForm({
       <h3 className="mb-3 text-sm font-medium text-ink">{copy.title}</h3>
 
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Field label="Amount (XAF)" htmlFor={`${mode}-amount`} hint={copy.hint}>
+        <Field
+          label={t("adminCredit.amountLabel")}
+          htmlFor={`${mode}-amount`}
+          hint={copy.hint}
+        >
           <Input
             id={`${mode}-amount`}
             type="number"
@@ -93,16 +102,12 @@ export function CreditTransactionForm({
         </Field>
       </div>
 
-      <Field label="Note (optional)" htmlFor={`${mode}-note`}>
+      <Field label={t("adminCredit.noteOptional")} htmlFor={`${mode}-note`}>
         <Textarea
           id={`${mode}-note`}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder={
-            mode === "charge"
-              ? "e.g. walk-in order, no order on file"
-              : "e.g. cash received at counter"
-          }
+          placeholder={copy.placeholder}
         />
       </Field>
 
@@ -121,7 +126,7 @@ export function CreditTransactionForm({
           {mutation.isPending ? copy.pending : copy.cta}
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
-          Cancel
+          {t("adminCredit.cancel")}
         </Button>
       </div>
     </form>

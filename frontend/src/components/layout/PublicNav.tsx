@@ -29,17 +29,17 @@ export function PublicNav() {
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-[72px] sm:px-6">
         <Link
           href="/"
-          className="flex items-center font-display text-base font-bold tracking-tight text-navy"
+          aria-label="Wedemboyz Lavomatique"
+          className="flex items-center transition-opacity hover:opacity-95"
         >
           <Image
-            src="/icon-mark.png"
-            alt="Wedemboyz Lavomatique logo"
-            width={32}
-            height={50}
-            className="h-10 w-auto shrink-0 object-contain sm:h-11"
+            src="/logo.png"
+            alt="Wedemboyz Lavomatique"
+            width={216}
+            height={80}
+            className="h-10 w-auto object-contain sm:h-12"
             priority
           />
-          Wedemboyz Lavomatique
         </Link>
         <div className="font-display hidden items-center gap-8 text-sm text-ink-muted md:flex">
           <Link href="/book" className="transition-colors hover:text-ink">
@@ -113,7 +113,7 @@ export function PublicNav() {
           <div className="font-display flex h-full flex-col text-ink-muted">
             <div className="mb-5"><LanguageSwitcher /></div>
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.16em] text-gold-600">
-              Explore Wedemboyz Lavomatique
+              {t("publicNav.explore")}
             </p>
             <Link
               href="/book"

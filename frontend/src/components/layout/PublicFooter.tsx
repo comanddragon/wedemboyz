@@ -6,18 +6,6 @@ import Image from "next/image";
 import { BUSINESS } from "@/src/lib/constants";
 import { useI18n } from "@/src/i18n/I18nProvider";
 
-function LogoMark() {
-  return (
-    <Image
-      src="/icon-mark.png"
-      alt=""
-      width={44}
-      height={54}
-      className="h-10 w-auto shrink-0 object-contain"
-      priority
-    />
-  );
-}
 /**
  * The one global footer, rendered by SiteShell on every route (including
  * the homepage). Uses the site's real Fold Line tokens (text-navy,
@@ -37,10 +25,16 @@ export function PublicFooter() {
           <Link
             href="/"
             aria-label="Wedemboyz Lavomatique"
-            className="flex items-center font-display text-base font-bold tracking-tight text-navy"
+            className="inline-block transition-opacity hover:opacity-95"
           >
-            <LogoMark />
-            Wedemboyz Lavomatique
+            <Image
+              src="/logo.png"
+              alt="Wedemboyz Lavomatique"
+              width={216}
+              height={80}
+              className="h-11 w-auto object-contain sm:h-12"
+              priority
+            />
           </Link>
 
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">

@@ -21,17 +21,19 @@ import { financeApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
-
-const CREDIT_TX_LABEL: Record<string, string> = {
-  CHARGE: "Charge",
-  PAYMENT: "Payment",
-  ADJUSTMENT: "Adjustment",
-};
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 export default function AdminCreditAccountDetailPage() {
   const params = useParams<{ userId: string }>();
   const userId = Number(params.userId);
+  const { locale, t } = useI18n();
   const [activeForm, setActiveForm] = useState<"charge" | "pay" | null>(null);
+
+  const creditTxLabel: Record<string, string> = {
+    CHARGE: t("adminCredit.chargeLabel"),
+    PAYMENT: t("adminCredit.paymentLabel"),
+    ADJUSTMENT: t("adminCredit.adjustmentLabel"),
+  };
 
   const {
     data: account,
@@ -45,7 +47,7 @@ export default function AdminCreditAccountDetailPage() {
   if (isLoading) {
     return (
       <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9 text-sm text-ink-muted">
-        Loading...
+        {t("common.loading")}
       </main>
     );
   }
@@ -58,7 +60,7 @@ export default function AdminCreditAccountDetailPage() {
           className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to Clients à crédit
+          {t("adminCredit.backToCredit")}
         </Link>
         <p className="text-sm text-status-cancelled-text">
           {getApiErrorMessage(error)}
@@ -81,7 +83,7 @@ export default function AdminCreditAccountDetailPage() {
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to Clients à crédit
+        {t("adminCredit.backToCredit")}
       </Link>
 
       <div className="mb-6 flex items-start justify-between gap-4">
@@ -97,24 +99,32 @@ export default function AdminCreditAccountDetailPage() {
           href={`/admin/customers/${account.user.id}`}
           className="text-xs text-navy hover:underline"
         >
-          View fiche client
+          {t("adminCredit.viewFicheClient")}
         </Link>
       </div>
 
       <Card className="mb-3">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs text-ink-muted">Balance owed</p>
+            <p className="text-xs text-ink-muted">
+              {t("adminCredit.balanceOwed")}
+            </p>
             <p
               className={`text-2xl font-semibold tabular-nums ${balance > 0 ? "text-status-cancelled-text" : "text-navy"}`}
             >
               {formatCurrency(account.balance)}
             </p>
             <p className="mt-1 text-xs text-ink-muted">
-              of {formatCurrency(account.credit_limit)} limit
+              {t("adminCredit.ofLimit").replace(
+                "{limit}",
+                formatCurrency(account.credit_limit),
+              )}
               {nearLimit && (
                 <span className="ml-2">
-                  <StatusBadge label="Near limit" tone="cancelled" />
+                  <StatusBadge
+                    label={t("adminCredit.nearLimit")}
+                    tone="cancelled"
+                  />
                 </span>
               )}
             </p>
@@ -125,7 +135,7 @@ export default function AdminCreditAccountDetailPage() {
               onClick={() => setActiveForm(activeForm === "pay" ? null : "pay")}
             >
               <MinusCircle className="h-4 w-4" aria-hidden="true" />
-              Record payment
+              {t("adminCredit.recordPayment")}
             </Button>
             <Button
               variant="secondary"
@@ -134,16 +144,21 @@ export default function AdminCreditAccountDetailPage() {
               }
             >
               <PlusCircle className="h-4 w-4" aria-hidden="true" />
-              Add charge
+              {t("adminCredit.addCharge")}
             </Button>
           </div>
         </div>
         <p className="mt-3 border-t border-crease pt-3 text-xs text-ink-muted">
           {account.days_since_last_activity === null
-            ? "No activity recorded yet."
+            ? t("adminCredit.noActivityYet")
             : account.days_since_last_activity === 0
-              ? "Last activity today."
-              : `Last activity ${account.days_since_last_activity} day${account.days_since_last_activity === 1 ? "" : "s"} ago.`}
+              ? t("adminCredit.lastActivityToday")
+              : account.days_since_last_activity === 1
+                ? t("adminCredit.lastActivityDaysAgo").replace("{count}", "1")
+                : t("adminCredit.lastActivityDaysAgoPlural").replace(
+                    "{count}",
+                    String(account.days_since_last_activity),
+                  )}
         </p>
       </Card>
 
@@ -158,25 +173,27 @@ export default function AdminCreditAccountDetailPage() {
       )}
 
       <h2 className="font-display mb-3 text-sm font-medium text-ink">
-        Transaction history
+        {t("adminCredit.txHistory")}
       </h2>
       <TableContainer>
         <THead>
-          <Th>Type</Th>
-          <Th align="right">Amount</Th>
-          <Th>Note</Th>
-          <Th>Order</Th>
-          <Th>By</Th>
-          <Th align="right">When</Th>
+          <Th>{t("adminCredit.colType")}</Th>
+          <Th align="right">{t("adminCredit.colAmount")}</Th>
+          <Th>{t("adminCredit.colNote")}</Th>
+          <Th>{t("adminCredit.colOrder")}</Th>
+          <Th>{t("adminCredit.colBy")}</Th>
+          <Th align="right">{t("adminCredit.colWhen")}</Th>
         </THead>
         <TBody>
           {account.transactions.length === 0 && (
-            <TableEmptyRow colSpan={6}>No credit activity yet.</TableEmptyRow>
+            <TableEmptyRow colSpan={6}>
+              {t("adminCredit.noCreditActivity")}
+            </TableEmptyRow>
           )}
           {account.transactions.map((tx) => (
             <Tr key={tx.id}>
               <Td>
-                {CREDIT_TX_LABEL[tx.transaction_type] ?? tx.transaction_type}
+                {creditTxLabel[tx.transaction_type] ?? tx.transaction_type}
               </Td>
               <Td
                 align="right"
@@ -200,7 +217,9 @@ export default function AdminCreditAccountDetailPage() {
               </Td>
               <Td className="text-ink-muted">{tx.created_by || "—"}</Td>
               <Td align="right" className="whitespace-nowrap text-ink-muted">
-                {new Date(tx.created_at).toLocaleString()}
+                {new Date(tx.created_at).toLocaleString(
+                  locale === "fr" ? "fr-FR" : "en-US",
+                )}
               </Td>
             </Tr>
           ))}

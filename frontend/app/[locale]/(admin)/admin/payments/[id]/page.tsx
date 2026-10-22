@@ -13,14 +13,7 @@ import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import type { PaymentMethodType } from "@/src/types";
-
-const METHOD_LABELS: Record<PaymentMethodType, string> = {
-  MTN_MOMO: "MTN Mobile Money",
-  ORANGE_MONEY: "Orange Money",
-  CASH: "Cash",
-  BANK_TRANSFER: "Bank transfer",
-  OTHER: "Other",
-};
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -32,6 +25,7 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
 }
 
 export default function AdminPaymentDetailPage() {
+  const { locale, t } = useI18n();
   const params = useParams<{ id: string }>();
   const paymentId = Number(params.id);
 
@@ -44,10 +38,18 @@ export default function AdminPaymentDetailPage() {
     queryFn: () => paymentsApi.getPayment(paymentId),
   });
 
+  const methodLabels: Record<PaymentMethodType, string> = {
+    MTN_MOMO: t("adminFinance.methodLabels.MTN_MOMO"),
+    ORANGE_MONEY: t("adminFinance.methodLabels.ORANGE_MONEY"),
+    CASH: t("adminFinance.methodLabels.CASH"),
+    BANK_TRANSFER: t("adminFinance.methodLabels.BANK_TRANSFER"),
+    OTHER: t("adminFinance.methodLabels.OTHER"),
+  };
+
   if (isLoading) {
     return (
       <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9 text-sm text-ink-muted">
-        Loading...
+        {t("adminFinance.loading")}
       </main>
     );
   }
@@ -62,6 +64,12 @@ export default function AdminPaymentDetailPage() {
     );
   }
 
+  const payerDisplayName =
+    payment.payer_name ||
+    (payment.customer
+      ? `${payment.customer.first_name} ${payment.customer.last_name}`.trim()
+      : t("adminFinance.paymentHash").replace("{id}", String(payment.id)));
+
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <Link
@@ -69,28 +77,28 @@ export default function AdminPaymentDetailPage() {
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to payments
+        {t("adminFinance.backToPayments")}
       </Link>
 
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <CustomerAvatar name={payment.payer_name || (payment.customer ? `${payment.customer.first_name} ${payment.customer.last_name}`.trim() : `Payment ${payment.id}`)} size="lg" />
+          <CustomerAvatar name={payerDisplayName} size="lg" />
           <div>
-          <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
-            Payment #{payment.id}
-          </h1>
-          {payment.order !== null ? (
-            <Link
-              href={`/admin/orders/${payment.order}`}
-              className="mt-0.5 block text-xs text-ink-muted hover:underline"
-            >
-              For order #{payment.order}
-            </Link>
-          ) : (
-            <p className="mt-0.5 text-xs text-ink-muted">
-              For subscription #{payment.subscription}
-            </p>
-          )}
+            <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
+              {t("adminFinance.paymentHash").replace("{id}", String(payment.id))}
+            </h1>
+            {payment.order !== null ? (
+              <Link
+                href={`/admin/orders/${payment.order}`}
+                className="mt-0.5 block text-xs text-ink-muted hover:underline"
+              >
+                {t("adminFinance.forOrder").replace("{id}", String(payment.order))}
+              </Link>
+            ) : (
+              <p className="mt-0.5 text-xs text-ink-muted">
+                {t("adminFinance.forSubscription").replace("{id}", String(payment.subscription))}
+              </p>
+            )}
           </div>
         </div>
         <StatusBadge
@@ -100,20 +108,23 @@ export default function AdminPaymentDetailPage() {
       </div>
 
       <Card>
-        <Row label="Amount" value={formatCurrency(payment.amount)} />
-        <Row label="Currency" value={payment.currency} />
-        <Row label="Method" value={METHOD_LABELS[payment.payment_method_type]} />
-        <Row label="Reference" value={payment.reference || "—"} />
+        <Row label={t("adminFinance.amount")} value={formatCurrency(payment.amount)} />
+        <Row label={t("adminFinance.currency")} value={payment.currency} />
         <Row
-          label="Received at"
-          value={new Date(payment.received_at).toLocaleString()}
+          label={t("adminFinance.method")}
+          value={methodLabels[payment.payment_method_type] ?? payment.payment_method_type}
         />
-        <Row label="Payer" value={payment.payer_name || "—"} />
-        <Row label="Payer phone" value={payment.payer_phone || "—"} />
-        <Row label="Notes" value={payment.notes || "—"} />
+        <Row label={t("adminFinance.reference")} value={payment.reference || "—"} />
+        <Row
+          label={t("adminFinance.receivedAt")}
+          value={new Date(payment.received_at).toLocaleString(locale)}
+        />
+        <Row label={t("adminFinance.payer")} value={payment.payer_name || "—"} />
+        <Row label={t("adminFinance.payerPhone")} value={payment.payer_phone || "—"} />
+        <Row label={t("adminFinance.notes")} value={payment.notes || "—"} />
         {payment.failure_reason && (
           <Row
-            label="Failure reason"
+            label={t("adminFinance.failureReason")}
             value={
               <span className="text-status-cancelled-text">
                 {payment.failure_reason}
@@ -122,8 +133,8 @@ export default function AdminPaymentDetailPage() {
           />
         )}
         <Row
-          label="Created"
-          value={new Date(payment.created_at).toLocaleString()}
+          label={t("adminFinance.created")}
+          value={new Date(payment.created_at).toLocaleString(locale)}
         />
       </Card>
     </main>

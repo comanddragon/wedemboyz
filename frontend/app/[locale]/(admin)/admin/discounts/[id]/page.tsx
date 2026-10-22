@@ -17,27 +17,8 @@ import { discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type { DiscountCampaign, DiscountCampaignSegment } from "@/src/types";
-
-const SEGMENT_LABELS: Record<DiscountCampaignSegment, string> = {
-  ALL: "All customers",
-  NEW_CUSTOMERS: "New customers",
-  LAPSED: "Lapsed customers",
-  LOYALTY_GOLD: "Gold-tier loyalty",
-};
-
-/** Same derivation as the list page — is_active plus the date range. */
-function campaignStatus(campaign: DiscountCampaign): {
-  label: string;
-  tone: StatusTone;
-} {
-  if (!campaign.is_active) return { label: "Paused", tone: "cancelled" };
-  const today = new Date().toISOString().slice(0, 10);
-  if (today < campaign.start_date)
-    return { label: "Scheduled", tone: "pending" };
-  if (today > campaign.end_date) return { label: "Ended", tone: "cancelled" };
-  return { label: "Active", tone: "ready" };
-}
 
 function formatDiscountValue(campaign: DiscountCampaign): string {
   return campaign.discount_type === "PERCENTAGE"
@@ -50,8 +31,30 @@ export default function AdminDiscountDetailPage() {
   const campaignId = Number(params.id);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { locale, t } = useI18n();
   const [showEditForm, setShowEditForm] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const segmentLabels: Record<DiscountCampaignSegment, string> = {
+    ALL: t("adminDiscounts.segments.ALL"),
+    NEW_CUSTOMERS: t("adminDiscounts.segments.NEW_CUSTOMERS"),
+    LAPSED: t("adminDiscounts.segments.LAPSED"),
+    LOYALTY_GOLD: t("adminDiscounts.segments.LOYALTY_GOLD"),
+  };
+
+  function getCampaignStatus(campaign: DiscountCampaign): {
+    label: string;
+    tone: StatusTone;
+  } {
+    if (!campaign.is_active)
+      return { label: t("adminDiscounts.pausedStatus"), tone: "cancelled" };
+    const today = new Date().toISOString().slice(0, 10);
+    if (today < campaign.start_date)
+      return { label: t("adminDiscounts.scheduledStatus"), tone: "pending" };
+    if (today > campaign.end_date)
+      return { label: t("adminDiscounts.endedStatus"), tone: "cancelled" };
+    return { label: t("adminDiscounts.activeStatus"), tone: "ready" };
+  }
 
   const {
     data: campaign,
@@ -84,7 +87,14 @@ export default function AdminDiscountDetailPage() {
   });
 
   function handleDelete() {
-    if (window.confirm(`Delete "${campaign?.name}"? This can't be undone.`)) {
+    if (
+      window.confirm(
+        t("adminDiscounts.confirmDeleteCampaign").replace(
+          "{name}",
+          campaign?.name ?? "",
+        ),
+      )
+    ) {
       deleteMutation.mutate();
     }
   }
@@ -92,7 +102,7 @@ export default function AdminDiscountDetailPage() {
   if (isLoading) {
     return (
       <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9 text-sm text-ink-muted">
-        Loading...
+        {t("common.loading")}
       </main>
     );
   }
@@ -105,7 +115,7 @@ export default function AdminDiscountDetailPage() {
           className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to discounts
+          {t("adminDiscounts.backToDiscounts")}
         </Link>
         <p className="text-sm text-status-cancelled-text">
           {getApiErrorMessage(error)}
@@ -114,7 +124,7 @@ export default function AdminDiscountDetailPage() {
     );
   }
 
-  const status = campaignStatus(campaign);
+  const status = getCampaignStatus(campaign);
 
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
@@ -123,7 +133,7 @@ export default function AdminDiscountDetailPage() {
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to discounts
+        {t("adminDiscounts.backToDiscounts")}
       </Link>
 
       <div className="mb-6 flex items-start justify-between gap-4">
@@ -132,7 +142,7 @@ export default function AdminDiscountDetailPage() {
             {campaign.name}
           </h1>
           <p className="mt-0.5 text-xs text-ink-muted">
-            {SEGMENT_LABELS[campaign.target_segment]}
+            {segmentLabels[campaign.target_segment]}
           </p>
         </div>
         <StatusBadge label={status.label} tone={status.tone} />
@@ -145,8 +155,13 @@ export default function AdminDiscountDetailPage() {
               {formatDiscountValue(campaign)}
             </p>
             <p className="mt-0.5 text-xs text-ink-muted">
-              {new Date(campaign.start_date).toLocaleDateString()} –{" "}
-              {new Date(campaign.end_date).toLocaleDateString()}
+              {new Date(campaign.start_date).toLocaleDateString(
+                locale === "fr" ? "fr-FR" : "en-US",
+              )}{" "}
+              –{" "}
+              {new Date(campaign.end_date).toLocaleDateString(
+                locale === "fr" ? "fr-FR" : "en-US",
+              )}
             </p>
           </div>
           <Button
@@ -157,12 +172,12 @@ export default function AdminDiscountDetailPage() {
             {campaign.is_active ? (
               <>
                 <Pause className="h-4 w-4" aria-hidden="true" />
-                Pause
+                {t("adminDiscounts.pause")}
               </>
             ) : (
               <>
                 <Play className="h-4 w-4" aria-hidden="true" />
-                Resume
+                {t("adminDiscounts.resume")}
               </>
             )}
           </Button>
@@ -182,7 +197,9 @@ export default function AdminDiscountDetailPage() {
       <div className="mb-6 flex items-center gap-2">
         <Button variant="ghost" onClick={() => setShowEditForm((v) => !v)}>
           <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-          {showEditForm ? "Close" : "Edit details"}
+          {showEditForm
+            ? t("adminDiscounts.close")
+            : t("adminDiscounts.editDetails")}
         </Button>
         <Button
           variant="ghost"
@@ -190,7 +207,9 @@ export default function AdminDiscountDetailPage() {
           disabled={deleteMutation.isPending}
         >
           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-          {deleteMutation.isPending ? "Deleting…" : "Delete campaign"}
+          {deleteMutation.isPending
+            ? t("adminDiscounts.deleting")
+            : t("adminDiscounts.deleteCampaign")}
         </Button>
       </div>
 

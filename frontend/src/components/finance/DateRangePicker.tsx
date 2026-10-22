@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/src/i18n/I18nProvider";
 import { cn } from "@/src/lib/utils";
 
 export interface DateRange {
@@ -39,16 +40,6 @@ export function rangeForPreset(
   return { start: toIsoDate(start), end };
 }
 
-const PRESETS: {
-  value: Exclude<DateRangePresetKey, "custom">;
-  label: string;
-}[] = [
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-  { value: "month", label: "This month" },
-  { value: "year", label: "This year" },
-];
-
 export function DateRangePicker({
   preset,
   onPresetChange,
@@ -56,9 +47,21 @@ export function DateRangePicker({
   preset: DateRangePresetKey;
   onPresetChange: (preset: Exclude<DateRangePresetKey, "custom">) => void;
 }) {
+  const { t } = useI18n();
+
+  const presets: {
+    value: Exclude<DateRangePresetKey, "custom">;
+    label: string;
+  }[] = [
+    { value: "7d", label: t("adminAnalytics.preset7d") },
+    { value: "30d", label: t("adminAnalytics.preset30d") },
+    { value: "month", label: t("adminAnalytics.presetMonth") },
+    { value: "year", label: t("adminAnalytics.presetYear") },
+  ];
+
   return (
     <div className="inline-flex rounded-md border border-crease bg-white p-0.5">
-      {PRESETS.map((p) => (
+      {presets.map((p) => (
         <button
           key={p.value}
           type="button"

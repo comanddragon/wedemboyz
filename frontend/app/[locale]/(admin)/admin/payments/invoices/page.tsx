@@ -27,10 +27,12 @@ import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import type { Invoice } from "@/src/types";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 type SortKey = "id" | "order" | "amount_due" | "is_settled" | "issued_at";
 
 export default function AdminInvoicesPage() {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -73,30 +75,32 @@ export default function AdminInvoicesPage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
-        title="Payments"
-        description="Every payment attempt across all customers."
+        title={t("adminFinance.payments")}
+        description={t("adminFinance.paymentsBody")}
       />
 
       <Tabs
         items={[
-          { href: "/admin/payments", label: "Payments" },
-          { href: "/admin/payments/refunds", label: "Refunds" },
-          { href: "/admin/payments/invoices", label: "Invoices" },
+          { href: "/admin/payments", label: t("adminFinance.payments") },
+          { href: "/admin/payments/refunds", label: t("adminFinance.refunds") },
+          { href: "/admin/payments/invoices", label: t("adminFinance.invoices") },
         ]}
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
-          placeholder="Search this page by invoice #, number, or order #"
+          placeholder={t("adminInvoices.searchThisPage")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="sm:max-w-sm"
-          aria-label="Search invoices on this page"
+          aria-label={t("adminInvoices.searchAria")}
         />
         {data && (
           <p className="text-xs text-ink-muted sm:ml-auto">
-            {filtered?.length ?? 0} of {data.results.length} on this page ·{" "}
-            {data.count} total
+            {t("adminInvoices.pageCount")
+              .replace("{shown}", String(filtered?.length ?? 0))
+              .replace("{pageTotal}", String(data.results.length))
+              .replace("{total}", String(data.count))}
           </p>
         )}
       </div>
@@ -110,33 +114,33 @@ export default function AdminInvoicesPage() {
       <TableContainer>
         <THead>
           <SortableTh
-            label="Invoice"
+            label={t("adminInvoices.colInvoice")}
             active={directionFor("id") !== null}
             direction={directionFor("id")}
             onSort={() => toggle("id")}
           />
           <SortableTh
-            label="Order"
+            label={t("adminInvoices.colOrder")}
             active={directionFor("order") !== null}
             direction={directionFor("order")}
             onSort={() => toggle("order")}
           />
           <SortableTh
-            label="Amount due"
+            label={t("adminInvoices.colAmountDue")}
             align="right"
             active={directionFor("amount_due") !== null}
             direction={directionFor("amount_due")}
             onSort={() => toggle("amount_due")}
           />
-          <Th align="right">Paid</Th>
+          <Th align="right">{t("adminInvoices.colPaid")}</Th>
           <SortableTh
-            label="Settled"
+            label={t("adminInvoices.colSettled")}
             active={directionFor("is_settled") !== null}
             direction={directionFor("is_settled")}
             onSort={() => toggle("is_settled")}
           />
           <SortableTh
-            label="Issued"
+            label={t("adminInvoices.colIssued")}
             active={directionFor("issued_at") !== null}
             direction={directionFor("issued_at")}
             onSort={() => toggle("issued_at")}
@@ -149,8 +153,8 @@ export default function AdminInvoicesPage() {
           {!isLoading && sorted && sorted.length === 0 && (
             <TableEmptyRow colSpan={7}>
               {data && data.results.length === 0
-                ? "No invoices yet."
-                : "No invoices match your search."}
+                ? t("adminInvoices.noInvoicesYet")
+                : t("adminInvoices.noInvoicesMatch")}
             </TableEmptyRow>
           )}
 
@@ -174,12 +178,16 @@ export default function AdminInvoicesPage() {
                 </Td>
                 <Td>
                   <StatusBadge
-                    label={invoice.is_settled ? "Settled" : "Outstanding"}
+                    label={
+                      invoice.is_settled
+                        ? t("adminInvoices.settledBadge")
+                        : t("adminInvoices.outstandingBadge")
+                    }
                     tone={invoice.is_settled ? "ready" : "pending"}
                   />
                 </Td>
                 <Td className="whitespace-nowrap text-ink-muted">
-                  {new Date(invoice.issued_at).toLocaleDateString()}
+                  {new Date(invoice.issued_at).toLocaleDateString(locale)}
                 </Td>
                 <Td>
                   <ChevronRight

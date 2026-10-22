@@ -1,49 +1,47 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-
+import { useI18n } from "@/src/i18n/I18nProvider";
 import { Reveal } from "./Reveal";
 
-const TESTIMONIALS = [
-  {
-    quote:
-      "I stopped ironing my own shirts the day I found Wedemboyz Lavomatique. Pickup has been on time every week for a year.",
-    name: "Aïcha M.",
-    context: "Bastos — Wash & press, weekly",
-  },
-  {
-    quote:
-      "Paid by Orange Money at the door, no back and forth. My suit came back better pressed than the tailor manages.",
-    name: "Bertrand K.",
-    context: "Mvog-Mbi — Dry clean",
-  },
-  {
-    quote:
-      "Booked at 9am, clothes were back by evening. I didn't think that turnaround existed here.",
-    name: "Solange T.",
-    context: "Nlongkak — Wash & fold",
-  },
-];
-
 export function AtelierTrust() {
+  const { t } = useI18n();
   const shouldReduceMotion = useReducedMotion();
+
+  const testimonials = [
+    {
+      quote: t("marketing.quote1Text"),
+      name: t("marketing.quote1Author"),
+      context: t("marketing.quote1Context"),
+    },
+    {
+      quote: t("marketing.quote2Text"),
+      name: t("marketing.quote2Author"),
+      context: t("marketing.quote2Context"),
+    },
+    {
+      quote: t("marketing.quote3Text"),
+      name: t("marketing.quote3Author"),
+      context: t("marketing.quote3Context"),
+    },
+  ];
 
   return (
     <section className="border-t border-[var(--at-line)] px-4 py-14 sm:px-6 sm:py-20 md:py-28">
       <div className="mx-auto max-w-7xl">
         <Reveal className="max-w-xl">
           <span className="at-display text-xs font-semibold uppercase tracking-[0.24em] text-[var(--at-brass-bright)]">
-            On the record
+            {t("marketing.trustEyebrow")}
           </span>
           <h2 className="at-display mt-2 text-2xl font-bold leading-tight text-[var(--at-ivory)] sm:mt-3 sm:text-3xl md:text-4xl">
-            What clients across Yaoundé are saying.
+            {t("marketing.trustTitle")}
           </h2>
         </Reveal>
 
         <div className="mt-8 grid grid-cols-1 gap-7 sm:mt-12 md:grid-cols-3 md:gap-0 md:divide-x md:divide-[var(--at-line)]">
-          {TESTIMONIALS.map((t, i) => (
+          {testimonials.map((item, i) => (
             <Reveal
-              key={t.name}
+              key={item.name}
               delay={i * 0.1}
               className="md:px-9 first:md:pl-0 last:md:pr-0"
             >
@@ -55,14 +53,14 @@ export function AtelierTrust() {
                   &ldquo;
                 </span>
                 <blockquote className="mt-1 text-sm leading-6 text-[var(--at-ivory)] sm:mt-2 sm:text-lg sm:leading-relaxed">
-                  {t.quote}
+                  {item.quote}
                 </blockquote>
                 <figcaption className="mt-3 border-t border-[var(--at-line)] pt-3 sm:mt-6 sm:pt-4">
                   <p className="at-display text-sm font-semibold text-[var(--at-ivory)]">
-                    {t.name}
+                    {item.name}
                   </p>
                   <p className="mt-0.5 text-xs uppercase tracking-wide text-[var(--at-slate)]">
-                    {t.context}
+                    {item.context}
                   </p>
                 </figcaption>
               </motion.figure>

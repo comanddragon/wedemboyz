@@ -1,10 +1,7 @@
-const WORDS = [
-  "PRESSED",
-  "SORTED BY FABRIC",
-  "ACCOUNTED FOR",
-  "DELIVERED ON SCHEDULE",
-  "HANDLED ONCE, HANDLED WELL",
-];
+"use client";
+
+import { useI18n } from "@/src/i18n/I18nProvider";
+import { messages } from "@/src/i18n/messages";
 
 /**
  * A quiet ledger-strip rather than a loud candy marquee — small caps,
@@ -12,7 +9,9 @@ const WORDS = [
  * operating standard, not a mood.
  */
 export function AtelierMarquee() {
-  const items = [...WORDS, ...WORDS];
+  const { locale } = useI18n();
+  const words = messages[locale]?.marketing?.marqueeWords ?? messages.fr.marketing.marqueeWords;
+  const items = [...words, ...words];
   return (
     <div className="border-y border-[var(--at-line)] bg-[var(--at-panel)] py-5">
       <div className="overflow-hidden whitespace-nowrap" aria-hidden="true">

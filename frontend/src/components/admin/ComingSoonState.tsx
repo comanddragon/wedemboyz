@@ -1,6 +1,8 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
-
+import { useI18n } from "@/src/i18n/I18nProvider";
 import { Card } from "@/src/components/ui";
 
 /**
@@ -22,6 +24,8 @@ export function ComingSoonState({
   backHref?: string;
   backLabel?: string;
 }) {
+  const { t } = useI18n();
+
   return (
     <Card className="flex flex-col items-start gap-3 border-dashed py-10 text-left">
       <span className="flex h-10 w-10 items-center justify-center rounded-full bg-steam text-navy">
@@ -36,7 +40,7 @@ export function ComingSoonState({
           href={backHref}
           className="text-sm font-medium text-navy hover:underline"
         >
-          {backLabel ?? "Back"}
+          {backLabel ?? t("adminCommon.back")}
         </Link>
       )}
     </Card>

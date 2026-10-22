@@ -36,27 +36,11 @@ import { financeApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type { ExpenseCategory } from "@/src/types";
 
-const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
-  SUPPLIES: "Supplies",
-  UTILITIES: "Utilities",
-  MAINTENANCE: "Maintenance",
-  RENT: "Rent",
-  OTHER: "Other",
-};
-
-const CATEGORY_FILTER_OPTIONS: {
-  value: ExpenseCategory | "ALL";
-  label: string;
-}[] = [
-  { value: "ALL", label: "All categories" },
-  ...(Object.entries(CATEGORY_LABELS) as [ExpenseCategory, string][]).map(
-    ([value, label]) => ({ value, label }),
-  ),
-];
-
 export default function AdminAnalyticsPage() {
+  const { locale, t } = useI18n();
   const [preset, setPreset] = useState<DateRangePresetKey>("30d");
   const [period, setPeriod] = useState<"daily" | "monthly">("daily");
   const [expensePage, setExpensePage] = useState(1);
@@ -64,6 +48,24 @@ export default function AdminAnalyticsPage() {
     ExpenseCategory | "ALL"
   >("ALL");
   const [showAddExpense, setShowAddExpense] = useState(false);
+
+  const categoryLabels: Record<ExpenseCategory, string> = {
+    SUPPLIES: t("adminExpenses.categories.SUPPLIES"),
+    UTILITIES: t("adminExpenses.categories.UTILITIES"),
+    MAINTENANCE: t("adminExpenses.categories.MAINTENANCE"),
+    RENT: t("adminExpenses.categories.RENT"),
+    OTHER: t("adminExpenses.categories.OTHER"),
+  };
+
+  const categoryFilterOptions: {
+    value: ExpenseCategory | "ALL";
+    label: string;
+  }[] = [
+    { value: "ALL", label: t("adminAnalytics.allCategories") },
+    ...(Object.entries(categoryLabels) as [ExpenseCategory, string][]).map(
+      ([value, label]) => ({ value, label }),
+    ),
+  ];
 
   const range = useMemo(
     () => rangeForPreset(preset === "custom" ? "30d" : preset),
@@ -108,8 +110,8 @@ export default function AdminAnalyticsPage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
-        title="Analytics"
-        description="Income booked from orders, cash collected, expenses, and profit."
+        title={t("adminAnalytics.title")}
+        description={t("adminAnalytics.subtitle")}
         action={<DateRangePicker preset={preset} onPresetChange={setPreset} />}
       />
 
@@ -123,35 +125,60 @@ export default function AdminAnalyticsPage() {
         <StatCard
           compact
           icon={TrendingUp}
-          label="Income booked"
+          label={t("adminAnalytics.incomeBooked")}
           value={summaryLoading ? "—" : formatCurrency(summary?.income_booked ?? 0)}
         />
         <StatCard
           compact
           icon={TrendingDown}
-          label="Cash received"
+          label={t("adminAnalytics.cashReceived")}
           value={summaryLoading ? "—" : formatCurrency(summary?.cash_received ?? 0)}
         />
         <StatCard
           compact
           icon={Wallet}
-          label="Outstanding"
+          label={t("adminAnalytics.outstanding")}
           value={summaryLoading ? "—" : formatCurrency(summary?.outstanding ?? 0)}
           accent="gold"
         />
         <StatCard
           compact
           icon={Receipt}
-          label="Operating profit"
+          label={t("adminAnalytics.operatingProfit")}
           value={summaryLoading ? "—" : formatCurrency(summary?.profit ?? 0)}
         />
       </div>
       {!summaryLoading && summary && (
         <p className="mt-2 text-xs text-ink-muted">
-          {summary.order_count} order
-          {summary.order_count === 1 ? "" : "s"} booked between{" "}
-          {new Date(summary.start).toLocaleDateString()} and{" "}
-          {new Date(summary.end).toLocaleDateString()}.
+          {summary.order_count === 1
+            ? t("adminAnalytics.ordersSummary")
+                .replace("{count}", "1")
+                .replace(
+                  "{start}",
+                  new Date(summary.start).toLocaleDateString(
+                    locale === "fr" ? "fr-FR" : "en-US",
+                  ),
+                )
+                .replace(
+                  "{end}",
+                  new Date(summary.end).toLocaleDateString(
+                    locale === "fr" ? "fr-FR" : "en-US",
+                  ),
+                )
+            : t("adminAnalytics.ordersSummaryPlural")
+                .replace("{count}", String(summary.order_count))
+                .replace(
+                  "{start}",
+                  new Date(summary.start).toLocaleDateString(
+                    locale === "fr" ? "fr-FR" : "en-US",
+                  ),
+                )
+                .replace(
+                  "{end}",
+                  new Date(summary.end).toLocaleDateString(
+                    locale === "fr" ? "fr-FR" : "en-US",
+                  ),
+                )}
         </p>
       )}
 
@@ -161,7 +188,14 @@ export default function AdminAnalyticsPage() {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-revenue-green text-white shadow-card-sm">
               <BarChart3 className="h-4 w-4" aria-hidden="true" />
             </span>
-            <div><h2 className="font-display text-base font-semibold text-navy">Revenue trend</h2><p className="text-xs text-revenue-green-dark">Income booked across the selected period</p></div>
+            <div>
+              <h2 className="font-display text-base font-semibold text-navy">
+                {t("adminAnalytics.trendTitle")}
+              </h2>
+              <p className="text-xs text-revenue-green-dark">
+                {t("adminAnalytics.trendSubtitle")}
+              </p>
+            </div>
           </div>
           <div className="inline-flex rounded-md border border-crease bg-white p-0.5">
             {(["daily", "monthly"] as const).map((p) => (
@@ -169,35 +203,39 @@ export default function AdminAnalyticsPage() {
                 key={p}
                 type="button"
                 onClick={() => setPeriod(p)}
-                  className={`rounded px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
+                className={`rounded px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
                   period === p
                     ? "bg-revenue-green-dark text-white"
                     : "text-ink-muted hover:text-ink"
                 }`}
               >
-                {p}
+                {p === "daily"
+                  ? t("adminAnalytics.daily")
+                  : t("adminAnalytics.monthly")}
               </button>
             ))}
           </div>
         </div>
 
         <div className="p-3.5 sm:p-4">
-        {revenueError && (
-          <p className="mb-3 text-sm text-status-cancelled-text">
-            {getApiErrorMessage(revenueError)}
-          </p>
-        )}
-        {revenueLoading && (
-          <div className="h-[260px] animate-pulse rounded-md bg-steam" />
-        )}
-        {!revenueLoading && revenue && (
-          <RevenueChart points={revenue.results} period={revenue.period} />
-        )}
+          {revenueError && (
+            <p className="mb-3 text-sm text-status-cancelled-text">
+              {getApiErrorMessage(revenueError)}
+            </p>
+          )}
+          {revenueLoading && (
+            <div className="h-[260px] animate-pulse rounded-md bg-steam" />
+          )}
+          {!revenueLoading && revenue && (
+            <RevenueChart points={revenue.results} period={revenue.period} />
+          )}
         </div>
       </Card>
 
       <div className="mb-4 mt-6 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-sm font-medium text-ink">Expenses</h2>
+        <h2 className="font-display text-sm font-medium text-ink">
+          {t("adminExpenses.title")}
+        </h2>
         <div className="flex flex-wrap items-center gap-2">
           <Select
             value={expenseCategory}
@@ -206,9 +244,9 @@ export default function AdminAnalyticsPage() {
               setExpensePage(1);
             }}
             className="w-44"
-            aria-label="Filter expenses by category"
+            aria-label={t("adminAnalytics.filterExpensesCategory")}
           >
-            {CATEGORY_FILTER_OPTIONS.map((opt) => (
+            {categoryFilterOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
@@ -216,7 +254,7 @@ export default function AdminAnalyticsPage() {
           </Select>
           <Button variant="gold" onClick={() => setShowAddExpense((v) => !v)}>
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Add expense
+            {t("adminAnalytics.addExpense")}
           </Button>
         </div>
       </div>
@@ -235,27 +273,31 @@ export default function AdminAnalyticsPage() {
 
       <TableContainer>
         <THead>
-          <Th>Date</Th>
-          <Th>Category</Th>
-          <Th>Notes</Th>
-          <Th align="right">Amount</Th>
+          <Th>{t("adminAnalytics.colDate")}</Th>
+          <Th>{t("adminAnalytics.colCategory")}</Th>
+          <Th>{t("adminAnalytics.colNotes")}</Th>
+          <Th align="right">{t("adminAnalytics.colAmount")}</Th>
         </THead>
         <TBody>
           {expensesLoading && <TableSkeleton columns={4} />}
           {!expensesLoading && expenses && expenses.results.length === 0 && (
             <TableEmptyRow colSpan={4}>
               {expenseCategory === "ALL"
-                ? "No expenses recorded in this range."
-                : "No expenses match this filter."}
+                ? t("adminAnalytics.noExpensesRange")
+                : t("adminAnalytics.noExpensesFilter")}
             </TableEmptyRow>
           )}
           {!expensesLoading &&
             expenses?.results.map((expense) => (
               <Tr key={expense.id}>
                 <Td className="whitespace-nowrap text-ink-muted">
-                  {new Date(expense.date).toLocaleDateString()}
+                  {new Date(expense.date).toLocaleDateString(
+                    locale === "fr" ? "fr-FR" : "en-US",
+                  )}
                 </Td>
-                <Td>{CATEGORY_LABELS[expense.category]}</Td>
+                <Td>
+                  {categoryLabels[expense.category] ?? expense.category}
+                </Td>
                 <Td className="text-ink-muted">
                   {expense.notes || <span>—</span>}
                 </Td>

@@ -8,36 +8,35 @@ import {
   Truck,
 } from "lucide-react";
 
+import { useI18n } from "@/src/i18n/I18nProvider";
 import { Reveal } from "./Reveal";
 
-const STEPS = [
-  {
-    icon: CalendarClock,
-    title: "Reserve a window",
-    description:
-      "Choose a pickup slot from your phone. We confirm the address and the service — wash, iron, or dry-clean — before a runner is ever dispatched.",
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Weighed and logged",
-    description:
-      "Every bag is weighed at your door, itemized on a duplicate ticket, and entered against your order number. Nothing travels unaccounted for.",
-  },
-  {
-    icon: Truck,
-    title: "Cleaned to spec",
-    description:
-      "Garments are sorted by fabric and service line, then cleaned, pressed, or dry-cleaned by staff trained on that specific line — not a single generic wash.",
-  },
-  {
-    icon: PackageCheck,
-    title: "Returned, checked",
-    description:
-      "Folded or hung, inspected against the original ticket, and delivered back to your door. You settle by cash, MTN, or Orange Money on arrival.",
-  },
-];
-
 export function AtelierProcess() {
+  const { t } = useI18n();
+
+  const steps = [
+    {
+      icon: CalendarClock,
+      title: t("marketing.step1Title"),
+      description: t("marketing.step1Desc"),
+    },
+    {
+      icon: ClipboardCheck,
+      title: t("marketing.step2Title"),
+      description: t("marketing.step2Desc"),
+    },
+    {
+      icon: Truck,
+      title: t("marketing.step3Title"),
+      description: t("marketing.step3Desc"),
+    },
+    {
+      icon: PackageCheck,
+      title: t("marketing.step4Title"),
+      description: t("marketing.step4Desc"),
+    },
+  ];
+
   return (
     <section className="relative isolate overflow-hidden py-14 sm:py-20 md:py-28">
       {/* Decorative background image */}
@@ -71,21 +70,20 @@ export function AtelierProcess() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6">
         <Reveal className="max-w-xl">
           <span className="at-display text-xs font-semibold uppercase tracking-[0.24em] text-[var(--at-brass-bright)]">
-            The process
+            {t("marketing.processEyebrow")}
           </span>
 
           <h2 className="at-display mt-2 text-2xl font-bold leading-tight text-[var(--at-ivory)] sm:mt-3 sm:text-3xl md:text-4xl">
-            A fixed sequence, not a best effort.
+            {t("marketing.processTitle")}
           </h2>
 
           <p className="mt-3 text-sm leading-6 text-[var(--at-slate)] sm:mt-4 sm:text-base sm:leading-relaxed">
-            {`The same four stages run on every order, from a single shirt to a
-            household's weekly wash. Consistency is the actual product.`}
+            {t("marketing.processDescription")}
           </p>
         </Reveal>
 
         <div className="mt-8 grid grid-cols-2 gap-x-5 gap-y-8 sm:mt-12 md:mt-16 md:grid-cols-4 md:gap-x-10 md:gap-y-14">
-          {STEPS.map((step, i) => {
+          {steps.map((step, i) => {
             const Icon = step.icon;
 
             return (

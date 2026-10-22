@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Coins, Mail, MapPin, Phone, Save } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useParams } from "next/navigation";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 import {
   TableContainer,
@@ -34,6 +35,7 @@ const CREDIT_TX_LABEL: Record<string, string> = {
 };
 
 export default function AdminCustomerDetailPage() {
+  const { locale, t } = useI18n();
   const params = useParams<{ id: string }>();
   const customerId = Number(params.id);
   const queryClient = useQueryClient();
@@ -59,7 +61,7 @@ export default function AdminCustomerDetailPage() {
   if (isLoading) {
     return (
       <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9 text-sm text-ink-muted">
-        Loading...
+        {t("adminCommon.loading")}
       </main>
     );
   }
@@ -72,7 +74,7 @@ export default function AdminCustomerDetailPage() {
           className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to customers
+          {t("adminCustomers.backToCustomers")}
         </Link>
         <p className="text-sm text-status-cancelled-text">
           {getApiErrorMessage(error)}
@@ -93,7 +95,7 @@ export default function AdminCustomerDetailPage() {
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to customers
+        {t("adminCustomers.backToCustomers")}
       </Link>
 
       <div className="mb-6 flex items-start justify-between gap-4">
@@ -104,19 +106,19 @@ export default function AdminCustomerDetailPage() {
             {fullName}
           </h1>
           <p className="mt-0.5 text-xs text-ink-muted">
-            Customer since {new Date(customer.created_at).toLocaleDateString()}
+            {t("adminCustomers.customerSince")}{" "}{new Date(customer.created_at).toLocaleDateString(locale)}
           </p>
           </div>
         </div>
         {!customer.is_active && (
-          <StatusBadge label="Inactive" tone="cancelled" />
+          <StatusBadge label={t("adminCustomers.inactiveBadge")} tone="cancelled" />
         )}
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Card>
           <h2 className="font-display mb-3 text-sm font-medium text-ink">
-            Contact
+            {t("adminCustomers.contactHeading")}
           </h2>
           <div className="space-y-2 text-sm text-ink-muted">
             <p className="flex items-center gap-2">
@@ -147,18 +149,18 @@ export default function AdminCustomerDetailPage() {
 
         <Card>
           <h2 className="font-display mb-3 text-sm font-medium text-ink">
-            At a glance
+            {t("adminCustomers.atAGlanceHeading")}
           </h2>
           <dl className="grid grid-cols-2 gap-y-3 text-sm">
-            <dt className="text-ink-muted">Orders</dt>
+            <dt className="text-ink-muted">{t("adminCustomers.orders")}</dt>
             <dd className="text-right font-medium text-ink">
               {customer.orders_count}
             </dd>
-            <dt className="text-ink-muted">Lifetime spend</dt>
+            <dt className="text-ink-muted">{t("adminCustomers.spend")}</dt>
             <dd className="text-right font-medium tabular-nums text-ink">
               {formatCurrency(customer.lifetime_spend)}
             </dd>
-            <dt className="text-ink-muted">Loyalty tier</dt>
+            <dt className="text-ink-muted">{t("adminCustomers.tier")}</dt>
             <dd className="text-right">
               {customer.loyalty_tier ? (
                 <StatusBadge
@@ -171,11 +173,11 @@ export default function AdminCustomerDetailPage() {
                 <span className="text-ink-muted">—</span>
               )}
             </dd>
-            <dt className="text-ink-muted">Loyalty points</dt>
+            <dt className="text-ink-muted">{t("adminCustomers.pointsBalance")}</dt>
             <dd className="text-right font-medium tabular-nums text-ink">
               {customer.loyalty.points_balance}
             </dd>
-            <dt className="text-ink-muted">Credit owed</dt>
+            <dt className="text-ink-muted">{t("adminCustomers.credit")}</dt>
             <dd
               className={`text-right font-medium tabular-nums ${creditOwed ? "text-status-cancelled-text" : "text-ink"}`}
             >
@@ -187,7 +189,7 @@ export default function AdminCustomerDetailPage() {
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <Card>
-          <h2 className="mb-3 text-sm font-semibold text-navy">Customer record</h2>
+          <h2 className="mb-3 text-sm font-semibold text-navy">{t("adminCustomers.editCustomerHeading")}</h2>
           <form key={`${customer.id}-${customer.notes}-${customer.tags.join("-")}`} className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => {
             event.preventDefault(); const data = new FormData(event.currentTarget);
             updateCustomer.mutate({
@@ -199,17 +201,17 @@ export default function AdminCustomerDetailPage() {
               marketing_opt_in: data.get("marketing_opt_in") === "on",
             });
           }}>
-            <Field label="First name" htmlFor="customer-first"><Input id="customer-first" name="first_name" defaultValue={customer.first_name} /></Field>
-            <Field label="Last name" htmlFor="customer-last"><Input id="customer-last" name="last_name" defaultValue={customer.last_name} /></Field>
-            <Field label="Email" htmlFor="customer-email"><Input id="customer-email" name="email" type="email" defaultValue={customer.email ?? ""} /></Field>
+            <Field label={t("settings.firstName")} htmlFor="customer-first"><Input id="customer-first" name="first_name" defaultValue={customer.first_name} /></Field>
+            <Field label={t("settings.lastName")} htmlFor="customer-last"><Input id="customer-last" name="last_name" defaultValue={customer.last_name} /></Field>
+            <Field label={t("settings.email")} htmlFor="customer-email"><Input id="customer-email" name="email" type="email" defaultValue={customer.email ?? ""} /></Field>
             <Field label="Secondary phone" htmlFor="customer-secondary"><Input id="customer-secondary" name="secondary_phone" defaultValue={customer.secondary_phone} /></Field>
             <Field label="WhatsApp" htmlFor="customer-whatsapp"><Input id="customer-whatsapp" name="whatsapp_number" defaultValue={customer.whatsapp_number} /></Field>
-            <Field label="Source" htmlFor="customer-source"><Select id="customer-source" name="source" defaultValue={customer.source}>{["ONLINE", "WALK_IN", "REFERRAL", "OTHER"].map((source) => <option key={source}>{source.replace(/_/g, " ")}</option>)}</Select></Field>
-            <Field label="Default pickup address" htmlFor="customer-pickup"><Input id="customer-pickup" name="default_pickup_address" defaultValue={customer.default_pickup_address} /></Field>
+            <Field label={t("adminOrders.colSource")} htmlFor="customer-source"><Select id="customer-source" name="source" defaultValue={customer.source}>{["ONLINE", "WALK_IN", "REFERRAL", "OTHER"].map((source) => <option key={source}>{source.replace(/_/g, " ")}</option>)}</Select></Field>
+            <Field label={t("adminOrders.pickupAddress")} htmlFor="customer-pickup"><Input id="customer-pickup" name="default_pickup_address" defaultValue={customer.default_pickup_address} /></Field>
             <Field label="Tags" htmlFor="customer-tags" hint="Comma-separated"><Input id="customer-tags" name="tags" defaultValue={customer.tags.join(", ")} /></Field>
-            <div className="sm:col-span-2"><Field label="Staff notes" htmlFor="customer-notes"><Textarea id="customer-notes" name="notes" rows={2} defaultValue={customer.notes} /></Field></div>
+            <div className="sm:col-span-2"><Field label={t("adminOrders.internalNotes")} htmlFor="customer-notes"><Textarea id="customer-notes" name="notes" rows={2} defaultValue={customer.notes} /></Field></div>
             <label className="flex items-center gap-2 text-sm text-ink"><input type="checkbox" name="marketing_opt_in" defaultChecked={customer.marketing_opt_in} /> Marketing opt-in</label>
-            <div className="flex justify-end"><Button size="sm" type="submit" disabled={updateCustomer.isPending}><Save className="h-3.5 w-3.5" /> Save customer</Button></div>
+            <div className="flex justify-end"><Button size="sm" type="submit" disabled={updateCustomer.isPending}><Save className="h-3.5 w-3.5" /> {t("adminCustomers.saveCustomerBtn")}</Button></div>
           </form>
           {updateCustomer.error ? <p className="mt-2 text-xs text-status-cancelled-text">{getApiErrorMessage(updateCustomer.error)}</p> : null}
         </Card>
@@ -227,10 +229,10 @@ export default function AdminCustomerDetailPage() {
             adjustPoints.mutate({ points: Number(data.get("points")), reason: String(data.get("reason")) });
             event.currentTarget.reset();
           }}>
-            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-navy"><Coins className="h-4 w-4" /> Adjust loyalty</p>
-            <Field label="Points (+ or −)" htmlFor="loyalty-points"><Input id="loyalty-points" name="points" type="number" required /></Field>
-            <Field label="Reason" htmlFor="loyalty-reason"><Input id="loyalty-reason" name="reason" required /></Field>
-            <Button size="sm" type="submit" disabled={adjustPoints.isPending}>Apply adjustment</Button>
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-navy"><Coins className="h-4 w-4" /> {t("adminCustomers.loyaltyPointsHeading")}</p>
+            <Field label={t("adminCustomers.pointsLabel")} htmlFor="loyalty-points"><Input id="loyalty-points" name="points" type="number" required /></Field>
+            <Field label={t("adminCustomers.reasonLabel")} htmlFor="loyalty-reason"><Input id="loyalty-reason" name="reason" placeholder={t("adminCustomers.reasonPlaceholder")} required /></Field>
+            <Button size="sm" type="submit" disabled={adjustPoints.isPending}>{t("adminCustomers.adjustPointsBtn")}</Button>
           </form>
           {adjustPoints.error ? <p className="mt-2 text-xs text-status-cancelled-text">{getApiErrorMessage(adjustPoints.error)}</p> : null}
         </Card>
@@ -238,21 +240,21 @@ export default function AdminCustomerDetailPage() {
 
       <div className="mt-8 flex items-center justify-between">
         <h2 className="font-display text-sm font-medium text-ink">
-          Recent orders
+          {t("adminCustomers.recentOrdersHeading")}
         </h2>
         <span className="text-xs text-ink-muted">Last 10</span>
       </div>
       <div className="mt-3">
         <TableContainer>
           <THead>
-            <Th>Order</Th>
-            <Th>Placed</Th>
-            <Th align="right">Total</Th>
-            <Th>Status</Th>
+            <Th>{t("adminOrders.colOrder")}</Th>
+            <Th>{t("adminOrders.colPlaced")}</Th>
+            <Th align="right">{t("adminOrders.colTotal")}</Th>
+            <Th>{t("adminOrders.colStatus")}</Th>
           </THead>
           <TBody>
             {customer.recent_orders.length === 0 && (
-              <TableEmptyRow colSpan={4}>No orders yet.</TableEmptyRow>
+              <TableEmptyRow colSpan={4}>{t("adminOrders.noOrders")}</TableEmptyRow>
             )}
             {customer.recent_orders.map((order) => (
               <Tr key={order.id}>
@@ -265,7 +267,7 @@ export default function AdminCustomerDetailPage() {
                   </Link>
                 </Td>
                 <Td className="whitespace-nowrap text-ink-muted">
-                  {new Date(order.created_at).toLocaleDateString()}
+                  {new Date(order.created_at).toLocaleDateString(locale)}
                 </Td>
                 <Td align="right" className="tabular-nums">
                   {formatCurrency(order.total_amount)}
@@ -284,22 +286,22 @@ export default function AdminCustomerDetailPage() {
 
       <div className="mt-8 flex items-center justify-between">
         <h2 className="font-display text-sm font-medium text-ink">
-          Credit ledger
+          {t("adminCustomers.creditLedgerHeading")}
         </h2>
         <span className="text-xs text-ink-muted">Last 10</span>
       </div>
       <div className="mt-3">
         <TableContainer>
           <THead>
-            <Th>Type</Th>
-            <Th align="right">Amount</Th>
-            <Th>Note</Th>
-            <Th align="right">When</Th>
+            <Th>{t("adminCustomers.txType")}</Th>
+            <Th align="right">{t("adminFinance.amount")}</Th>
+            <Th>{t("adminOrders.note")}</Th>
+            <Th align="right">{t("adminOrders.when")}</Th>
           </THead>
           <TBody>
             {customer.recent_credit_transactions.length === 0 && (
               <TableEmptyRow colSpan={4}>
-                No credit activity — this customer doesn&apos;t have a tab.
+                {t("adminCustomers.noCreditTx")}
               </TableEmptyRow>
             )}
             {customer.recent_credit_transactions.map((tx) => (
@@ -313,7 +315,7 @@ export default function AdminCustomerDetailPage() {
                 </Td>
                 <Td className="text-ink-muted">{tx.note || "—"}</Td>
                 <Td align="right" className="whitespace-nowrap text-ink-muted">
-                  {new Date(tx.created_at).toLocaleString()}
+                  {new Date(tx.created_at).toLocaleString(locale)}
                 </Td>
               </Tr>
             ))}

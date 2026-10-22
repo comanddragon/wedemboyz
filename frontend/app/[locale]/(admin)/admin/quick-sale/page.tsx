@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { CircleCheck, ShoppingBag } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import { useMemo, useState } from "react";
 
 import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
@@ -44,6 +45,7 @@ function emptyLineItemsTotal(items: QuickSaleLineItem[]): number | null {
 }
 
 export default function AdminQuickSalePage() {
+  const { t } = useI18n();
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [items, setItems] = useState<QuickSaleLineItem[]>([]);
@@ -52,6 +54,14 @@ export default function AdminQuickSalePage() {
   const [deliveryFee, setDeliveryFee] = useState("");
   const [notes, setNotes] = useState("");
   const [result, setResult] = useState<QuickSaleResult | null>(null);
+
+  const paymentMethods: { value: PaymentMethodType; label: string }[] = [
+    { value: "CASH", label: t("adminFinance.cash") },
+    { value: "MTN_MOMO", label: "MTN Mobile Money" },
+    { value: "ORANGE_MONEY", label: "Orange Money" },
+    { value: "BANK_TRANSFER", label: t("adminFinance.transfer") },
+    { value: "OTHER", label: t("adminFinance.other") },
+  ];
 
   const estimatedTotal = useMemo(() => emptyLineItemsTotal(items), [items]);
 
@@ -92,20 +102,20 @@ export default function AdminQuickSalePage() {
             <CircleCheck className="h-6 w-6" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-lg font-semibold text-navy">Sale recorded</p>
+            <p className="text-lg font-semibold text-navy">{t("adminQuickSale.saleRecorded")}</p>
             <p className="mt-1 text-sm text-ink-muted">
-              Order{" "}
+              {t("adminQuickSale.orderLabel")}{" "}
               <span className="font-medium text-ink">#{result.order.id}</span> —{" "}
               {formatCurrency(result.order.total_amount)}
-              {result.on_credit && " (on the customer's credit tab)"}
+              {result.on_credit && t("adminQuickSale.onCreditSuffix")}
             </p>
           </div>
           <div className="mt-4 flex gap-3">
             <Link href={`/admin/orders/${result.order.id}`}>
-              <Button variant="secondary">View order</Button>
+              <Button variant="secondary">{t("adminQuickSale.viewOrderBtn")}</Button>
             </Link>
             <Button variant="gold" onClick={resetForm}>
-              Start another sale
+              {t("adminQuickSale.startAnotherSale")}
             </Button>
           </div>
         </Card>
@@ -116,8 +126,8 @@ export default function AdminQuickSalePage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
-        title="Quick sale"
-        description="Record a walk-in sale without the online booking flow. The customer is found or created by phone number."
+        title={t("adminQuickSale.title")}
+        description={t("adminQuickSale.description")}
       />
 
       <div className="grid items-start gap-6 lg:grid-cols-2 xl:gap-10">
@@ -128,14 +138,14 @@ export default function AdminQuickSalePage() {
                 <ShoppingBag className="h-[18px] w-[18px]" aria-hidden="true" />
               </span>
               <h2 className="font-display text-sm font-medium text-ink">
-                Customer
+                {t("adminQuickSale.customerHeading")}
               </h2>
             </div>
 
             <Field
-              label="Phone number"
+              label={t("adminQuickSale.customerPhone")}
               htmlFor="qs-phone"
-              hint="Existing customers are matched by this number."
+              hint={t("adminQuickSale.customerPhoneHint")}
             >
               <Input
                 id="qs-phone"
@@ -146,14 +156,14 @@ export default function AdminQuickSalePage() {
               />
             </Field>
             <Field
-              label="Name (only used if this is a new customer)"
+              label={t("adminQuickSale.customerNameLabel")}
               htmlFor="qs-name"
             >
               <Input
                 id="qs-name"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="e.g. Aïcha Ngo"
+                placeholder={t("adminQuickSale.customerNameHint")}
               />
             </Field>
           </Card>
@@ -161,7 +171,7 @@ export default function AdminQuickSalePage() {
           <CreaseDivider />
 
           <h2 className="font-display mb-3 text-sm font-medium text-ink">
-            Items
+            {t("adminQuickSale.itemsCount")}
           </h2>
           <QuickSaleItems
             items={items}
@@ -175,14 +185,14 @@ export default function AdminQuickSalePage() {
         <div>
           <Card>
             <h2 className="font-display mb-3 text-sm font-medium text-ink">
-              Payment
+              {t("adminQuickSale.paymentHeading")}
             </h2>
 
             <fieldset className="space-y-2">
               <legend className="mb-2 text-sm font-medium text-ink">
-                Payment method
+                {t("adminQuickSale.paymentMethodLegend")}
               </legend>
-              {PAYMENT_METHODS.map((method) => (
+              {paymentMethods.map((method) => (
                 <label
                   key={method.value}
                   className={`flex cursor-pointer items-center gap-2 rounded-xl border border-crease px-3.5 py-2.5 text-sm transition-colors hover:border-navy/40 ${
@@ -211,16 +221,16 @@ export default function AdminQuickSalePage() {
                 checked={paidNow}
                 onChange={(e) => setPaidNow(e.target.checked)}
               />
-              Payment received now
+              {t("adminQuickSale.paymentReceivedNow")}
             </label>
             {!paidNow && (
               <p className="mt-2 text-xs text-ink-muted">
-                The sale will remain unpaid until staff records a payment.
+                {t("adminQuickSale.unpaidNotice")}
               </p>
             )}
 
             <div className="mt-4">
-              <Field label="Delivery fee (optional, XAF)" htmlFor="qs-delivery">
+              <Field label={t("adminQuickSale.deliveryFeeLabel")} htmlFor="qs-delivery">
                 <Input
                   id="qs-delivery"
                   type="number"
@@ -232,7 +242,7 @@ export default function AdminQuickSalePage() {
                 />
               </Field>
             </div>
-            <Field label="Notes (optional)" htmlFor="qs-notes">
+            <Field label={t("adminQuickSale.notesLabel")} htmlFor="qs-notes">
               <Textarea
                 id="qs-notes"
                 value={notes}
@@ -242,7 +252,7 @@ export default function AdminQuickSalePage() {
 
             {estimatedTotal != null && (
               <p className="mb-2 text-sm text-ink-muted">
-                Estimated total (manual prices only):{" "}
+                {t("adminQuickSale.estimatedTotalManual")}{" "}
                 <span className="font-medium text-ink">
                   {formatCurrency(estimatedTotal)}
                 </span>
@@ -250,8 +260,7 @@ export default function AdminQuickSalePage() {
             )}
             {items.some((i) => i.unit_price == null) && (
               <p className="mb-2 text-xs text-ink-muted">
-                Some items will be auto-priced — the exact total is confirmed
-                after submitting.
+                {t("adminQuickSale.autoPriceNotice")}
               </p>
             )}
 
@@ -266,7 +275,7 @@ export default function AdminQuickSalePage() {
               disabled={!isValid || submitMutation.isPending}
               className="w-full"
             >
-              {submitMutation.isPending ? "Recording sale..." : "Record sale"}
+              {submitMutation.isPending ? t("adminQuickSale.recordingSale") : t("adminQuickSale.recordSale")}
             </Button>
           </Card>
         </div>

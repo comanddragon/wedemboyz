@@ -2,12 +2,14 @@
 
 import Image from "next/image";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function AtelierHero() {
+  const { t } = useI18n();
   const shouldReduceMotion = useReducedMotion();
 
   const stagger = (i: number) => ({
@@ -45,18 +47,17 @@ export function AtelierHero() {
             {...stagger(0)}
             className="at-display max-w-xl text-[clamp(2.15rem,10vw,4rem)] font-bold leading-[0.98] tracking-[-0.035em] text-[var(--at-ivory)]"
           >
-            Garment care,{" "}
-            <span className="at-shimmer-text">handled like an art</span>.
+            {t("marketing.heroTitlePrefix")}
+            <span className="at-shimmer-text">
+              {t("marketing.heroTitleHighlight")}
+            </span>
           </motion.h1>
 
           <motion.p
             {...stagger(1)}
             className="mt-4 max-w-md text-[0.84rem] leading-6 text-[var(--at-slate)] sm:mt-6 sm:text-lg sm:leading-relaxed"
           >
-            Wedemboyz Lavomatique collects, cleans, and presses your wardrobe with the
-            discipline of a proper atelier — then returns it to your door. No
-            storefront queue, no counter clerk guessing your fabric. Just a
-            precise, accountable process, city-wide.
+            {t("marketing.heroDescription")}
           </motion.p>
 
           <motion.div
@@ -67,7 +68,7 @@ export function AtelierHero() {
               href="/book"
               className="at-focus at-btn-primary group inline-flex min-h-11 items-center justify-center gap-1.5 rounded-sm px-3 py-2.5 text-[0.68rem] font-semibold uppercase tracking-wide transition-colors sm:min-h-12 sm:gap-2 sm:px-7 sm:py-3.5 sm:text-sm sm:tracking-wider"
             >
-              Schedule a pickup
+              {t("marketing.schedulePickup")}
               <ArrowRight
                 className="h-4 w-4 transition-transform group-hover:translate-x-1"
                 aria-hidden="true"
@@ -77,7 +78,7 @@ export function AtelierHero() {
               href="/pricing"
               className="at-focus inline-flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-[var(--at-line-strong)] px-3 py-2.5 text-[0.68rem] font-semibold uppercase tracking-wide text-[var(--at-ivory)] transition-colors hover:border-[var(--at-brass)] hover:text-[var(--at-brass-bright)] sm:min-h-12 sm:gap-2 sm:px-7 sm:py-3.5 sm:text-sm sm:tracking-wider"
             >
-              View the tariff
+              {t("marketing.viewTariff")}
             </Link>
           </motion.div>
 
@@ -86,9 +87,9 @@ export function AtelierHero() {
             className="mt-7 grid max-w-lg grid-cols-3 gap-2 border-t border-[var(--at-line)] pt-4 sm:mt-16 sm:gap-6 sm:pt-8"
           >
             {[
-              ["12,000+", "Garments returned"],
-              ["48 hrs", "Median turnaround"],
-              ["4.8 / 5", "Client rating"],
+              ["12,000+", t("marketing.statGarments")],
+              ["48 hrs", t("marketing.statTurnaround")],
+              ["4.8 / 5", t("marketing.statRating")],
             ].map(([value, label]) => (
               <div key={label}>
                 <dt className="sr-only">{label}</dt>

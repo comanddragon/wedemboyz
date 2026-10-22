@@ -33,57 +33,74 @@ import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import { customerFullName, customerNumber } from "@/src/lib/utils";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type {
   OrderListItem,
   OrderPaymentStatus,
   OrderStatus,
 } from "@/src/types";
 
-const STATUS_OPTIONS: { value: OrderStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "All statuses" },
-  { value: "PENDING", label: "Pending" },
-  { value: "CONFIRMED", label: "Confirmed" },
-  { value: "IN_PROGRESS", label: "In progress" },
-  { value: "READY", label: "Ready" },
-  { value: "OUT_FOR_DELIVERY", label: "Out for delivery" },
-  { value: "DELIVERED", label: "Delivered" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
-
-const PAYMENT_OPTIONS: { value: OrderPaymentStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "All payment states" },
-  { value: "UNPAID", label: "Unpaid" },
-  { value: "PARTIALLY_PAID", label: "Partially paid" },
-  { value: "PAID", label: "Paid" },
-  { value: "OVERPAID", label: "Overpaid" },
-  { value: "NO_CHARGE", label: "No charge" },
-  { value: "WAIVED", label: "Waived" },
-  { value: "REFUNDED", label: "Refunded" },
-];
-
 const SOURCE_OPTIONS = ["ALL", "ONLINE", "WALK_IN", "PHONE", "STAFF"] as const;
 
 type SortKey =
-  "id" | "customer" | "phone_number" | "created_at" | "total_amount" | "status";
+  | "id"
+  | "customer"
+  | "phone_number"
+  | "created_at"
+  | "total_amount"
+  | "status";
 
 export default function AdminOrdersPage() {
   const router = useRouter();
+  const { locale, t } = useI18n();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "ALL">("ALL");
   const [paymentFilter, setPaymentFilter] = useState<
     OrderPaymentStatus | "ALL"
   >("ALL");
-  const [sourceFilter, setSourceFilter] = useState<(typeof SOURCE_OPTIONS)[number]>("ALL");
-  const [priorityFilter, setPriorityFilter] = useState<"ALL" | "NORMAL" | "EXPRESS" | "URGENT">("ALL");
+  const [sourceFilter, setSourceFilter] =
+    useState<(typeof SOURCE_OPTIONS)[number]>("ALL");
+  const [priorityFilter, setPriorityFilter] = useState<
+    "ALL" | "NORMAL" | "EXPRESS" | "URGENT"
+  >("ALL");
   const [periodFilter, setPeriodFilter] = useState("ALL");
+
+  const statusOptions: { value: OrderStatus | "ALL"; label: string }[] = [
+    { value: "ALL", label: t("adminOrders.allStatuses") },
+    { value: "PENDING", label: t("common.statuses.pending") },
+    { value: "CONFIRMED", label: t("common.statuses.confirmed") },
+    { value: "IN_PROGRESS", label: t("common.statuses.inProgress") },
+    { value: "READY", label: t("common.statuses.ready") },
+    { value: "OUT_FOR_DELIVERY", label: t("common.statuses.outForDelivery") },
+    { value: "DELIVERED", label: t("common.statuses.delivered") },
+    { value: "CANCELLED", label: t("common.statuses.cancelled") },
+  ];
+
+  const paymentOptions: { value: OrderPaymentStatus | "ALL"; label: string }[] =
+    [
+      { value: "ALL", label: t("adminOrders.allPayments") },
+      { value: "UNPAID", label: t("common.statuses.unpaid") },
+      { value: "PARTIALLY_PAID", label: t("common.statuses.partiallyPaid") },
+      { value: "PAID", label: t("common.statuses.paid") },
+      { value: "OVERPAID", label: t("common.statuses.overpaid") },
+      { value: "NO_CHARGE", label: t("common.statuses.noCharge") },
+      { value: "WAIVED", label: t("common.statuses.waived") },
+      { value: "REFUNDED", label: t("common.statuses.refunded") },
+    ];
 
   const staffQuery = useQuery({
     queryKey: ["staff", "operations"],
     queryFn: () => staffApi.listOperationalStaff(),
   });
   const staffNames = useMemo(
-    () => new Map(staffQuery.data?.map((profile) => [profile.user.id, `${profile.user.first_name} ${profile.user.last_name}`.trim()]) ?? []),
+    () =>
+      new Map(
+        staffQuery.data?.map((profile) => [
+          profile.user.id,
+          `${profile.user.first_name} ${profile.user.last_name}`.trim(),
+        ]) ?? [],
+      ),
     [staffQuery.data],
   );
 
@@ -112,9 +129,16 @@ export default function AdminOrdersPage() {
         String(order.id).includes(term) ||
         name.includes(term) ||
         number.includes(term);
-      const matchesPriority = priorityFilter === "ALL" || order.priority === priorityFilter;
-      const cutoff = periodFilter === "7" ? Date.now() - 7 * 864e5 : periodFilter === "30" ? Date.now() - 30 * 864e5 : 0;
-      const matchesPeriod = !cutoff || new Date(order.created_at).getTime() >= cutoff;
+      const matchesPriority =
+        priorityFilter === "ALL" || order.priority === priorityFilter;
+      const cutoff =
+        periodFilter === "7"
+          ? Date.now() - 7 * 864e5
+          : periodFilter === "30"
+            ? Date.now() - 30 * 864e5
+            : 0;
+      const matchesPeriod =
+        !cutoff || new Date(order.created_at).getTime() >= cutoff;
       return matchesSearch && matchesPriority && matchesPeriod;
     });
   }, [data, search, priorityFilter, periodFilter]);
@@ -142,17 +166,17 @@ export default function AdminOrdersPage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
-        title="Orders"
-        description="Every customer's orders — staff see the same GET /orders/ list customers see, just unfiltered."
+        title={t("adminOrders.title")}
+        description={t("adminOrders.description")}
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
-          placeholder="Search this page by order # or customer name"
+          placeholder={t("adminOrders.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="sm:max-w-xs"
-          aria-label="Search orders on this page"
+          aria-label={t("adminOrders.searchPlaceholder")}
         />
         <Select
           value={statusFilter}
@@ -162,28 +186,61 @@ export default function AdminOrdersPage() {
           className="sm:w-52"
           aria-label="Filter by status"
         >
-          {STATUS_OPTIONS.map((opt) => (
+          {statusOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
           ))}
         </Select>
-        <Select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as typeof priorityFilter)} className="sm:w-40" aria-label="Filter by priority">
-          <option value="ALL">All priorities</option><option value="NORMAL">Normal</option><option value="EXPRESS">Express</option><option value="URGENT">Urgent</option>
+        <Select
+          value={priorityFilter}
+          onChange={(e) =>
+            setPriorityFilter(e.target.value as typeof priorityFilter)
+          }
+          className="sm:w-40"
+          aria-label="Filter by priority"
+        >
+          <option value="ALL">{t("adminOrders.allPriorities")}</option>
+          <option value="NORMAL">{t("adminOrders.priorityNormal")}</option>
+          <option value="EXPRESS">{t("adminOrders.priorityExpress")}</option>
+          <option value="URGENT">{t("adminOrders.priorityUrgent")}</option>
         </Select>
-        <Select value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value)} className="sm:w-40" aria-label="Filter by date">
-          <option value="ALL">Any date</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option>
+        <Select
+          value={periodFilter}
+          onChange={(e) => setPeriodFilter(e.target.value)}
+          className="sm:w-40"
+          aria-label="Filter by date"
+        >
+          <option value="ALL">{t("adminOrders.anyDate")}</option>
+          <option value="7">{t("adminOrders.last7")}</option>
+          <option value="30">{t("adminOrders.last30")}</option>
         </Select>
-        <Button variant="ghost" onClick={() => { setSearch(""); setStatusFilter("ALL"); setPaymentFilter("ALL"); setSourceFilter("ALL"); setPriorityFilter("ALL"); setPeriodFilter("ALL"); }}>Clear</Button>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setSearch("");
+            setStatusFilter("ALL");
+            setPaymentFilter("ALL");
+            setSourceFilter("ALL");
+            setPriorityFilter("ALL");
+            setPeriodFilter("ALL");
+          }}
+        >
+          {t("adminCommon.clear")}
+        </Button>
         <Select
           value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value as (typeof SOURCE_OPTIONS)[number])}
+          onChange={(e) =>
+            setSourceFilter(e.target.value as (typeof SOURCE_OPTIONS)[number])
+          }
           className="sm:w-40"
           aria-label="Filter by order source"
         >
           {SOURCE_OPTIONS.map((source) => (
             <option key={source} value={source}>
-              {source === "ALL" ? "All sources" : source.replace(/_/g, " ")}
+              {source === "ALL"
+                ? t("adminOrders.allSources")
+                : source.replace(/_/g, " ")}
             </option>
           ))}
         </Select>
@@ -195,7 +252,7 @@ export default function AdminOrdersPage() {
           className="sm:w-52"
           aria-label="Filter by payment status"
         >
-          {PAYMENT_OPTIONS.map((opt) => (
+          {paymentOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -203,8 +260,9 @@ export default function AdminOrdersPage() {
         </Select>
         {data && (
           <p className="text-xs text-ink-muted sm:ml-auto">
-            {filtered?.length ?? 0} of {data.results.length} on this page ·{" "}
-            {data.count} total
+            {filtered?.length ?? 0} {t("adminCommon.of")} {data.results.length}{" "}
+            {t("adminOrders.onThisPage")} · {data.count}{" "}
+            {t("adminOrders.totalOrders")}
           </p>
         )}
       </div>
@@ -218,36 +276,36 @@ export default function AdminOrdersPage() {
       <TableContainer>
         <THead>
           <SortableTh
-            label="Order"
+            label={t("adminOrders.colOrder")}
             active={directionFor("id") !== null}
             direction={directionFor("id")}
             onSort={() => toggle("id")}
           />
-          <Th>Source</Th>
+          <Th>{t("adminOrders.colSource")}</Th>
           <SortableTh
-            label="Customer"
+            label={t("adminOrders.colCustomer")}
             active={directionFor("customer") !== null}
             direction={directionFor("customer")}
             onSort={() => toggle("customer")}
           />
-          <Th>Assigned</Th>
-          <Th>Load</Th>
+          <Th>{t("adminOrders.colAssigned")}</Th>
+          <Th>{t("adminOrders.colLoad")}</Th>
           <SortableTh
-            label="Placed"
+            label={t("adminOrders.colPlaced")}
             active={directionFor("created_at") !== null}
             direction={directionFor("created_at")}
             onSort={() => toggle("created_at")}
           />
           <SortableTh
-            label="Total"
+            label={t("adminOrders.colTotal")}
             align="right"
             active={directionFor("total_amount") !== null}
             direction={directionFor("total_amount")}
             onSort={() => toggle("total_amount")}
           />
-          <Th>Payment</Th>
+          <Th>{t("adminOrders.colPayment")}</Th>
           <SortableTh
-            label="Status"
+            label={t("adminOrders.colStatus")}
             active={directionFor("status") !== null}
             direction={directionFor("status")}
             onSort={() => toggle("status")}
@@ -260,8 +318,8 @@ export default function AdminOrdersPage() {
           {!isLoading && sorted && sorted.length === 0 && (
             <TableEmptyRow colSpan={10}>
               {data && data.results.length === 0
-                ? "No orders yet."
-                : "No orders match your search or filter."}
+                ? t("adminOrders.noOrders")
+                : t("adminOrders.noMatch")}
             </TableEmptyRow>
           )}
 
@@ -273,23 +331,52 @@ export default function AdminOrdersPage() {
               >
                 <Td className="font-medium">
                   <p>{order.ticket_number ?? `#${order.id}`}</p>
-                  {order.is_express && <span className="text-[10px] font-semibold uppercase tracking-wide text-status-pending-text">Express</span>}
+                  {order.is_express && (
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-status-pending-text">
+                      {t("adminOrders.express")}
+                    </span>
+                  )}
                 </Td>
                 <Td className="whitespace-nowrap text-xs text-ink-muted">
                   {order.source.replace(/_/g, " ")}
                 </Td>
                 <Td>
-                  <span className="flex items-center gap-2"><CustomerAvatar name={customerFullName(order.customer) ?? `Customer ${order.id}`} size="sm" /><span>{customerFullName(order.customer) ?? <span className="text-ink-muted">—</span>}</span></span>
+                  <span className="flex items-center gap-2">
+                    <CustomerAvatar
+                      name={
+                        customerFullName(order.customer) ??
+                        `Customer ${order.id}`
+                      }
+                      size="sm"
+                    />
+                    <span>
+                      {customerFullName(order.customer) ?? (
+                        <span className="text-ink-muted">—</span>
+                      )}
+                    </span>
+                  </span>
                 </Td>
                 <Td className="text-xs text-ink-muted">
-                  <p>{order.assigned_to ? staffNames.get(order.assigned_to) ?? "Assigned" : "Unassigned"}</p>
-                  {order.driver && <p>Driver: {staffNames.get(order.driver) ?? "Assigned"}</p>}
+                  <p>
+                    {order.assigned_to
+                      ? staffNames.get(order.assigned_to) ??
+                        t("adminOrders.assigned")
+                      : t("adminOrders.unassigned")}
+                  </p>
+                  {order.driver && (
+                    <p>
+                      {t("adminOrders.driver")}:{" "}
+                      {staffNames.get(order.driver) ??
+                        t("adminOrders.assigned")}
+                    </p>
+                  )}
                 </Td>
-                <Td className="whitespace-nowrap text-ink-muted">
-                  {order.pieces_count} pc · {Number(order.weight_kg_total).toFixed(1)} kg
+                <Td className="whitespace-nowrap text-xs text-ink-muted">
+                  {order.pieces_count} {t("adminOrders.pc")} ·{" "}
+                  {Number(order.weight_kg_total).toFixed(1)} kg
                 </Td>
-                <Td className="whitespace-nowrap text-ink-muted">
-                  {new Date(order.created_at).toLocaleString()}
+                <Td className="whitespace-nowrap text-xs text-ink-muted">
+                  {new Date(order.created_at).toLocaleString(locale)}
                 </Td>
                 <Td align="right" className="tabular-nums">
                   {formatCurrency(order.total_amount)}
@@ -302,7 +389,8 @@ export default function AdminOrdersPage() {
                     />
                     {Number(order.balance_due) > 0 && (
                       <p className="text-xs tabular-nums text-ink-muted">
-                        {formatCurrency(order.balance_due)} due
+                        {formatCurrency(order.balance_due)}{" "}
+                        {t("adminOrders.due")}
                       </p>
                     )}
                   </div>
@@ -327,7 +415,7 @@ export default function AdminOrdersPage() {
       {data && data.results.length === 0 && !isLoading && data.count === 0 && (
         <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
           <Package className="h-3.5 w-3.5" aria-hidden="true" />
-          Orders will show up here as soon as a customer books a pickup.
+          {t("adminOrders.emptyHelp")}
         </p>
       )}
 

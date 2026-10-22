@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowLeft, Droplets, Shirt, Sparkles, Wind } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
 
@@ -78,5 +80,4 @@ export default function LaundryPreferencesPage() {
     </main>
   );
 }
-"use client";
 

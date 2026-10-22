@@ -15,6 +15,7 @@ import {
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import { useState } from "react";
 
 import {
@@ -74,9 +75,18 @@ const ITEM_STATUSES: OrderItem["status"][] = [
 ];
 
 export default function AdminOrderDetailPage() {
+  const { locale, t } = useI18n();
   const params = useParams<{ id: string }>();
   const orderId = Number(params.id);
   const queryClient = useQueryClient();
+
+  const paymentMethods: Array<{ value: PaymentMethodType; label: string }> = [
+    { value: "CASH", label: t("adminFinance.cash") },
+    { value: "MTN_MOMO", label: "MTN Mobile Money" },
+    { value: "ORANGE_MONEY", label: "Orange Money" },
+    { value: "BANK_TRANSFER", label: t("adminFinance.transfer") },
+    { value: "OTHER", label: t("adminFinance.other") },
+  ];
 
   const {
     data: order,
@@ -190,7 +200,7 @@ export default function AdminOrderDetailPage() {
   if (isLoading) {
     return (
       <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9 text-sm text-ink-muted">
-        Loading...
+        {t("adminCommon.loading")}
       </main>
     );
   }
@@ -212,7 +222,7 @@ export default function AdminOrderDetailPage() {
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to orders
+        {t("adminOrders.backToOrders")}
       </Link>
 
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -227,7 +237,7 @@ export default function AdminOrderDetailPage() {
             </h1>
             <p className="mt-1 text-sm text-ink-muted">
               {customerFullName(order.customer) ?? `Customer #${order.user}`} ·
-              placed {new Date(order.created_at).toLocaleString()}
+              {" "}{t("adminOrders.colPlaced").toLowerCase()} {new Date(order.created_at).toLocaleString(locale)}
             </p>
           </div>
         </div>
@@ -244,23 +254,23 @@ export default function AdminOrderDetailPage() {
         {[
           {
             icon: Shirt,
-            label: "Laundry load",
-            value: `${order.pieces_count} pieces · ${Number(order.weight_kg_total).toFixed(1)} kg`,
+            label: t("adminOrders.laundryLoad"),
+            value: `${order.pieces_count} ${t("adminOrders.pc")} · ${Number(order.weight_kg_total).toFixed(1)} kg`,
           },
           {
             icon: WalletCards,
-            label: "Payment",
-            value: `${formatCurrency(order.balance_due)} due`,
+            label: t("adminOrders.colPayment"),
+            value: `${formatCurrency(order.balance_due)} ${t("adminOrders.due")}`,
           },
           {
             icon: UserRound,
-            label: "Customer",
+            label: t("adminOrders.colCustomer"),
             value:
               customerFullName(order.customer) ?? `Customer #${order.user}`,
           },
           {
             icon: CalendarDays,
-            label: "Priority & source",
+            label: t("adminOrders.priorityAndSource"),
             value: `${order.priority} · ${order.source.replace(/_/g, " ")}`,
           },
         ].map(({ icon: Icon, label, value }, index) => (
@@ -287,10 +297,10 @@ export default function AdminOrderDetailPage() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="font-display text-lg font-semibold text-navy">
-                  Items in this order
+                  {t("adminOrders.itemsInOrder")}
                 </h2>
                 <p className="text-xs text-ink-muted">
-                  Inspect photos, care notes, and processing progress.
+                  {t("adminOrders.itemsDescription")}
                 </p>
               </div>
               <PackageCheck className="h-5 w-5 text-gold" aria-hidden="true" />
@@ -303,10 +313,10 @@ export default function AdminOrderDetailPage() {
                 />
                 <div>
                   <p className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">
-                    Pickup
+                    {t("adminOrders.pickup")}
                   </p>
                   <p className="text-ink">
-                    {order.pickup_address || "Not provided"}
+                    {order.pickup_address || t("adminOrders.notProvided")}
                   </p>
                 </div>
               </div>
@@ -317,17 +327,17 @@ export default function AdminOrderDetailPage() {
                 />
                 <div>
                   <p className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">
-                    Delivery
+                    {t("adminOrders.delivery")}
                   </p>
                   <p className="text-ink">
-                    {order.delivery_address || "Not provided"}
+                    {order.delivery_address || t("adminOrders.notProvided")}
                   </p>
                 </div>
               </div>
             </div>
             {order.notes && (
               <div className="mt-4 rounded-xl bg-gold-50 px-4 py-3 text-sm text-gold-600">
-                <span className="font-semibold">Customer note:</span>{" "}
+                <span className="font-semibold">{t("adminOrders.customerNote")}:</span>{" "}
                 {order.notes}
               </div>
             )}
@@ -335,12 +345,12 @@ export default function AdminOrderDetailPage() {
 
           <TableContainer className="rounded-none border-x-0 border-b-0">
             <THead>
-              <Th>Item</Th>
-              <Th>Service</Th>
-              <Th>Progress</Th>
-              <Th align="right">Weight</Th>
-              <Th align="right">Qty</Th>
-              <Th align="right">Subtotal</Th>
+              <Th>{t("adminOrders.colOrder")}</Th>
+              <Th>{t("adminOrders.service")}</Th>
+              <Th>{t("adminOrders.progress")}</Th>
+              <Th align="right">{t("adminOrders.weight")}</Th>
+              <Th align="right">{t("adminOrders.qty")}</Th>
+              <Th align="right">{t("adminOrders.subtotal")}</Th>
             </THead>
             <TBody>
               {order.items.map((item) => (
@@ -448,25 +458,25 @@ export default function AdminOrderDetailPage() {
 
           <div className="space-y-1 p-5 pt-4 text-sm">
             <div className="flex justify-between text-ink-muted">
-              <span>Subtotal</span>
+              <span>{t("adminOrders.subtotal")}</span>
               <span className="tabular-nums">
                 {formatCurrency(order.subtotal)}
               </span>
             </div>
             <div className="flex justify-between text-ink-muted">
-              <span>Discount</span>
+              <span>{t("adminOrders.discount")}</span>
               <span className="tabular-nums">
                 -{formatCurrency(order.discount_amount)}
               </span>
             </div>
             <div className="flex justify-between text-ink-muted">
-              <span>Delivery fee</span>
+              <span>{t("adminOrders.deliveryFee")}</span>
               <span className="tabular-nums">
                 {formatCurrency(order.delivery_fee)}
               </span>
             </div>
             <div className="flex justify-between pt-2 text-base font-semibold text-navy">
-              <span>Total</span>
+              <span>{t("adminOrders.total")}</span>
               <span className="tabular-nums">
                 {formatCurrency(order.total_amount)}
               </span>
@@ -476,9 +486,11 @@ export default function AdminOrderDetailPage() {
 
         <div className="space-y-6">
           <Card>
-            <h2 className="mb-3 text-sm font-semibold text-navy">Operations</h2>
+            <h2 className="mb-3 text-sm font-semibold text-navy">
+              {t("adminOrders.operations")}
+            </h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Assigned staff" htmlFor="assigned-staff">
+              <Field label={t("adminOrders.assignedStaff")} htmlFor="assigned-staff">
                 <Select
                   id="assigned-staff"
                   value={order.assigned_to ?? ""}
@@ -492,7 +504,7 @@ export default function AdminOrderDetailPage() {
                     })
                   }
                 >
-                  <option value="">Unassigned</option>
+                  <option value="">{t("adminOrders.unassigned")}</option>
                   {staffQuery.data?.map((profile) => (
                     <option key={profile.id} value={profile.user.id}>
                       {profile.user.first_name} {profile.user.last_name} ·{" "}
@@ -501,7 +513,7 @@ export default function AdminOrderDetailPage() {
                   ))}
                 </Select>
               </Field>
-              <Field label="Driver" htmlFor="order-driver">
+              <Field label={t("adminOrders.driver")} htmlFor="order-driver">
                 <Select
                   id="order-driver"
                   value={order.driver ?? ""}
@@ -515,7 +527,7 @@ export default function AdminOrderDetailPage() {
                     })
                   }
                 >
-                  <option value="">No driver</option>
+                  <option value="">{t("adminOrders.noDriver")}</option>
                   {staffQuery.data
                     ?.filter((profile) => profile.role === "DRIVER")
                     .map((profile) => (
@@ -541,15 +553,15 @@ export default function AdminOrderDetailPage() {
                 });
               }}
             >
-              <Field label="Internal note" htmlFor="internal-notes">
+              <Field label={t("adminOrders.internalNotes")} htmlFor="internal-notes">
                 <Input
                   id="internal-notes"
                   name="internal_notes"
                   defaultValue={order.internal_notes}
-                  placeholder="Visible to staff only"
+                  placeholder={t("adminOrders.tagPlaceholder")}
                 />
               </Field>
-              <Field label="Tag" htmlFor="tag-number">
+              <Field label={t("adminOrders.tag")} htmlFor="tag-number">
                 <Input
                   id="tag-number"
                   name="tag_number"
@@ -563,14 +575,14 @@ export default function AdminOrderDetailPage() {
                   aria-label="Order priority"
                   className="w-28"
                 >
-                  <option value="NORMAL">Normal</option>
-                  <option value="EXPRESS">Express</option>
-                  <option value="URGENT">Urgent</option>
+                  <option value="NORMAL">{t("adminOrders.priorityNormal")}</option>
+                  <option value="EXPRESS">{t("adminOrders.priorityExpress")}</option>
+                  <option value="URGENT">{t("adminOrders.priorityUrgent")}</option>
                 </Select>
                 <Button
                   type="submit"
                   size="sm"
-                  aria-label="Save order operations"
+                  aria-label={t("adminOrders.saveOperations")}
                   disabled={detailsMutation.isPending}
                 >
                   <Save className="h-3.5 w-3.5" aria-hidden="true" />
@@ -592,7 +604,7 @@ export default function AdminOrderDetailPage() {
 
           <Card>
             <h2 className="mb-3 text-sm font-semibold text-navy">
-              Pickup & delivery
+              {t("adminOrders.pickupAndDelivery")}
             </h2>
             <form
               key={
@@ -618,7 +630,7 @@ export default function AdminOrderDetailPage() {
                 });
               }}
             >
-              <Field label="Pickup date" htmlFor="pickup-date">
+              <Field label={t("adminOrders.pickupDate")} htmlFor="pickup-date">
                 <Input
                   id="pickup-date"
                   name="pickup_date"
@@ -627,7 +639,7 @@ export default function AdminOrderDetailPage() {
                   defaultValue={scheduleQuery.data?.pickup_date}
                 />
               </Field>
-              <Field label="Pickup window" htmlFor="pickup-slot">
+              <Field label={t("adminOrders.pickupWindow")} htmlFor="pickup-slot">
                 <Select
                   id="pickup-slot"
                   name="pickup_time_slot"
@@ -640,7 +652,7 @@ export default function AdminOrderDetailPage() {
                   ))}
                 </Select>
               </Field>
-              <Field label="Delivery date" htmlFor="delivery-date">
+              <Field label={t("adminOrders.deliveryDate")} htmlFor="delivery-date">
                 <Input
                   id="delivery-date"
                   name="delivery_date"
@@ -649,7 +661,7 @@ export default function AdminOrderDetailPage() {
                   defaultValue={scheduleQuery.data?.delivery_date}
                 />
               </Field>
-              <Field label="Delivery window" htmlFor="delivery-slot">
+              <Field label={t("adminOrders.deliveryWindow")} htmlFor="delivery-slot">
                 <Select
                   id="delivery-slot"
                   name="delivery_time_slot"
@@ -662,19 +674,19 @@ export default function AdminOrderDetailPage() {
                   ))}
                 </Select>
               </Field>
-              <Field label="Contact phone" htmlFor="schedule-phone">
+              <Field label={t("adminOrders.contactPhone")} htmlFor="schedule-phone">
                 <Input
                   id="schedule-phone"
                   name="contact_phone"
                   defaultValue={scheduleQuery.data?.contact_phone}
                 />
               </Field>
-              <Field label="Address override" htmlFor="schedule-address">
+              <Field label={t("adminOrders.addressOverride")} htmlFor="schedule-address">
                 <Input
                   id="schedule-address"
                   name="address_override"
                   defaultValue={scheduleQuery.data?.address_override}
-                  placeholder="Use order address"
+                  placeholder={t("adminOrders.useOrderAddress")}
                 />
               </Field>
               <div className="flex items-center gap-2 sm:col-span-2">
@@ -683,12 +695,12 @@ export default function AdminOrderDetailPage() {
                   type="submit"
                   disabled={scheduleMutation.isPending}
                 >
-                  {order.has_schedule ? "Save schedule" : "Create schedule"}
+                  {order.has_schedule ? t("adminOrders.saveSchedule") : t("adminOrders.createSchedule")}
                 </Button>
                 {scheduleQuery.data && (
                   <span className="text-xs text-ink-muted">
-                    Pickup {scheduleQuery.data.pickup_status.toLowerCase()} ·
-                    Delivery {scheduleQuery.data.delivery_status.toLowerCase()}
+                    {t("adminOrders.pickup")} {scheduleQuery.data.pickup_status.toLowerCase()} ·
+                    {" "}{t("adminOrders.delivery")} {scheduleQuery.data.delivery_status.toLowerCase()}
                   </span>
                 )}
               </div>
@@ -719,7 +731,7 @@ export default function AdminOrderDetailPage() {
                 }}
               >
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Amount received" htmlFor="payment-amount">
+                  <Field label={t("adminOrders.amountReceived")} htmlFor="payment-amount">
                     <Input
                       id="payment-amount"
                       type="number"
@@ -731,7 +743,7 @@ export default function AdminOrderDetailPage() {
                       placeholder={order.balance_due}
                     />
                   </Field>
-                  <Field label="Method" htmlFor="payment-method">
+                  <Field label={t("adminOrders.method")} htmlFor="payment-method">
                     <div className="flex items-center gap-2">
                       <PaymentMethodIcon method={paymentMethod} />
                       <Select
@@ -743,7 +755,7 @@ export default function AdminOrderDetailPage() {
                           )
                         }
                       >
-                        {PAYMENT_METHODS.map((method) => (
+                        {paymentMethods.map((method) => (
                           <option key={method.value} value={method.value}>
                             {method.label}
                           </option>
@@ -753,9 +765,9 @@ export default function AdminOrderDetailPage() {
                   </Field>
                 </div>
                 <Field
-                  label="Reference"
+                  label={t("adminOrders.reference")}
                   htmlFor="payment-reference"
-                  hint="Optional transaction or receipt number."
+                  hint={t("adminOrders.referenceHint")}
                 >
                   <Input
                     id="payment-reference"
@@ -769,7 +781,7 @@ export default function AdminOrderDetailPage() {
                   type="submit"
                   disabled={paymentMutation.isPending || !paymentAmount}
                 >
-                  {paymentMutation.isPending ? "Recording…" : "Record payment"}
+                  {paymentMutation.isPending ? t("adminOrders.recording") : t("adminOrders.recordPayment")}
                 </Button>
                 {paymentMutation.error && (
                   <p className="mt-2 text-xs text-status-cancelled-text">
@@ -782,7 +794,7 @@ export default function AdminOrderDetailPage() {
 
           <Card className="p-0">
             <h2 className="p-5 pb-3 text-sm font-semibold text-navy">
-              Payments received
+              {t("adminOrders.paymentsReceived")}
             </h2>
             {paymentsQuery.data?.length ? (
               <div className="divide-y divide-crease">
@@ -797,7 +809,7 @@ export default function AdminOrderDetailPage() {
                         {payment.payment_method_type.replace(/_/g, " ")}
                       </p>
                       <p className="mt-0.5 text-xs text-ink-muted">
-                        {new Date(payment.received_at).toLocaleString()}
+                        {new Date(payment.received_at).toLocaleString(locale)}
                         {payment.reference ? ` · ${payment.reference}` : ""}
                       </p>
                     </div>
@@ -807,7 +819,7 @@ export default function AdminOrderDetailPage() {
                       </p>
                       {payment.voided_at && (
                         <StatusBadge
-                          label="Voided"
+                          label={t("adminOrders.voided")}
                           tone={paymentStatusTone("VOID")}
                         />
                       )}
@@ -817,22 +829,22 @@ export default function AdminOrderDetailPage() {
               </div>
             ) : (
               <p className="px-5 pb-5 text-sm text-ink-muted">
-                No payment has been recorded.
+                {t("adminOrders.noPaymentRecorded")}
               </p>
             )}
           </Card>
 
           <Card>
             <h2 className="mb-3 text-sm font-semibold text-navy">
-              Move order forward
+              {t("adminOrders.moveForward")}
             </h2>
             {NEXT_STATUSES[order.status].length ? (
               <>
                 <Field
                   label={
                     NEXT_STATUSES[order.status].includes("CANCELLED")
-                      ? "Status note / cancellation reason"
-                      : "Status note"
+                      ? t("adminOrders.statusNoteCancel")
+                      : t("adminOrders.statusNote")
                   }
                   htmlFor="status-note"
                 >
@@ -859,7 +871,7 @@ export default function AdminOrderDetailPage() {
                           status === "DELIVERED" &&
                           Number(order.balance_due) > 0 &&
                           !window.confirm(
-                            `Deliver with ${formatCurrency(order.balance_due)} still due?`,
+                            `${t("adminOrders.deliverBalanceConfirm")} (${formatCurrency(order.balance_due)})`,
                           )
                         )
                           return;
@@ -878,8 +890,7 @@ export default function AdminOrderDetailPage() {
               </>
             ) : (
               <p className="text-sm text-ink-muted">
-                This order is {order.status.toLowerCase()} and has no further
-                workflow actions.
+                {t("adminOrders.noFurtherActions")}
               </p>
             )}
             {statusMutation.error && (
@@ -891,19 +902,19 @@ export default function AdminOrderDetailPage() {
 
           <Card className="p-0">
             <h2 className="font-display p-5 pb-3 text-sm font-medium text-ink">
-              Status history
+              {t("adminOrders.statusHistory")}
             </h2>
             {order.status_history.length === 0 ? (
               <p className="px-5 pb-5 text-sm text-ink-muted">
-                No status changes yet.
+                {t("adminOrders.noStatusChanges")}
               </p>
             ) : (
               <TableContainer className="rounded-none border-x-0 border-b-0">
                 <THead>
-                  <Th>Status</Th>
-                  <Th>Changed by</Th>
-                  <Th>Note</Th>
-                  <Th align="right">When</Th>
+                  <Th>{t("adminOrders.colStatus")}</Th>
+                  <Th>{t("adminOrders.changedBy")}</Th>
+                  <Th>{t("adminOrders.note")}</Th>
+                  <Th align="right">{t("adminOrders.when")}</Th>
                 </THead>
                 <TBody>
                   {order.status_history.map((entry, i) => (
@@ -922,7 +933,7 @@ export default function AdminOrderDetailPage() {
                         align="right"
                         className="whitespace-nowrap text-ink-muted"
                       >
-                        {new Date(entry.created_at).toLocaleString()}
+                        {new Date(entry.created_at).toLocaleString(locale)}
                       </Td>
                     </Tr>
                   ))}

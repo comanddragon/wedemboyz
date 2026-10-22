@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
 import { SearchInput } from "@/src/components/admin/SearchInput";
@@ -56,12 +57,28 @@ function staffFullName(user: StaffProfile["user"]): string {
 }
 
 export default function AdminStaffPage() {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"roster" | "invites">("roster");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<StaffRole | "ALL">("ALL");
   const [showInviteForm, setShowInviteForm] = useState(false);
+
+  const roleFilterOptions: { value: StaffRole | "ALL"; label: string }[] = [
+    { value: "ALL", label: t("adminStaff.allRoles") },
+    { value: "MANAGER", label: t("adminCommon.roles.manager") },
+    { value: "ATTENDANT", label: t("adminCommon.roles.attendant") },
+    { value: "CASHIER", label: t("adminCommon.roles.cashier") },
+    { value: "DRIVER", label: t("adminOrders.driver") },
+  ];
+
+  const roleLabels: Record<StaffRole, string> = {
+    MANAGER: t("adminCommon.roles.manager"),
+    ATTENDANT: t("adminCommon.roles.attendant"),
+    CASHIER: t("adminCommon.roles.cashier"),
+    DRIVER: t("adminOrders.driver"),
+  };
 
   const {
     data: roster,
@@ -146,30 +163,30 @@ export default function AdminStaffPage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <AdminPageHeader
-        title="Staff"
-        description="Manage who has admin access and their roles."
+        title={t("adminStaff.title")}
+        description={t("adminStaff.description")}
         action={
           <Button
             variant="secondary"
             onClick={() => setShowInviteForm((v) => !v)}
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Invite staff
+            {t("adminStaff.inviteStaffBtn")}
           </Button>
         }
       />
 
       <div className="mb-6 inline-flex rounded-md border border-crease bg-white p-0.5">
-        {(["roster", "invites"] as const).map((t) => (
+        {(["roster", "invites"] as const).map((tabKey) => (
           <button
-            key={t}
+            key={tabKey}
             type="button"
-            onClick={() => setTab(t)}
+            onClick={() => setTab(tabKey)}
             className={`rounded px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
-              tab === t ? "bg-navy text-white" : "text-ink-muted hover:text-ink"
+              tab === tabKey ? "bg-navy text-white" : "text-ink-muted hover:text-ink"
             }`}
           >
-            {t === "roster" ? "Roster" : "Pending invites"}
+            {tabKey === "roster" ? t("adminStaff.rosterBadge") : t("adminStaff.invitesBadge")}
           </button>
         ))}
       </div>
@@ -184,11 +201,11 @@ export default function AdminStaffPage() {
         <>
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <SearchInput
-              placeholder="Search by name or phone"
+              placeholder={t("adminStaff.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="sm:max-w-xs"
-              aria-label="Search staff"
+              aria-label={t("adminStaff.searchPlaceholder")}
             />
             <Select
               value={roleFilter}
@@ -196,9 +213,9 @@ export default function AdminStaffPage() {
                 setRoleFilter(e.target.value as StaffRole | "ALL")
               }
               className="sm:w-44"
-              aria-label="Filter by role"
+              aria-label={t("adminStaff.allRoles")}
             >
-              {ROLE_FILTER_OPTIONS.map((opt) => (
+              {roleFilterOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -206,7 +223,7 @@ export default function AdminStaffPage() {
             </Select>
             {roster && (
               <p className="text-xs text-ink-muted sm:ml-auto">
-                {filteredRoster?.length ?? 0} of {roster.results.length} staff
+                {filteredRoster?.length ?? 0} {t("adminStaff.ofTotalStaff")} {roster.results.length} {t("adminStaff.staffCountLabel")}
               </p>
             )}
           </div>
@@ -220,27 +237,27 @@ export default function AdminStaffPage() {
           <TableContainer>
             <THead>
               <SortableTh
-                label="Name"
+                label={t("adminStaff.colName")}
                 active={rosterDirectionFor("name") !== null}
                 direction={rosterDirectionFor("name")}
                 onSort={() => toggleRoster("name")}
               />
               <SortableTh
-                label="Phone"
+                label={t("adminStaff.colPhone")}
                 active={rosterDirectionFor("phone_number") !== null}
                 direction={rosterDirectionFor("phone_number")}
                 onSort={() => toggleRoster("phone_number")}
               />
               <SortableTh
-                label="Role"
+                label={t("adminStaff.colRole")}
                 active={rosterDirectionFor("role") !== null}
                 direction={rosterDirectionFor("role")}
                 onSort={() => toggleRoster("role")}
               />
-              <Th>Chats</Th>
-              <Th>Status</Th>
+              <Th>{t("adminStaff.colChats")}</Th>
+              <Th>{t("adminStaff.colStatus")}</Th>
               <SortableTh
-                label="Joined"
+                label={t("adminStaff.colJoined")}
                 active={rosterDirectionFor("joined_at") !== null}
                 direction={rosterDirectionFor("joined_at")}
                 onSort={() => toggleRoster("joined_at")}
@@ -252,8 +269,8 @@ export default function AdminStaffPage() {
               {!rosterLoading && sortedRoster && sortedRoster.length === 0 && (
                 <TableEmptyRow colSpan={7}>
                   {roster && roster.results.length === 0
-                    ? "No staff yet."
-                    : "No staff match your search or filter."}
+                    ? t("adminStaff.noStaff")
+                    : t("adminStaff.noStaff")}
                 </TableEmptyRow>
               )}
               {!rosterLoading &&
@@ -268,7 +285,7 @@ export default function AdminStaffPage() {
                     </Td>
                     <Td>
                       <StatusBadge
-                        label={ROLE_LABELS[staff.role]}
+                        label={roleLabels[staff.role]}
                         tone={staffRoleTone(staff.role)}
                       />
                     </Td>
@@ -281,11 +298,11 @@ export default function AdminStaffPage() {
                       {staff.is_active ? (
                         <StatusBadge label="Active" tone="ready" />
                       ) : (
-                        <StatusBadge label="Inactive" tone="cancelled" />
+                        <StatusBadge label={t("adminCustomers.inactiveBadge")} tone="cancelled" />
                       )}
                     </Td>
                     <Td className="whitespace-nowrap text-ink-muted">
-                      {new Date(staff.joined_at).toLocaleDateString()}
+                      {new Date(staff.joined_at).toLocaleDateString(locale)}
                     </Td>
                     <Td>
                       <ChevronRight
@@ -311,31 +328,31 @@ export default function AdminStaffPage() {
           <TableContainer>
             <THead>
               <SortableTh
-                label="Name"
+                label={t("adminStaff.colName")}
                 active={invitesDirectionFor("full_name") !== null}
                 direction={invitesDirectionFor("full_name")}
                 onSort={() => toggleInvites("full_name")}
               />
               <SortableTh
-                label="Phone"
+                label={t("adminStaff.colPhone")}
                 active={invitesDirectionFor("phone_number") !== null}
                 direction={invitesDirectionFor("phone_number")}
                 onSort={() => toggleInvites("phone_number")}
               />
               <SortableTh
-                label="Role"
+                label={t("adminStaff.colRole")}
                 active={invitesDirectionFor("role") !== null}
                 direction={invitesDirectionFor("role")}
                 onSort={() => toggleInvites("role")}
               />
               <SortableTh
-                label="Status"
+                label={t("adminStaff.colStatus")}
                 active={invitesDirectionFor("status") !== null}
                 direction={invitesDirectionFor("status")}
                 onSort={() => toggleInvites("status")}
               />
               <SortableTh
-                label="Sent"
+                label={t("adminStaff.colJoined")}
                 active={invitesDirectionFor("created_at") !== null}
                 direction={invitesDirectionFor("created_at")}
                 onSort={() => toggleInvites("created_at")}
@@ -349,7 +366,7 @@ export default function AdminStaffPage() {
                 sortedInvites &&
                 sortedInvites.length === 0 && (
                   <TableEmptyRow colSpan={7}>
-                    No invites sent yet.
+                    {t("adminStaff.noInvites")}
                   </TableEmptyRow>
                 )}
               {!invitesLoading &&
@@ -363,7 +380,7 @@ export default function AdminStaffPage() {
                     <Td className="text-ink-muted">{invite.phone_number}</Td>
                     <Td>
                       <StatusBadge
-                        label={ROLE_LABELS[invite.role]}
+                        label={roleLabels[invite.role]}
                         tone={staffRoleTone(invite.role)}
                       />
                     </Td>
@@ -374,10 +391,10 @@ export default function AdminStaffPage() {
                       />
                     </Td>
                     <Td className="whitespace-nowrap text-ink-muted">
-                      {new Date(invite.created_at).toLocaleDateString()}
+                      {new Date(invite.created_at).toLocaleDateString(locale)}
                     </Td>
                     <Td className="whitespace-nowrap text-ink-muted">
-                      {new Date(invite.expires_at).toLocaleDateString()}
+                      {new Date(invite.expires_at).toLocaleDateString(locale)}
                     </Td>
                     <Td>
                       <div className="flex justify-end gap-1">
@@ -388,7 +405,7 @@ export default function AdminStaffPage() {
                             disabled={resendMutation.isPending}
                             onClick={() => resendMutation.mutate(invite.id)}
                           >
-                            Resend
+                            {t("adminStaff.resendInvite")}
                           </Button>
                         )}
                         {invite.status === "PENDING" && (
@@ -398,7 +415,7 @@ export default function AdminStaffPage() {
                             disabled={revokeMutation.isPending}
                             onClick={() => revokeMutation.mutate(invite.id)}
                           >
-                            Revoke
+                            {t("adminStaff.revokeInvite")}
                           </Button>
                         )}
                       </div>

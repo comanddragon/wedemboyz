@@ -168,7 +168,7 @@ export default function AdminOverviewPage() {
           <span className="h-2 w-2 rounded-full bg-clothesline" />
           {t("adminDashboard.signedIn")} {" "}
           <strong className="font-semibold text-navy">
-            {role ? ROLE_LABELS[role] : "Staff"}
+            {role ? t(`adminCommon.roles.${role.toLowerCase()}`) : t("common.staff")}
           </strong>
         </div>
       </header>
@@ -207,8 +207,8 @@ export default function AdminOverviewPage() {
                 ? "—"
                 : formatCurrency(todaySummary?.average_payment ?? 0)
               : role
-                ? ROLE_LABELS[role]
-                : "Staff"
+                ? t(`adminCommon.roles.${role.toLowerCase()}`)
+                : t("common.staff")
           }
           detail={t("adminDashboard.transaction")}
         />
@@ -217,7 +217,7 @@ export default function AdminOverviewPage() {
           icon={MessageCircle}
           label={t("adminDashboard.unassigned")}
           value={canSeeChat ? (chatLoading ? "—" : unassigned) : t("adminDashboard.limited")}
-          detail={openRooms ? `${openRooms} open` : t("adminDashboard.inboxClear")}
+          detail={openRooms ? `${openRooms} ${t("adminDashboard.openConversations")}` : t("adminDashboard.inboxClear")}
         />
       </section>
 
@@ -293,9 +293,12 @@ export default function AdminOverviewPage() {
           {canSeeChat && openRooms > 0 && (
             <div className="mt-5 rounded-xl bg-gradient-to-r from-gold-50 to-white p-3.5 text-xs text-gold-600 ring-1 ring-gold/25">
               <strong>
-                {openRooms} open conversation{openRooms === 1 ? "" : "s"}
+                {openRooms}{" "}
+                {openRooms === 1
+                  ? t("adminDashboard.conversationSingular")
+                  : t("adminDashboard.conversationPlural")}
               </strong>{" "}
-              currently need attention.
+              {t("adminDashboard.openRoomsAlert")}
             </div>
           )}
         </Card>

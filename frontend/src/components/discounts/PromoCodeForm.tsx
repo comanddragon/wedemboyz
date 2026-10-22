@@ -7,12 +7,8 @@ import { Button, Field, Input, Select, Textarea } from "@/src/components/ui";
 import { discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
+import { useI18n } from "@/src/i18n/I18nProvider";
 import type { DiscountType, PromoCode } from "@/src/types";
-
-const DISCOUNT_TYPE_OPTIONS: { value: DiscountType; label: string }[] = [
-  { value: "PERCENTAGE", label: "Percentage off" },
-  { value: "FIXED", label: "Fixed amount off" },
-];
 
 /** YYYY-MM-DD for a date input's value, defaulting to today. */
 function todayInputValue(): string {
@@ -33,6 +29,7 @@ export function PromoCodeForm({
   onDone: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [code, setCode] = useState(promoCode?.code ?? "");
   const [description, setDescription] = useState(promoCode?.description ?? "");
   const [discountType, setDiscountType] = useState<DiscountType>(
@@ -56,6 +53,11 @@ export function PromoCodeForm({
   const [validUntil, setValidUntil] = useState(
     promoCode?.valid_until ?? todayInputValue(),
   );
+
+  const discountTypeOptions: { value: DiscountType; label: string }[] = [
+    { value: "PERCENTAGE", label: t("adminDiscounts.percentageOff") },
+    { value: "FIXED", label: t("adminDiscounts.fixedOff") },
+  ];
 
   const saveMutation = useMutation({
     mutationFn: () => {
@@ -106,25 +108,25 @@ export function PromoCodeForm({
     >
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
         <Field
-          label="Code"
+          label={t("adminDiscounts.colCode")}
           htmlFor="promo-code"
-          hint="What the customer types at checkout."
+          hint={t("adminDiscounts.codeHint")}
         >
           <Input
             id="promo-code"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="e.g. WELCOME10"
+            placeholder={t("adminDiscounts.codePlaceholder")}
             className="uppercase"
           />
         </Field>
-        <Field label="Discount type" htmlFor="promo-type">
+        <Field label={t("adminDiscounts.discountType")} htmlFor="promo-type">
           <Select
             id="promo-type"
             value={discountType}
             onChange={(e) => setDiscountType(e.target.value as DiscountType)}
           >
-            {DISCOUNT_TYPE_OPTIONS.map((opt) => (
+            {discountTypeOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
@@ -135,7 +137,11 @@ export function PromoCodeForm({
 
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
         <Field
-          label={discountType === "PERCENTAGE" ? "Value (%)" : "Value (XAF)"}
+          label={
+            discountType === "PERCENTAGE"
+              ? t("adminDiscounts.valuePercent")
+              : t("adminDiscounts.valueAmount")
+          }
           htmlFor="promo-value"
         >
           <Input
@@ -144,13 +150,15 @@ export function PromoCodeForm({
             min="0"
             step={discountType === "PERCENTAGE" ? "1" : "50"}
             placeholder={
-              discountType === "PERCENTAGE" ? "e.g. 10" : "e.g. 1000"
+              discountType === "PERCENTAGE"
+                ? t("adminDiscounts.valuePercentPlaceholder")
+                : t("adminDiscounts.valueAmountPlaceholder")
             }
             value={value}
             onChange={(e) => setValue(e.target.value)}
           />
         </Field>
-        <Field label="Minimum order amount (XAF)" htmlFor="promo-min-order">
+        <Field label={t("adminDiscounts.minOrderAmount")} htmlFor="promo-min-order">
           <Input
             id="promo-min-order"
             type="number"
@@ -165,20 +173,20 @@ export function PromoCodeForm({
 
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
         <Field
-          label="Max total uses (optional)"
+          label={t("adminDiscounts.maxUsesOptional")}
           htmlFor="promo-max-uses"
-          hint="Leave blank for unlimited."
+          hint={t("adminDiscounts.unlimitedHint")}
         >
           <Input
             id="promo-max-uses"
             type="number"
             min="1"
-            placeholder="Unlimited"
+            placeholder={t("adminDiscounts.unlimited")}
             value={maxUses}
             onChange={(e) => setMaxUses(e.target.value)}
           />
         </Field>
-        <Field label="Max uses per customer" htmlFor="promo-max-uses-per-user">
+        <Field label={t("adminDiscounts.maxUsesPerCustomer")} htmlFor="promo-max-uses-per-user">
           <Input
             id="promo-max-uses-per-user"
             type="number"
@@ -190,7 +198,7 @@ export function PromoCodeForm({
       </div>
 
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Field label="Valid from" htmlFor="promo-valid-from">
+        <Field label={t("adminDiscounts.validFrom")} htmlFor="promo-valid-from">
           <Input
             id="promo-valid-from"
             type="date"
@@ -199,11 +207,11 @@ export function PromoCodeForm({
           />
         </Field>
         <Field
-          label="Valid until"
+          label={t("adminDiscounts.validUntil")}
           htmlFor="promo-valid-until"
           error={
             validUntil && validFrom && validUntil < validFrom
-              ? "Valid-until must be after valid-from."
+              ? t("adminDiscounts.validUntilError")
               : undefined
           }
         >
@@ -216,12 +224,12 @@ export function PromoCodeForm({
         </Field>
       </div>
 
-      <Field label="Description (optional)" htmlFor="promo-description">
+      <Field label={t("adminDiscounts.descriptionOptional")} htmlFor="promo-description">
         <Textarea
           id="promo-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Internal note about who this code is for or why it exists."
+          placeholder={t("adminDiscounts.promoDescPlaceholder")}
         />
       </Field>
 
@@ -238,13 +246,13 @@ export function PromoCodeForm({
           disabled={!isValid || saveMutation.isPending}
         >
           {saveMutation.isPending
-            ? "Saving…"
+            ? t("adminDiscounts.saving")
             : promoCode
-              ? "Save changes"
-              : "Create code"}
+              ? t("adminDiscounts.saveChanges")
+              : t("adminDiscounts.createCode")}
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
-          Cancel
+          {t("adminDiscounts.cancel")}
         </Button>
       </div>
     </form>

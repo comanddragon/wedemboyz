@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 import { Button, Field, Input, Select } from "@/src/components/ui";
 import { staffApi } from "@/src/lib/api";
@@ -17,10 +18,18 @@ const ROLE_OPTIONS: { value: StaffRole; label: string }[] = [
 ];
 
 export function InviteStaffForm({ onDone }: { onDone: () => void }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [phone, setPhone] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<StaffRole>("ATTENDANT");
+
+  const roleOptions: { value: StaffRole; label: string }[] = [
+    { value: "ATTENDANT", label: t("adminCommon.roles.attendant") },
+    { value: "MANAGER", label: t("adminCommon.roles.manager") },
+    { value: "CASHIER", label: t("adminCommon.roles.cashier") },
+    { value: "DRIVER", label: t("adminOrders.driver") },
+  ];
 
   const inviteMutation = useMutation({
     mutationFn: () =>
@@ -49,7 +58,7 @@ export function InviteStaffForm({ onDone }: { onDone: () => void }) {
       className="rounded-card border border-crease bg-steam/40 p-4"
     >
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
-        <Field label="Phone number" htmlFor="invite-phone">
+        <Field label={t("adminStaff.phoneNumber")} htmlFor="invite-phone">
           <Input
             id="invite-phone"
             type="tel"
@@ -58,7 +67,7 @@ export function InviteStaffForm({ onDone }: { onDone: () => void }) {
             onChange={(e) => setPhone(e.target.value)}
           />
         </Field>
-        <Field label="Full name (optional)" htmlFor="invite-name">
+        <Field label={t("adminStaff.fullName")} htmlFor="invite-name">
           <Input
             id="invite-name"
             value={fullName}
@@ -66,13 +75,13 @@ export function InviteStaffForm({ onDone }: { onDone: () => void }) {
             placeholder="e.g. Paul Eto'o"
           />
         </Field>
-        <Field label="Role" htmlFor="invite-role">
+        <Field label={t("adminStaff.role")} htmlFor="invite-role">
           <Select
             id="invite-role"
             value={role}
             onChange={(e) => setRole(e.target.value as StaffRole)}
           >
-            {ROLE_OPTIONS.map((opt) => (
+            {roleOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
@@ -93,10 +102,10 @@ export function InviteStaffForm({ onDone }: { onDone: () => void }) {
           variant="primary"
           disabled={!isValid || inviteMutation.isPending}
         >
-          {inviteMutation.isPending ? "Sending…" : "Send invite"}
+          {inviteMutation.isPending ? t("adminStaff.sending") : t("adminStaff.sendInvite")}
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
-          Cancel
+          {t("adminCommon.cancel")}
         </Button>
       </div>
     </form>

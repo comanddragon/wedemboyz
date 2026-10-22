@@ -11,6 +11,7 @@ import { paymentsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -22,6 +23,7 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
 }
 
 export default function AdminInvoiceDetailPage() {
+  const { locale, t } = useI18n();
   const params = useParams<{ id: string }>();
   const invoiceId = Number(params.id);
 
@@ -37,7 +39,7 @@ export default function AdminInvoiceDetailPage() {
   if (isLoading) {
     return (
       <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9 text-sm text-ink-muted">
-        Loading...
+        {t("adminInvoices.loading")}
       </main>
     );
   }
@@ -59,54 +61,59 @@ export default function AdminInvoiceDetailPage() {
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to invoices
+        {t("adminInvoices.backToInvoices")}
       </Link>
 
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
-            {invoice.invoice_number || `Invoice #${invoice.id}`}
+            {invoice.invoice_number ||
+              t("adminInvoices.invoiceHash").replace("{id}", String(invoice.id))}
           </h1>
           <Link
             href={`/admin/orders/${invoice.order}`}
             className="mt-0.5 block text-xs text-ink-muted hover:underline"
           >
-            For order #{invoice.order}
+            {t("adminInvoices.forOrder").replace("{id}", String(invoice.order))}
           </Link>
         </div>
         <StatusBadge
-          label={invoice.is_settled ? "Settled" : "Outstanding"}
+          label={
+            invoice.is_settled
+              ? t("adminInvoices.settledBadge")
+              : t("adminInvoices.outstandingBadge")
+          }
           tone={invoice.is_settled ? "ready" : "pending"}
         />
       </div>
 
       <Card>
-        <Row label="Amount due" value={formatCurrency(invoice.amount_due)} />
-        <Row label="Amount paid" value={formatCurrency(invoice.amount_paid)} />
+        <Row label={t("adminInvoices.amountDue")} value={formatCurrency(invoice.amount_due)} />
+        <Row label={t("adminInvoices.amountPaid")} value={formatCurrency(invoice.amount_paid)} />
         <Row
-          label="Issued"
-          value={new Date(invoice.issued_at).toLocaleString()}
+          label={t("adminInvoices.issued")}
+          value={new Date(invoice.issued_at).toLocaleString(locale)}
         />
       </Card>
 
       <div className="mt-4 flex flex-wrap gap-2 print:hidden">
         <Button variant="secondary" onClick={() => window.print()}>
           <Printer className="h-4 w-4" aria-hidden="true" />
-          Print invoice
+          {t("adminInvoices.printInvoice")}
         </Button>
-      {invoice.pdf_file && (
-        <a
-          href={invoice.pdf_file}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block"
-        >
-          <Button variant="secondary">
-            <FileDown className="h-4 w-4" aria-hidden="true" />
-            Download PDF
-          </Button>
-        </a>
-      )}
+        {invoice.pdf_file && (
+          <a
+            href={invoice.pdf_file}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block"
+          >
+            <Button variant="secondary">
+              <FileDown className="h-4 w-4" aria-hidden="true" />
+              {t("adminInvoices.downloadPdf")}
+            </Button>
+          </a>
+        )}
       </div>
     </main>
   );
