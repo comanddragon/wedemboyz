@@ -1,15 +1,24 @@
-from django.contrib.auth import password_validation
-from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from apps.users.models import CustomUser
-from core.utils import format_phone_number
-from apps.staff.permissions import get_staff_permissions, get_staff_role
-from typing import Any, Dict
+from datetime import timedelta
+from typing import Any
 
 from django.conf import settings
-from datetime import timedelta
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from django.contrib.auth import password_validation
+from django.db import transaction
+from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from apps.staff.permissions import get_staff_permissions, get_staff_role
+from apps.users.models import CustomUser
+from core.utils import format_phone_number
+
+
+def _avatar_payload(user):
+    profile = getattr(user, "profile", None)
+    return {
+        "avatar": profile.avatar.url if profile and profile.avatar else None,
+        "use_profile_photo": bool(profile and profile.use_profile_photo),
+    }
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -20,14 +29,44 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ["phone_number", "first_name", "last_name", "email", "password", "password2"]
 
+    def validate_phone_number(self, value):
+        normalised = format_phone_number(value)
+        if CustomUser.objects.filter(phone_number=normalised).exists():
+            raise serializers.ValidationError("A user with this phone number already exists.")
+        return normalised
+
     def validate(self, attrs):
         if attrs["password"] != attrs.pop("password2"):
             raise serializers.ValidationError({"password2": "Passwords do not match."})
         password_validation.validate_password(attrs["password"])
         return attrs
 
+    @transaction.atomic
     def create(self, validated_data):
         password = validated_data.pop("password")
+        phone_number = format_phone_number(validated_data["phone_number"])
+
+        # A visitor may register from a different tab/device after placing an
+        # order as a guest.  Reconnect the account by the contact number saved
+        # during checkout so those database-backed orders continue with the
+        # same customer instead of creating an unrelated account.
+        guest = (
+            CustomUser.objects.select_for_update()
+            .filter(is_guest=True, profile__secondary_phone=phone_number)
+            .order_by("-updated_at")
+            .first()
+        )
+        if guest:
+            guest.phone_number = phone_number
+            guest.first_name = validated_data.get("first_name", "") or guest.first_name
+            guest.last_name = validated_data.get("last_name", "") or guest.last_name
+            guest.email = validated_data.get("email") or guest.email
+            guest.is_guest = False
+            guest.set_password(password)
+            guest.save()
+            return guest
+
+        validated_data["phone_number"] = phone_number
         return CustomUser.objects.create_user(password=password, **validated_data)
 
 
@@ -48,7 +87,7 @@ class LoginSerializer(TokenObtainPairSerializer):
             attrs[phone_field] = format_phone_number(attrs[phone_field])
 
         data = super().validate(attrs)
-        data: Dict[str, Any] = data
+        data: dict[str, Any] = data
         data["user"] = {
             "id": self.user.pk,
             "phone_number": self.user.phone_number,
@@ -61,6 +100,7 @@ class LoginSerializer(TokenObtainPairSerializer):
             "staff_permissions": get_staff_permissions(self.user),
             "staff_access_active": get_staff_role(self.user) is not None,
             "is_ambassador": hasattr(self.user, "ambassador_profile") and self.user.ambassador_profile.is_active,
+            **_avatar_payload(self.user),
         }
 
         return data
@@ -69,7 +109,7 @@ class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
 
-def auth_payload(user) -> Dict[str, Any]:
+def auth_payload(user) -> dict[str, Any]:
     """Same shape as the login response, so the frontend can treat a guest
     session, a fresh registration and a login identically."""
     refresh = RefreshToken.for_user(user)
@@ -91,6 +131,7 @@ def auth_payload(user) -> Dict[str, Any]:
             "staff_permissions": get_staff_permissions(user),
             "staff_access_active": get_staff_role(user) is not None,
             "is_ambassador": hasattr(user, "ambassador_profile") and user.ambassador_profile.is_active,
+            **_avatar_payload(user),
         },
     }
 

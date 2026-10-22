@@ -9,10 +9,12 @@ from apps.staff.permissions import StaffPermission, has_staff_permission
 User = get_user_model()
 
 class ChatCustomerSerializer(serializers.ModelSerializer):
+    avatar = serializers.ImageField(source="profile.avatar", read_only=True, allow_null=True)
+    use_profile_photo = serializers.BooleanField(source="profile.use_profile_photo", read_only=True, default=False)
 
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "phone_number"]
+        fields = ["id", "first_name", "last_name", "phone_number", "avatar", "use_profile_photo"]
 
 
 class ChatAgentSerializer(serializers.ModelSerializer):
@@ -138,4 +140,12 @@ class ChatRoomCreateSerializer(serializers.ModelSerializer):
         return order
 
     def create(self, validated_data):
+        order = validated_data.get("order")
+        if order is not None:
+            room = ChatRoom.objects.filter(
+                customer=self.context["request"].user,
+                order=order,
+            ).first()
+            if room is not None:
+                return room
         return ChatRoom.objects.create(customer=self.context["request"].user, **validated_data)

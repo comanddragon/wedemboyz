@@ -38,6 +38,8 @@ export interface ChatRoom {
     first_name: string;
     last_name: string;
     phone_number: string;
+    avatar: string | null;
+    use_profile_photo: boolean;
   };
   agent: ChatAgent | null;
   assigned_by: ChatAgent | null;

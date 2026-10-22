@@ -1,13 +1,14 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageSquareText } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { SearchInput } from "@/src/components/admin/SearchInput";
 import { Select } from "@/src/components/ui";
-import { chatApi } from "@/src/lib/api";
+import { chatApi, staffApi } from "@/src/lib/api";
+import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
 import { useI18n } from "@/src/i18n/I18nProvider";
 import type { ChatRoom, ChatRoomStatus } from "@/src/types";
@@ -27,6 +28,21 @@ export function AdminChatSidebar({ className = "" }: { className?: string }) {
     queryKey: queryKeys.chat.rooms,
     queryFn: () => chatApi.listChatRooms(),
     refetchInterval: 20_000,
+  });
+  const { data: chatAgents } = useQuery({
+    queryKey: [...queryKeys.staff.roster, "chat-available"],
+    queryFn: () => staffApi.listChatAgents(),
+  });
+  const assignMutation = useMutation({
+    mutationFn: ({ roomId, agentId }: { roomId: number; agentId: number }) =>
+      chatApi.assignChatRoom(roomId, agentId),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<ChatRoom[]>(queryKeys.chat.rooms, (current) =>
+        current?.map((room) => (room.id === updated.id ? updated : room)),
+      );
+      queryClient.setQueryData(queryKeys.chat.room(updated.id), updated);
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.roster });
+    },
   });
 
   const filteredRooms = useMemo(() => {
@@ -127,14 +143,17 @@ export function AdminChatSidebar({ className = "" }: { className?: string }) {
             room.customer.phone_number;
           const active = room.id === activeRoomId;
           return (
-            <button
+            <article
               key={room.id}
-              type="button"
-              onClick={() => openRoom(room)}
-              className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-crease px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-gold/30 ${active ? "bg-navy-50" : "hover:bg-steam/45"}`}
+              className={`grid grid-cols-[minmax(0,1fr)_auto] items-center border-b border-crease pr-3 transition-colors ${active ? "bg-navy-50" : "hover:bg-steam/45"}`}
             >
-              <CustomerAvatar name={name} size="sm" />
-              <span className="min-w-0">
+              <button
+                type="button"
+                onClick={() => openRoom(room)}
+                className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-gold/30"
+              >
+                <CustomerAvatar name={name} size="sm" imageUrl={room.customer.avatar} useProfilePhoto={room.customer.use_profile_photo} />
+                <span className="min-w-0">
                 <span className="flex items-center gap-2">
                   <span
                     className={`truncate text-sm ${room.unread_count ? "font-bold text-navy" : "font-semibold text-navy"}`}
@@ -156,8 +175,9 @@ export function AdminChatSidebar({ className = "" }: { className?: string }) {
                 >
                   {room.last_message?.content || t("adminChat.noMessagesYet")}
                 </span>
-              </span>
-              <span className="text-right">
+                </span>
+              </button>
+              <span className="flex flex-col items-end gap-1.5 text-right">
                 <span className="block text-[10px] text-ink-faint">
                   {new Date(
                     room.last_message?.created_at ?? room.updated_at,
@@ -177,8 +197,31 @@ export function AdminChatSidebar({ className = "" }: { className?: string }) {
                     {room.unread_count > 99 ? "99+" : room.unread_count}
                   </span>
                 ) : null}
+                {room.status === "OPEN" && room.agent === null ? (
+                  <select
+                    value=""
+                    disabled={assignMutation.isPending}
+                    onChange={(event) => {
+                      const agentId = Number(event.target.value);
+                      if (agentId) assignMutation.mutate({ roomId: room.id, agentId });
+                    }}
+                    className="max-w-28 rounded-lg border border-crease bg-white px-2 py-1 text-[10px] font-semibold text-navy outline-none transition-colors hover:border-gold focus:border-gold disabled:opacity-50"
+                    aria-label={t("adminChat.assignConversation").replace("{name}", name)}
+                  >
+                    <option value="">{t("adminChat.assign")}</option>
+                    {chatAgents?.map((person) => {
+                      const agentName = `${person.user.first_name} ${person.user.last_name}`.trim() || person.user.phone_number;
+                      return <option key={person.user.id} value={person.user.id}>{agentName}</option>;
+                    })}
+                  </select>
+                ) : null}
+                {assignMutation.isError && assignMutation.variables?.roomId === room.id ? (
+                  <span className="max-w-32 text-[10px] leading-tight text-status-cancelled-text" role="alert">
+                    {getApiErrorMessage(assignMutation.error)}
+                  </span>
+                ) : null}
               </span>
-            </button>
+            </article>
           );
         })}
       </div>

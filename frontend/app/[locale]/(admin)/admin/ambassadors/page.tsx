@@ -11,6 +11,7 @@ import { customersApi, discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { useI18n } from "@/src/i18n/I18nProvider";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 
 export default function AdminAmbassadorsPage() {
   const { t } = useI18n();
@@ -84,7 +85,7 @@ export default function AdminAmbassadorsPage() {
                   {customer.first_name || customer.last_name
                     ? `${customer.first_name} ${customer.last_name}`.trim()
                     : customer.phone_number}{" "}
-                  · {customer.phone_number}
+                  · {customer.phone_number}{!customer.avatar ? ` · (${t("adminPrograms.photoPending")})` : ""}
                 </option>
               ))}
             </Select>
@@ -120,13 +121,23 @@ export default function AdminAmbassadorsPage() {
                 key={ambassador.id}
                 className="grid gap-4 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center"
               >
-                <div>
-                  <p className="text-sm font-semibold text-navy">
-                    {ambassador.name}
-                  </p>
-                  <p className="text-xs text-ink-muted">
-                    {ambassador.phone_number}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <CustomerAvatar name={ambassador.name} size="sm" imageUrl={ambassador.profile_photo} forceProfilePhoto />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-navy">
+                        {ambassador.name}
+                      </p>
+                      {!ambassador.profile_photo ? (
+                        <span className="rounded-full bg-gold-100 px-2 py-0.5 text-[10px] font-semibold text-gold-800">
+                          {t("adminPrograms.photoPending")}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-ink-muted">
+                      {ambassador.phone_number}
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"

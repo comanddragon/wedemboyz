@@ -147,17 +147,26 @@ class AmbassadorProfileSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     phone_number = serializers.CharField(source="user.phone_number", read_only=True)
     promo_code = serializers.CharField(source="promo_code.code", read_only=True)
+    profile_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = AmbassadorProfile
         fields = [
             "id", "user_id", "name", "phone_number", "promo_code",
-            "credit_balance", "lifetime_credits", "is_active", "created_at",
+            "profile_photo", "credit_balance", "lifetime_credits", "is_active", "created_at",
         ]
         read_only_fields = fields
 
     def get_name(self, obj):
         return obj.user.get_full_name() or obj.user.phone_number
+
+    def get_profile_photo(self, obj):
+        profile = getattr(obj.user, "profile", None)
+        if profile and profile.avatar:
+            request = self.context.get("request")
+            url = profile.avatar.url
+            return request.build_absolute_uri(url) if request else url
+        return None
 
 
 class AmbassadorCreateSerializer(serializers.Serializer):

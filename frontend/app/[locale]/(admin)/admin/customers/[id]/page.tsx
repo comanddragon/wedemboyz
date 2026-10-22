@@ -100,7 +100,7 @@ export default function AdminCustomerDetailPage() {
 
       <div className="mb-6 flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <CustomerAvatar name={fullName} size="lg" />
+          <CustomerAvatar name={fullName} size="lg" imageUrl={customer.avatar} useProfilePhoto={customer.use_profile_photo} />
           <div>
           <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
             {fullName}

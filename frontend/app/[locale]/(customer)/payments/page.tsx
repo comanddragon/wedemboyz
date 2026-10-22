@@ -101,7 +101,7 @@ export default function PaymentHistoryPage() {
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <div className="mb-6 flex items-center gap-3">
-        <CustomerAvatar name={user ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() || user.phone_number : "Customer"} size="lg" />
+        <CustomerAvatar name={user ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() || user.phone_number : "Customer"} size="lg" imageUrl={user?.avatar} useProfilePhoto={user?.use_profile_photo} />
         <div>
           <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
             {t("payments.title")}

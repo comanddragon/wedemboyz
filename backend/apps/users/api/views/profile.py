@@ -8,6 +8,7 @@ from apps.users.api.serializers import (
     ProfileSerializer,
 )
 from apps.users.models import UserProfile
+from core.permissions import IsRegisteredUser
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
@@ -26,7 +27,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 class ChangePasswordView(APIView):
     """POST /api/v1/users/me/change-password/"""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
@@ -39,7 +40,7 @@ class PreferencesView(generics.RetrieveUpdateAPIView):
     """GET/PATCH /api/v1/users/me/preferences/"""
 
     serializer_class = PreferencesSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     def get_object(self):
         profile, _ = UserProfile.objects.get_or_create(user=self.request.user)

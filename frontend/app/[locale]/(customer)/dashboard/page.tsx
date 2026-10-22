@@ -82,17 +82,17 @@ function nextEventFromSchedule(
 
 export default function DashboardPage() {
   const { locale, t } = useI18n();
-  const { user, isAuthenticated, isHydrated } = useAuth();
+  const { user, isAuthenticated, isHydrated, isGuest } = useAuth();
   const canLoadDashboard = isHydrated && isAuthenticated;
   const loyalty = useQuery({
     queryKey: queryKeys.discounts.loyalty,
     queryFn: discountsApi.getLoyaltyAccount,
-    enabled: canLoadDashboard,
+    enabled: canLoadDashboard && !isGuest,
   });
   const orders = useQuery({
     queryKey: queryKeys.orders.list(1),
     queryFn: () => ordersApi.listOrders(1),
-    enabled: canLoadDashboard,
+    enabled: canLoadDashboard && !isGuest,
   });
   const notifications = useQuery({
     queryKey: queryKeys.notifications.list(1),
@@ -165,7 +165,7 @@ export default function DashboardPage() {
       </header>
 
       <section
-        className="mt-4 grid grid-cols-2 gap-2 sm:mt-8 sm:gap-4 xl:grid-cols-4"
+        className={`mt-4 grid grid-cols-2 gap-2 sm:mt-8 sm:gap-4 ${isGuest ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}
         aria-label="Account summary"
       >
         <KpiTile
@@ -182,13 +182,13 @@ export default function DashboardPage() {
           value={orders.isLoading ? "—" : (orders.data?.count ?? 0)}
           detail={t("customerDashboard.allBookings")}
         />
-        <KpiTile
+        {!isGuest && <KpiTile
           accent="gold"
           icon={Coins}
           label={t("customerDashboard.points")}
           value={loyalty.isLoading ? "—" : (loyalty.data?.points_balance ?? 0)}
           detail={t("customerDashboard.redeem")}
-        />
+        />}
         <KpiTile
           accent="coral"
           icon={Bell}
@@ -264,7 +264,9 @@ export default function DashboardPage() {
                 {t("customerDashboard.currentPlan")}
               </p>
               <p className="mt-0.5 truncate font-display text-base font-semibold sm:mt-1 sm:text-xl">
-                {subscription
+                {isGuest
+                  ? t("customerDashboard.accountRequired")
+                  : subscription
                   ? PLAN_LABELS[subscription.plan]
                   : t("customerDashboard.payAsYouGo")}
               </p>
@@ -273,7 +275,14 @@ export default function DashboardPage() {
         </section>
 
         <div className="space-y-3 sm:space-y-6">
-          {subscription ? (
+          {isGuest ? (
+            <Card className="card-gold rounded-2xl border-0 p-4 text-navy shadow-btn-gold sm:rounded-[22px] sm:p-5">
+              <Sparkles className="h-5 w-5" />
+              <h2 className="mt-3 font-display text-lg font-semibold">{t("customerDashboard.unlockTitle")}</h2>
+              <p className="mt-1 text-sm text-navy/70">{t("customerDashboard.unlockBody")}</p>
+              <Link href="/register" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold">{t("auth.create")} <ArrowRight className="h-4 w-4" /></Link>
+            </Card>
+          ) : subscription ? (
             <Link href="/subscription">
               <Card className="relative overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-turquoise-50 via-white to-white p-4 text-navy shadow-card transition-all hover:-translate-y-0.5 sm:rounded-[22px] sm:p-5">
                 <div className="flex items-start justify-between">
@@ -315,14 +324,14 @@ export default function DashboardPage() {
               </Link>
             </Card>
           )}
-          {loyalty.data ? (
+          {!isGuest && (loyalty.data ? (
             <MembershipCard
               tier={loyalty.data.tier}
               pointsBalance={loyalty.data.points_balance}
             />
           ) : (
             <div className="h-36 animate-pulse rounded-xl bg-steam" />
-          )}
+          ))}
         </div>
       </div>
 

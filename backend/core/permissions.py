@@ -1,4 +1,4 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 
 class IsOwner(BasePermission):
@@ -27,3 +27,16 @@ class IsStaffOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return bool(request.user and request.user.is_authenticated)
         return bool(request.user and request.user.is_staff)
+
+
+class IsRegisteredUser(BasePermission):
+    """Account-only benefits; guest sessions may still book and get support."""
+
+    message = "Create an account to use this feature."
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and not getattr(request.user, "is_guest", False)
+        )

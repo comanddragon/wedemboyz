@@ -17,6 +17,7 @@ export interface UserProfile {
   email: string | null;
   is_phone_verified: boolean;
   avatar: string | null;
+  use_profile_photo: boolean;
   address_line: string;
   city: string;
   date_of_birth: string | null; // ISO date
@@ -44,6 +45,7 @@ export type ProfileUpdateInput = Partial<
     | "city"
     | "date_of_birth"
     | "contact_phone"
+    | "use_profile_photo"
   >
 > & {
   avatar?: File | null;
@@ -52,6 +54,10 @@ export type ProfileUpdateInput = Partial<
 /** Mirrors apps.users.api.serializers.profile.PreferencesSerializer */
 export interface UserPreferences {
   preferred_language: PreferredLanguage;
+  water_temperature: "COLD" | "WARM" | "HOT";
+  spin_speed: "GENTLE" | "NORMAL" | "HIGH";
+  detergent_preference: "STANDARD" | "HYPOALLERGENIC" | "SCENT_FREE";
+  folding_style: "BY_GARMENT" | "BY_OUTFIT" | "HANGER_READY";
 }
 
 export interface RegisterInput {
@@ -84,6 +90,8 @@ export interface AuthTokens {
     staff_permissions: string[];
     staff_access_active: boolean;
     is_ambassador: boolean;
+    avatar: string | null;
+    use_profile_photo: boolean;
   };
 }
 

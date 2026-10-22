@@ -217,6 +217,8 @@ export default function AdminChatRoomPage() {
               t("adminChat.customerHash").replace("{id}", String(roomId))
             }
             size="sm"
+            imageUrl={room?.customer.avatar}
+            useProfilePhoto={room?.customer.use_profile_photo}
           />
           <div>
             <p className="text-sm font-semibold text-navy">
@@ -354,6 +356,8 @@ export default function AdminChatRoomPage() {
                             t("adminChat.customer")
                           }
                           size="sm"
+                          imageUrl={room?.customer.avatar}
+                          useProfilePhoto={room?.customer.use_profile_photo}
                         />
                       ) : !isMine ? (
                         <span className="w-9 shrink-0" />

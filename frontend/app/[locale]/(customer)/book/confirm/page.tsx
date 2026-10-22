@@ -170,7 +170,7 @@ export default function BookConfirmPage() {
                 return (
                   <label
                     key={value}
-                    className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition-colors ${selected ? "border-navy bg-gold-50/70 ring-[3px] ring-gold/15" : "border-crease hover:border-navy/40 hover:bg-steam/60"}`}
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition-colors ${selected ? "border-status-ready-text/40 bg-status-ready-bg ring-[3px] ring-status-ready-text/15" : "border-crease hover:border-navy/40 hover:bg-steam/60"}`}
                   >
                     <input
                       type="radio"

@@ -230,6 +230,8 @@ export default function AdminOrderDetailPage() {
           <CustomerAvatar
             name={customerFullName(order.customer) ?? `Customer ${order.user}`}
             size="lg"
+            imageUrl={order.customer?.avatar}
+            useProfilePhoto={order.customer?.use_profile_photo}
           />
           <div>
             <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">

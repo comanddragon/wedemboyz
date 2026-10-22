@@ -57,11 +57,43 @@ class UserProfile(TimeStampedModel):
         CustomUser, on_delete=models.CASCADE, related_name="profile"
     )
     avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    use_profile_photo = models.BooleanField(
+        default=False,
+        help_text="Use the uploaded photo instead of the generated illustrated avatar.",
+    )
     address_line = models.CharField(max_length=255, blank=True)
-    city = models.CharField(max_length=100, default="Bamenda")
+    city = models.CharField(max_length=100, default="Yaoundé")
     date_of_birth = models.DateField(blank=True, null=True)
     preferred_language = models.CharField(
         max_length=2, choices=LANGUAGE_CHOICES, default="en"
+    )
+    water_temperature = models.CharField(
+        max_length=10,
+        choices=[("COLD", "Cold"), ("WARM", "Warm"), ("HOT", "Hot")],
+        default="COLD",
+    )
+    spin_speed = models.CharField(
+        max_length=10,
+        choices=[("GENTLE", "Gentle"), ("NORMAL", "Normal"), ("HIGH", "High")],
+        default="NORMAL",
+    )
+    detergent_preference = models.CharField(
+        max_length=20,
+        choices=[
+            ("STANDARD", "Standard"),
+            ("HYPOALLERGENIC", "Hypoallergenic"),
+            ("SCENT_FREE", "Scent-free"),
+        ],
+        default="STANDARD",
+    )
+    folding_style = models.CharField(
+        max_length=20,
+        choices=[
+            ("BY_GARMENT", "By garment type"),
+            ("BY_OUTFIT", "By outfit"),
+            ("HANGER_READY", "Hanger-ready"),
+        ],
+        default="BY_GARMENT",
     )
     notes = models.TextField(blank=True)
     tags = models.JSONField(default=list, blank=True)

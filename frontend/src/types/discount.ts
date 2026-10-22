@@ -166,6 +166,7 @@ export interface AmbassadorProfile {
   name: string;
   phone_number: string;
   promo_code: string;
+  profile_photo: string | null;
   credit_balance: string;
   lifetime_credits: string;
   is_active: boolean;
@@ -183,7 +184,7 @@ export interface AmbassadorLeaderboardRow {
 export interface AmbassadorLeaderboard {
   period: "month" | "year" | "all";
   period_label: string;
-  current_ambassador_id: number;
+  current_ambassador_id: number | null;
   results: AmbassadorLeaderboardRow[];
 }
 

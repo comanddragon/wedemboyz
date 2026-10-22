@@ -20,6 +20,7 @@ from apps.payments.models import Payment, PaymentMethod
 from apps.staff.models import log_activity
 from apps.staff.permissions import HasStaffPermission, StaffPermission, has_staff_permission
 from core.constants import PaymentGateway, PaymentStatus
+from core.permissions import IsRegisteredUser
 from services.order_payments import recompute_payment_status
 
 
@@ -37,6 +38,7 @@ class PaymentListCreateView(generics.ListCreateAPIView):
         staff_id = self.request.query_params.get("staff")
         date_from = self.request.query_params.get("date_from")
         date_to = self.request.query_params.get("date_to")
+        status_filter = self.request.query_params.get("status")
         if method:
             qs = qs.filter(payment_method_type=method)
         if order_id and order_id.isdigit():
@@ -47,6 +49,8 @@ class PaymentListCreateView(generics.ListCreateAPIView):
             qs = qs.filter(received_at__date__gte=date_from)
         if date_to:
             qs = qs.filter(received_at__date__lte=date_to)
+        if status_filter in PaymentStatus.values:
+            qs = qs.filter(status=status_filter)
         if has_staff_permission(self.request.user, StaffPermission.PAYMENTS_VIEW):
             return qs
         return qs.filter(Q(order__user=self.request.user) | Q(subscription__user=self.request.user))
@@ -207,7 +211,7 @@ class PaymentMethodListCreateView(generics.ListCreateAPIView):
     """GET/POST /api/v1/payments/methods/"""
 
     serializer_class = PaymentMethodSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
     # A user only ever has a handful of payment methods, and the frontend
     # (paymentsApi.listPaymentMethods) expects a bare array back — same
     # reasoning as SubscriptionListCreateView.
@@ -226,7 +230,7 @@ class PaymentMethodDetailView(generics.RetrieveDestroyAPIView):
     """GET/DELETE /api/v1/payments/methods/{id}/"""
 
     serializer_class = PaymentMethodSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     def get_queryset(self):
         return PaymentMethod.objects.filter(user=self.request.user)
@@ -235,7 +239,7 @@ class PaymentMethodDetailView(generics.RetrieveDestroyAPIView):
 class SetDefaultPaymentMethodView(APIView):
     """POST /api/v1/payments/methods/{id}/set-default/"""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     def post(self, request, pk):
         method = get_object_or_404(PaymentMethod, pk=pk, user=request.user)

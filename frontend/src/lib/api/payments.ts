@@ -49,8 +49,11 @@ export async function setDefaultPaymentMethod(
 // --- Payments ----------------------------------------------------------------
 
 /** GET /payments/ */
-export async function listPayments(page = 1): Promise<Paginated<Payment>> {
-  const res = await apiClient.get("/payments/", { params: { page } });
+export async function listPayments(
+  page = 1,
+  filters: { status?: string } = {},
+): Promise<Paginated<Payment>> {
+  const res = await apiClient.get("/payments/", { params: { page, ...filters } });
   return unwrap<Paginated<Payment>>(res);
 }
 

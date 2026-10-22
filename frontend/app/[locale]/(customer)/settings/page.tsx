@@ -2,15 +2,18 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Bell,
+  Camera,
   ChevronRight,
-  CreditCard,
+  Gift,
+  ReceiptText,
   Repeat,
   ShieldCheck,
   Sparkles,
   WashingMachine,
 } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import {
@@ -25,8 +28,11 @@ import { profileApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
 import type { PreferredLanguage, UserProfile } from "@/src/types";
+import type { ProfileUpdateInput } from "@/src/types";
 import { useI18n } from "@/src/i18n/I18nProvider";
 import { localizeHref, stripLocale } from "@/src/i18n/config";
+import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
+import { useAuthStore } from "@/src/lib/stores/auth.store";
 
 function SectionSkeleton() {
   return (
@@ -64,13 +70,7 @@ function ProfileForm({
 }: {
   profile: UserProfile;
   mutation: {
-    mutate: (data: {
-      first_name: string;
-      last_name: string;
-      email: string;
-      address_line: string;
-      city: string;
-    }) => void;
+    mutate: (data: ProfileUpdateInput) => void;
     isPending: boolean;
   };
 }) {
@@ -79,12 +79,36 @@ function ProfileForm({
   const [lastName, setLastName] = useState(profile.last_name ?? "");
   const [email, setEmail] = useState(profile.email ?? "");
   const [addressLine, setAddressLine] = useState(profile.address_line ?? "");
-  const [city, setCity] = useState(profile.city ?? "");
+  const [city, setCity] = useState(profile.city || "Yaoundé");
+  const [dateOfBirth, setDateOfBirth] = useState(profile.date_of_birth ?? "");
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [useProfilePhoto, setUseProfilePhoto] = useState(profile.use_profile_photo);
+  const [photoError, setPhotoError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewUrl = useMemo(
+    () => (avatar ? URL.createObjectURL(avatar) : profile.avatar),
+    [avatar, profile.avatar],
+  );
+
+  useEffect(() => {
+    if (!avatar) return;
+    const url = previewUrl;
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [avatar, previewUrl]);
+
+  const displayName = `${firstName} ${lastName}`.trim() || profile.phone_number;
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
+
+        if (profile.is_ambassador && !profile.avatar && !avatar) {
+          setPhotoError(t("settings.ambassadorPhotoRequired"));
+          return;
+        }
 
         mutation.mutate({
           first_name: firstName,
@@ -92,9 +116,85 @@ function ProfileForm({
           email,
           address_line: addressLine,
           city,
+          date_of_birth: dateOfBirth || null,
+          avatar: avatar ?? undefined,
+          use_profile_photo: useProfilePhoto,
         });
       }}
     >
+      {profile.is_ambassador && !profile.avatar && !avatar ? (
+        <div className="mb-5 rounded-2xl border border-gold/60 bg-gold-50/90 p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-5 w-5 shrink-0 text-gold-700 mt-0.5" aria-hidden="true" />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-gold-900">
+                {t("settings.ambassadorRequiredTitle")}
+              </p>
+              <p className="mt-1 text-xs text-navy/80 leading-relaxed">
+                {t("settings.ambassadorRequiredBody")}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      <div
+        className={`mb-6 rounded-2xl p-4 sm:p-5 transition-all ${
+          profile.is_ambassador && !profile.avatar && !avatar
+            ? "border-2 border-gold bg-gold-50/30 ring-4 ring-gold/15"
+            : "bg-steam/55"
+        }`}
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <CustomerAvatar name={displayName} size="lg" imageUrl={previewUrl} useProfilePhoto={useProfilePhoto} className="h-20 w-20 ring-2 ring-white" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-display text-base font-semibold text-navy">{t("settings.profilePicture")}</p>
+              {profile.is_ambassador ? (
+                <span className="rounded-full bg-gold-100 px-2 py-0.5 text-[10px] font-bold text-navy">
+                  {t("settings.requiredForAmbassadors")}
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-1 text-xs leading-5 text-ink-muted">{t("settings.profilePictureBody")}</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                if (file.size > 5 * 1024 * 1024) {
+                  setPhotoError(t("settings.profilePictureTooLarge"));
+                  return;
+                }
+                setPhotoError("");
+                setAvatar(file);
+                setUseProfilePhoto(true);
+              }}
+            />
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full bg-white px-4 text-xs font-semibold text-navy ring-1 ring-crease transition-colors hover:bg-gold-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
+              <Camera className="h-4 w-4" aria-hidden="true" />
+              {profile.avatar || avatar ? t("settings.changePicture") : t("settings.uploadPicture")}
+            </button>
+            {photoError ? <p className="mt-2 text-xs text-status-cancelled-text" role="alert">{photoError}</p> : null}
+          </div>
+        </div>
+        <fieldset className="mt-4 grid gap-2 sm:grid-cols-2">
+          <legend className="sr-only">{t("settings.avatarDisplay")}</legend>
+          <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${!useProfilePhoto ? "border-navy bg-white" : "border-crease bg-white/60"}`}>
+            <input type="radio" name="avatar-display" checked={!useProfilePhoto} onChange={() => setUseProfilePhoto(false)} className="accent-navy" />
+            <CustomerAvatar name={displayName} size="sm" />
+            <span><span className="block text-xs font-semibold text-navy">{t("settings.illustratedAvatar")}</span><span className="block text-[11px] text-ink-muted">{t("settings.illustratedAvatarBody")}</span></span>
+          </label>
+          <label className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${useProfilePhoto ? "border-navy bg-white" : "border-crease bg-white/60"} ${!previewUrl ? "cursor-not-allowed opacity-55" : "cursor-pointer"}`}>
+            <input type="radio" name="avatar-display" checked={useProfilePhoto} disabled={!previewUrl} onChange={() => setUseProfilePhoto(true)} className="accent-navy" />
+            <CustomerAvatar name={displayName} size="sm" imageUrl={previewUrl} forceProfilePhoto />
+            <span><span className="block text-xs font-semibold text-navy">{t("settings.profilePhoto")}</span><span className="block text-[11px] text-ink-muted">{previewUrl ? t("settings.profilePhotoBody") : t("settings.uploadFirst")}</span></span>
+          </label>
+        </fieldset>
+        {profile.is_ambassador ? <p className="mt-3 text-xs font-medium text-gold-600">{t("settings.ambassadorPhotoNotice")}</p> : null}
+      </div>
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
         <Field label={t("settings.firstName")}>
           <Input
@@ -130,6 +230,14 @@ function ProfileForm({
         <Input value={city} onChange={(e) => setCity(e.target.value)} />
       </Field>
 
+      <Field label={t("settings.dateOfBirth")}>
+        <Input
+          type="date"
+          value={dateOfBirth}
+          onChange={(e) => setDateOfBirth(e.target.value)}
+        />
+      </Field>
+
       <Button type="submit" disabled={mutation.isPending}>
         {mutation.isPending ? t("settings.saving") : t("settings.save")}
       </Button>
@@ -142,8 +250,9 @@ export default function SettingsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
+  const setAuthUser = useAuthStore((state) => state.setUser);
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, error: profileError, refetch: refetchProfile } = useQuery({
     queryKey: queryKeys.profile.me,
     queryFn: () => profileApi.getProfile(),
   });
@@ -154,15 +263,16 @@ export default function SettingsPage() {
   } | null>(null);
 
   const updateProfileMutation = useMutation({
-    mutationFn: (data: {
-      first_name: string;
-      last_name: string;
-      email: string;
-      address_line: string;
-      city: string;
-    }) => profileApi.updateProfile(data),
+    mutationFn: (data: ProfileUpdateInput) => profileApi.updateProfile(data),
 
-    onSuccess: async () => {
+    onSuccess: async (updated) => {
+      setAuthUser({
+        first_name: updated.first_name,
+        last_name: updated.last_name,
+        avatar: updated.avatar,
+        use_profile_photo: updated.use_profile_photo,
+        is_ambassador: updated.is_ambassador,
+      });
       setProfileMessage({
         text: t("settings.updated"),
         tone: "ok",
@@ -170,6 +280,9 @@ export default function SettingsPage() {
 
       await queryClient.invalidateQueries({
         queryKey: queryKeys.profile.me,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["ambassadors"],
       });
     },
 
@@ -272,25 +385,6 @@ export default function SettingsPage() {
           </Card>
         </Link>
 
-        <Link href="/settings/payments">
-          <Card className="flex items-center gap-3 transition-colors hover:bg-steam">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold-50 text-gold">
-              <CreditCard className="h-[18px] w-[18px]" aria-hidden="true" />
-            </span>
-
-            <div className="flex-1">
-              <p className="text-sm font-medium text-ink">{t("settings.payments")}</p>
-
-              <p className="text-xs text-ink-muted">{t("settings.paymentsBody")}</p>
-            </div>
-
-            <ChevronRight
-              className="h-4 w-4 text-ink-muted"
-              aria-hidden="true"
-            />
-          </Card>
-        </Link>
-
         <Link href="/subscription">
           <Card className="flex items-center gap-3 transition-colors hover:bg-steam">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-turquoise-50 text-turquoise-600">
@@ -311,6 +405,30 @@ export default function SettingsPage() {
             />
           </Card>
         </Link>
+
+        <Link href="/notifications">
+          <Card className="flex items-center gap-3 transition-colors hover:bg-steam">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy"><Bell className="h-[18px] w-[18px]" aria-hidden="true" /></span>
+            <div className="flex-1"><p className="text-sm font-medium text-ink">{t("settings.notifications")}</p><p className="text-xs text-ink-muted">{t("settings.notificationsBody")}</p></div>
+            <ChevronRight className="h-4 w-4 text-ink-muted" aria-hidden="true" />
+          </Card>
+        </Link>
+
+        <Link href="/loyalty">
+          <Card className="flex items-center gap-3 transition-colors hover:bg-steam">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold-50 text-gold-600"><Gift className="h-[18px] w-[18px]" aria-hidden="true" /></span>
+            <div className="flex-1"><p className="text-sm font-medium text-ink">{t("settings.rewards")}</p><p className="text-xs text-ink-muted">{t("settings.rewardsBody")}</p></div>
+            <ChevronRight className="h-4 w-4 text-ink-muted" aria-hidden="true" />
+          </Card>
+        </Link>
+
+        <Link href="/payments">
+          <Card className="flex items-center gap-3 transition-colors hover:bg-steam">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-steam text-navy"><ReceiptText className="h-[18px] w-[18px]" aria-hidden="true" /></span>
+            <div className="flex-1"><p className="text-sm font-medium text-ink">{t("settings.paymentHistory")}</p><p className="text-xs text-ink-muted">{t("settings.paymentHistoryBody")}</p></div>
+            <ChevronRight className="h-4 w-4 text-ink-muted" aria-hidden="true" />
+          </Card>
+        </Link>
       </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-2 xl:gap-10">
@@ -319,6 +437,12 @@ export default function SettingsPage() {
           <div>
             <SectionSkeleton />
           </div>
+        ) : profileError ? (
+          <Card>
+            <h2 className="font-display text-sm font-semibold text-navy">{t("settings.profileUnavailable")}</h2>
+            <p className="mt-1 text-xs text-ink-muted">{getApiErrorMessage(profileError)}</p>
+            <Button className="mt-4" variant="secondary" onClick={() => refetchProfile()}>{t("settings.retry")}</Button>
+          </Card>
         ) : (
           <Card>
             <h2 className="font-display mb-1 text-sm font-semibold text-navy">

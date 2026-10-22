@@ -154,7 +154,7 @@ export default function BookServicesPage() {
         </div>
       }
     >
-      <div className="grid h-full min-h-0 items-start gap-5 pb-3 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:gap-8">
+      <div className="grid min-h-0 items-start gap-5 pb-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:gap-8">
         <Card className="p-4 lg:p-5">
           <form onSubmit={handleAddItem}>
             <Field label={t("booking.service")}>
@@ -328,22 +328,24 @@ export default function BookServicesPage() {
                       </p>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => beginEdit(item.clientId)}
-                    aria-label={`${t("booking.edit")} ${item.label || serviceLabel(item.service_type)}`}
-                    className="grid h-8 w-8 place-items-center rounded-lg text-ink-muted hover:bg-steam hover:text-navy"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeItem(item.clientId)}
-                    aria-label={t("booking.removeItem")}
-                    className="text-ink-muted hover:text-status-cancelled-text"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex shrink-0 items-center gap-1 self-center">
+                    <button
+                      type="button"
+                      onClick={() => beginEdit(item.clientId)}
+                      aria-label={`${t("booking.edit")} ${item.label || serviceLabel(item.service_type)}`}
+                      className="grid h-8 w-8 place-items-center rounded-lg text-ink-muted hover:bg-steam hover:text-navy"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.clientId)}
+                      aria-label={t("booking.removeItem")}
+                      className="grid h-8 w-8 place-items-center rounded-lg text-ink-muted hover:bg-status-cancelled-bg hover:text-status-cancelled-text"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </Card>
               </li>
             ))}

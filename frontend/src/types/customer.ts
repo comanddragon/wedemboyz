@@ -21,6 +21,8 @@ export interface CustomerListItem {
   source: "ONLINE" | "WALK_IN" | "REFERRAL" | "OTHER";
   is_blocked: boolean;
   tags: string[];
+  avatar: string | null;
+  use_profile_photo: boolean;
   is_walk_in: boolean;
   created_at: string;
 }

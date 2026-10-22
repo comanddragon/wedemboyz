@@ -101,6 +101,28 @@ def test_registered_user_cannot_claim():
     assert res.status_code == 400
 
 
+def test_register_from_another_session_reconnects_guest_orders_by_contact_phone():
+    guest_client, data = _guest_client(contact_phone="677000555")
+    order_res = guest_client.post(
+        "/api/v1/orders/",
+        {"pickup_address": "A", "delivery_address": "B",
+         "items": [{"service_type": "TSHIRT", "label": "Tee", "weight_kg": 1, "quantity": 2}]},
+        format="json",
+    )
+
+    register = APIClient().post(
+        "/api/v1/auth/register/",
+        {"phone_number": "677000555", "first_name": "Ada",
+         "password": "S3cure-pass!", "password2": "S3cure-pass!"},
+        format="json",
+    )
+
+    assert register.status_code == 201, register.content
+    user = CustomUser.objects.get(pk=data["user"]["id"])
+    assert user.phone_number == "237677000555" and not user.is_guest
+    assert Order.objects.get(pk=order_res.json()["data"]["id"]).user_id == user.pk
+
+
 def test_sms_skips_guests_without_contact_number(settings):
     from services import sms
 

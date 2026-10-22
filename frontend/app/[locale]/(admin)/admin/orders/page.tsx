@@ -348,6 +348,8 @@ export default function AdminOrdersPage() {
                         `Customer ${order.id}`
                       }
                       size="sm"
+                      imageUrl={order.customer?.avatar}
+                      useProfilePhoto={order.customer?.use_profile_photo}
                     />
                     <span>
                       {customerFullName(order.customer) ?? (

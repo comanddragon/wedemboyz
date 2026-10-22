@@ -40,10 +40,13 @@ class OrderListCreateView(generics.ListCreateAPIView):
         qs = Order.objects.select_related(
             "user", "schedule", "assigned_to", "driver"
         ).prefetch_related("items")
-        if not has_staff_permission(self.request.user, StaffPermission.ORDERS_VIEW):
-            return qs.filter(user=self.request.user)
-
         status_filter = self.request.query_params.get("status")
+        if not has_staff_permission(self.request.user, StaffPermission.ORDERS_VIEW):
+            qs = qs.filter(user=self.request.user)
+            if status_filter in OrderStatus.values:
+                qs = qs.filter(status=status_filter)
+            return qs
+
         payment_status = self.request.query_params.get("payment_status")
         source = self.request.query_params.get("source")
         assigned_to = self.request.query_params.get("assigned_to")

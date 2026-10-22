@@ -12,8 +12,7 @@ import {
   Star,
   TrendingUp,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import { discountsApi } from "@/src/lib/api";
@@ -72,27 +71,20 @@ const TRANSACTION_META: Record<
 export default function LoyaltyPage() {
   const { locale, t } = useI18n();
   const { user, isHydrated } = useAuth();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data: account, isLoading } = useQuery({
     queryKey: queryKeys.discounts.loyalty,
     queryFn: () => discountsApi.getLoyaltyAccount(),
-    enabled: isHydrated && !user?.is_staff,
+    enabled: isHydrated,
   });
 
   const { data: transactions, isLoading: isLoadingTransactions } = useQuery({
     queryKey: queryKeys.discounts.loyaltyTransactions(1),
     queryFn: () => discountsApi.listLoyaltyTransactions(1),
-    enabled: isHydrated && !user?.is_staff,
+    enabled: isHydrated,
   });
-
-  useEffect(() => {
-    if (isHydrated && user?.is_staff) {
-      router.replace("/admin/loyalty");
-    }
-  }, [isHydrated, router, user?.is_staff]);
 
   const redeemMutation = useMutation({
     mutationFn: (rewardId: number) =>
@@ -119,14 +111,14 @@ export default function LoyaltyPage() {
 
   const formatPoints = (value: number) => value.toLocaleString(locale);
 
-  if (!isHydrated || user?.is_staff) {
+  if (!isHydrated) {
     return null;
   }
 
   return (
     <main className="mx-auto w-full max-w-[1480px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <header className="mb-6 flex items-center gap-3">
-        <CustomerAvatar name={customerName} size="lg" />
+        <CustomerAvatar name={customerName} size="lg" imageUrl={user?.avatar} useProfilePhoto={user?.use_profile_photo} />
         <div className="min-w-0">
           <h1 className="font-display text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-navy sm:text-[2rem]">
             {t("loyalty.title")}

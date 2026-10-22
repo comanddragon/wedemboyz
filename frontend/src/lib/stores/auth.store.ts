@@ -15,6 +15,8 @@ interface AuthUser {
   staff_permissions: string[];
   staff_access_active: boolean;
   is_ambassador: boolean;
+  avatar: string | null;
+  use_profile_photo: boolean;
 }
 
 export interface AuthState {

@@ -16,6 +16,8 @@ class CustomerListSerializer(serializers.ModelSerializer):
     source = serializers.CharField(source="profile.source", read_only=True, default="ONLINE")
     is_blocked = serializers.BooleanField(source="profile.is_blocked", read_only=True, default=False)
     tags = serializers.JSONField(source="profile.tags", read_only=True, default=list)
+    avatar = serializers.ImageField(source="profile.avatar", read_only=True, allow_null=True)
+    use_profile_photo = serializers.BooleanField(source="profile.use_profile_photo", read_only=True, default=False)
 
     class Meta:
         model = CustomUser
@@ -35,6 +37,8 @@ class CustomerListSerializer(serializers.ModelSerializer):
             "source",
             "is_blocked",
             "tags",
+            "avatar",
+            "use_profile_photo",
             "is_walk_in",
             "created_at",
         ]

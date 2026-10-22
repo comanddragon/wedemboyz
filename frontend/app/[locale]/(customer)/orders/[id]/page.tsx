@@ -22,7 +22,7 @@ import {
   orderStatusTone,
   serviceLabel,
 } from "@/src/components/ui";
-import { ordersApi } from "@/src/lib/api";
+import { chatApi, ordersApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
@@ -54,6 +54,15 @@ export default function OrderDetailPage() {
     },
   });
 
+  const orderChatMutation = useMutation({
+    mutationFn: async () => {
+      const rooms = await chatApi.listChatRooms();
+      const existing = rooms.find((room) => room.order?.id === orderId);
+      return existing ?? chatApi.createChatRoom({ order: orderId });
+    },
+    onSuccess: (room) => router.push(`/chat/${room.id}`),
+  });
+
   if (isLoading)
     return (
       <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9 text-sm text-ink-muted">
@@ -73,6 +82,17 @@ export default function OrderDetailPage() {
   const canCancel =
     EDITABLE_ORDER_STATUSES.includes(order.status) ||
     order.status === "CONFIRMED";
+  // Line items are the source of truth. Older orders may still have stale
+  // denormalised summary columns until the repair migration is deployed.
+  const piecesCount = order.items.reduce(
+    (total, item) => total + Number(item.quantity || 0),
+    0,
+  );
+  const weightKgTotal = order.items.reduce(
+    (total, item) =>
+      total + Number(item.weight_kg || 0) * Number(item.quantity || 0),
+    0,
+  );
 
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
@@ -103,7 +123,7 @@ export default function OrderDetailPage() {
           {
             icon: PackageCheck,
             label: t("orders.load"),
-            value: `${order.pieces_count} ${t("orders.pieces")} · ${Number(order.weight_kg_total).toFixed(1)} kg`,
+            value: `${piecesCount} ${t("orders.pieces")} · ${weightKgTotal.toFixed(1)} kg`,
           },
           {
             icon: WalletCards,
@@ -282,14 +302,23 @@ export default function OrderDetailPage() {
             {cancelMutation.isPending ? t("orders.cancelling") : t("orders.cancel")}
           </Button>
         )}
-        <Button variant="secondary" onClick={() => router.push("/chat")}>
+        <Button
+          variant="secondary"
+          onClick={() => orderChatMutation.mutate()}
+          disabled={orderChatMutation.isPending}
+        >
           <MessageCircle className="h-4 w-4" aria-hidden="true" />
-          {t("orders.question")}
+          {orderChatMutation.isPending ? t("orders.loading") : t("orders.question")}
         </Button>
       </div>
       {cancelMutation.error && (
         <p className="mt-2 text-sm text-status-cancelled-text">
           {getApiErrorMessage(cancelMutation.error)}
+        </p>
+      )}
+      {orderChatMutation.error && (
+        <p className="mt-2 text-sm text-status-cancelled-text">
+          {getApiErrorMessage(orderChatMutation.error)}
         </p>
       )}
     </main>

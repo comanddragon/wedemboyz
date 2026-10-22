@@ -22,7 +22,7 @@ export async function updateProfile(
     const formData = new FormData();
     Object.entries(input).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        formData.append(key, value as string | Blob);
+        formData.append(key, value instanceof Blob ? value : String(value));
       }
     });
     const res = await apiClient.patch("/users/me/", formData, {

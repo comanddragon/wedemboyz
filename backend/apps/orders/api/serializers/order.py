@@ -117,9 +117,12 @@ class OrderCustomerSerializer(serializers.ModelSerializer):
     types/order.ts::OrderCustomerSummary on the frontend. Kept intentionally
     small (no phone/email) since it renders in admin list/detail views."""
 
+    avatar = serializers.ImageField(source="profile.avatar", read_only=True, allow_null=True)
+    use_profile_photo = serializers.BooleanField(source="profile.use_profile_photo", read_only=True, default=False)
+
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "phone_number"]
+        fields = ["id", "first_name", "last_name", "phone_number", "avatar", "use_profile_photo"]
         read_only_fields = fields
 
 
@@ -404,6 +407,11 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                 unit_price=unit_price,
                 # OrderItem.save() derives subtotal = unit_price * quantity.
             )
+
+        # Keep the denormalised load summary in sync with the line items just
+        # created.  These values are rendered on the customer order detail and
+        # were previously left at their model defaults (0 pieces / 0 kg).
+        order.recalculate_total()
 
         if promo:
             from apps.discounts.models import PromoUsage

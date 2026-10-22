@@ -1,27 +1,27 @@
 from datetime import date
 
-from rest_framework import generics, permissions, status
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
+from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.discounts.api.serializers import (
+    AmbassadorCreateSerializer,
+    AmbassadorProfileSerializer,
     LoyaltyAccountSerializer,
-    LoyaltyTransactionSerializer,
-    RedeemPointsSerializer,
-    StampCardConfigSerializer,
     LoyaltyAdjustmentSerializer,
+    LoyaltyProgramSettingsSerializer,
+    LoyaltyRewardGrantSerializer,
+    LoyaltyRewardSerializer,
     LoyaltyRuleSerializer,
     LoyaltyTierConfigSerializer,
-    LoyaltyProgramSettingsSerializer,
-    LoyaltyRewardSerializer,
-    LoyaltyRewardGrantSerializer,
+    LoyaltyTransactionSerializer,
+    RedeemPointsSerializer,
     RewardRedeemSerializer,
-    AmbassadorProfileSerializer,
-    AmbassadorCreateSerializer,
+    StampCardConfigSerializer,
 )
 from apps.discounts.models import (
     AmbassadorCredit,
@@ -34,8 +34,9 @@ from apps.discounts.models import (
     LoyaltyTransaction,
     StampCardConfig,
 )
-from apps.users.models import LoyaltyAccount
 from apps.staff.permissions import HasStaffPermission, IsStaffManager, StaffPermission
+from apps.users.models import LoyaltyAccount
+from core.permissions import IsRegisteredUser
 from services.loyalty import redeem_points
 
 
@@ -44,7 +45,7 @@ class LoyaltyAccountView(generics.RetrieveAPIView):
     stamp-card view derived from the same points ledger."""
 
     serializer_class = LoyaltyAccountSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     def get_object(self):
         account, _ = LoyaltyAccount.objects.get_or_create(user=self.request.user)
@@ -55,7 +56,7 @@ class LoyaltyTransactionListView(generics.ListAPIView):
     """GET /api/v1/loyalty/transactions/"""
 
     serializer_class = LoyaltyTransactionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     def get_queryset(self):
         return LoyaltyTransaction.objects.filter(loyalty_account__user=self.request.user).select_related("order")
@@ -65,7 +66,7 @@ class LoyaltyRedeemView(APIView):
     """POST /api/v1/loyalty/redeem/ — redeem an arbitrary points amount
     (e.g. for a checkout discount)."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     def post(self, request):
         serializer = RedeemPointsSerializer(data=request.data)
@@ -83,7 +84,7 @@ class LoyaltyRedeemView(APIView):
 
 
 class LoyaltyRewardRedeemView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     @transaction.atomic
     def post(self, request):
@@ -113,7 +114,7 @@ class StampCardRedeemView(APIView):
     """Legacy endpoint retained for old clients. Badge-card rewards are now
     independent of credits and are granted automatically at ten badges."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     def post(self, request):
         raise ValidationError(
@@ -260,12 +261,18 @@ class AmbassadorLeaderboardView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        try:
-            current = AmbassadorProfile.objects.select_related("user", "promo_code").get(
-                user=request.user, is_active=True
-            )
-        except AmbassadorProfile.DoesNotExist:
+        current = AmbassadorProfile.objects.select_related("user", "user__profile", "promo_code").filter(
+            user=request.user, is_active=True
+        ).first()
+        if current is None and not request.user.is_staff:
             return Response({"detail": "Ambassador access required."}, status=status.HTTP_403_FORBIDDEN)
+        if current is not None:
+            profile = getattr(current.user, "profile", None)
+            if not profile or not profile.avatar:
+                return Response(
+                    {"detail": "Upload a profile photo before entering the ambassador leaderboard."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
         period = request.query_params.get("period", "month")
         today = timezone.localdate()
@@ -290,7 +297,12 @@ class AmbassadorLeaderboardView(APIView):
         else:
             raise ValidationError({"period": "Use month, year, or all."})
 
-        profiles = AmbassadorProfile.objects.filter(is_active=True).select_related("user", "promo_code")
+        profiles = (
+            AmbassadorProfile.objects.filter(is_active=True)
+            .exclude(user__profile__avatar="")
+            .filter(user__profile__avatar__isnull=False)
+            .select_related("user", "user__profile", "promo_code")
+        )
         rows = []
         for profile in profiles:
             credits = AmbassadorCredit.objects.filter(ambassador=profile, **{
@@ -308,6 +320,6 @@ class AmbassadorLeaderboardView(APIView):
         return Response({
             "period": period,
             "period_label": label,
-            "current_ambassador_id": current.id,
+            "current_ambassador_id": current.id if current else None,
             "results": rows,
         })

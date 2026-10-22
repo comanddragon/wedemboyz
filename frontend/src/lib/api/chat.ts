@@ -14,9 +14,25 @@ export async function listChatRooms(params?: {
   agent?: number;
   search?: string;
 }): Promise<ChatRoom[]> {
-  const res = await apiClient.get("/chat/rooms/", { params });
-  const data = unwrap<Paginated<ChatRoom>>(res);
-  return data.results;
+  const pageSize = 100;
+  const firstResponse = await apiClient.get("/chat/rooms/", {
+    params: { ...params, page: 1, page_size: pageSize },
+  });
+  const firstPage = unwrap<Paginated<ChatRoom>>(firstResponse);
+
+  if (firstPage.num_pages <= 1) return firstPage.results;
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: firstPage.num_pages - 1 }, (_, index) =>
+      apiClient
+        .get("/chat/rooms/", {
+          params: { ...params, page: index + 2, page_size: pageSize },
+        })
+        .then((response) => unwrap<Paginated<ChatRoom>>(response).results),
+    ),
+  );
+
+  return [firstPage.results, ...remainingPages].flat();
 }
 
 export async function assignChatRoom(

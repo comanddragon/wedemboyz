@@ -197,12 +197,13 @@ export default function AdminQuickSalePage() {
                   key={method.value}
                   className={`flex cursor-pointer items-center gap-2 rounded-xl border border-crease px-3.5 py-2.5 text-sm transition-colors hover:border-navy/40 ${
                     paymentMethod === method.value
-                      ? "border-navy bg-gold-50/70 ring-[3px] ring-gold/15"
+                      ? "border-status-ready-text/40 bg-status-ready-bg ring-[3px] ring-status-ready-text/15"
                       : ""
                   }`}
                 >
                   <input
                     type="radio"
+                    className="accent-status-ready-text"
                     name="qs-payment-method"
                     value={method.value}
                     checked={paymentMethod === method.value}

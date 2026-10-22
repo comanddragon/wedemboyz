@@ -1,22 +1,23 @@
 from django.conf import settings
 from django.db import transaction
-from rest_framework import generics, permissions, status
+from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.payments.api.serializers import (
+    AdminSubscriptionSerializer,
+    SubscriptionAdminActionSerializer,
     SubscriptionCheckoutSerializer,
     SubscriptionCreateSerializer,
     SubscriptionSerializer,
-    AdminSubscriptionSerializer,
-    SubscriptionAdminActionSerializer,
 )
 from apps.payments.models import Payment, Subscription
-from core.constants import PaymentGateway, PaymentStatus
-from services.pricing import price_for_subscription_plan
 from apps.staff.permissions import HasStaffPermission, StaffPermission
+from core.constants import PaymentGateway, PaymentStatus
+from core.permissions import IsRegisteredUser
+from services.pricing import price_for_subscription_plan
 
 
 class SubscriptionListCreateView(generics.ListCreateAPIView):
@@ -28,7 +29,7 @@ class SubscriptionListCreateView(generics.ListCreateAPIView):
     the project's standard {count, results, ...} envelope.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
     pagination_class = None
 
     def get_queryset(self):
@@ -48,7 +49,7 @@ class SubscriptionDetailView(generics.RetrieveAPIView):
     """GET /api/v1/subscriptions/{id}/"""
 
     serializer_class = SubscriptionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     def get_queryset(self):
         return Subscription.objects.filter(user=self.request.user)
@@ -65,7 +66,7 @@ class SubscriptionCheckoutView(APIView):
     apps.payments.tasks.activate_subscription / renew_subscription.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     def post(self, request, pk):
         subscription = get_object_or_404(Subscription, pk=pk, user=request.user)
@@ -185,7 +186,7 @@ class SubscriptionCheckoutView(APIView):
 class SubscriptionActionView(APIView):
     """POST /api/v1/subscriptions/{id}/pause|resume|cancel/"""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     # action -> (required current status or None, new status)
     TRANSITIONS = {
@@ -284,8 +285,10 @@ class AdminSubscriptionActionView(APIView):
         serializer = SubscriptionAdminActionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         action = serializer.validated_data["action"]
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
+
         from services.pricing import SUBSCRIPTION_PERIOD_DAYS, kg_allowance_for_plan
 
         if action in {"activate", "renew"}:
