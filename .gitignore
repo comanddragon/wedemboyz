@@ -12,13 +12,7 @@ cloudflare-env.d.ts
 .dev.vars
 frontend/.env
 frontend/.files/*
-frontend/public/*
-!frontend/public/brands/
-frontend/public/brands/*
-!frontend/public/brands/mtn-momo.png
-!frontend/public/brands/orange-money.svg
 *.zip
-.idea/
 .vscode/
 .DS_Store
 /Files/*
