@@ -11,6 +11,13 @@ from .loyalty import (
     LoyaltyRuleListCreateView,
     LoyaltyTierConfigDetailView,
     LoyaltyTierConfigListView,
+    LoyaltyProgramSettingsView,
+    LoyaltyRewardListCreateView,
+    LoyaltyRewardDetailView,
+    LoyaltyRewardRedeemView,
+    AmbassadorAdminListCreateView,
+    AmbassadorAdminDetailView,
+    AmbassadorLeaderboardView,
 )
 from .promo import (
     DiscountCampaignDetailView,
@@ -38,4 +45,11 @@ __all__ = [
     "LoyaltyRuleListCreateView",
     "LoyaltyTierConfigDetailView",
     "LoyaltyTierConfigListView",
+    "LoyaltyProgramSettingsView",
+    "LoyaltyRewardListCreateView",
+    "LoyaltyRewardDetailView",
+    "LoyaltyRewardRedeemView",
+    "AmbassadorAdminListCreateView",
+    "AmbassadorAdminDetailView",
+    "AmbassadorLeaderboardView",
 ]

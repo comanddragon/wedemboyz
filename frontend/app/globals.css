@@ -11,136 +11,124 @@
 @import "tailwindcss";
 
 @theme {
-  /*
-      Brand identity, taken from the printed flyer. Each colour has one job:
-      - navy   = authority. Structure, text, primary actions, the featured plan.
-      - gold   = reward. Prices, savings, CTAs on navy, focus, medals.
-      - silver = the middle tier and quiet supporting surfaces.
-      - paper / white = the canvas everything sits on.
-      Never write a hex or rgb() value in a component. Add or reuse a token here.
-    */
-  --color-navy: #071130;
-  --color-navy-700: #0d1b45;
-  --color-navy-600: #192849;
-  --color-navy-50: #f0f2f7;
+    /*
+        Brand identity, taken from the printed flyer. Each colour has one job:
+        - navy   = authority. Structure, text, primary actions, the featured plan.
+        - gold   = reward. Prices, savings, CTAs on navy, focus, medals.
+        - silver = the middle tier and quiet supporting surfaces.
+        - paper / white = the canvas everything sits on.
+        Never write a hex or rgb() value in a component. Add or reuse a token here.
+      */
+    --color-navy: #071130;
+    --color-navy-700: #0d1b45;
+    --color-navy-600: #192849;
+    --color-navy-50: #f0f2f7;
 
-  --color-gold: #dfa013;
-  --color-gold-bright: #f0b62f;
-  --color-gold-300: #ffd855;
-  --color-gold-50: #fff7df;
-  --color-gold-600: #9f7022;
-  --color-gold-light: var(--color-gold-bright);
-  --color-gold-deep: var(--color-gold-600);
+    --color-gold: #dfa013;
+    --color-gold-bright: #f0b62f;
+    --color-gold-300: #ffd855;
+    --color-gold-50: #fff7df;
+    --color-gold-600: #9f7022;
+    --color-gold-light: var(--color-gold-bright);
+    --color-gold-deep: var(--color-gold-600);
 
-  --color-silver: #a7abb4;
-  --color-silver-600: #5f6573;
-  --color-silver-50: #f0f1f4;
+    --color-silver: #a7abb4;
+    --color-silver-600: #5f6573;
+    --color-silver-50: #f0f1f4;
 
-  --color-bronze: #a9673a;
-  --color-bronze-50: #f7e8dc;
+    --color-bronze: #a9673a;
+    --color-bronze-50: #f7e8dc;
 
-  /* Neutrals: one ramp, all tinted from the navy. */
-  --color-paper: #f8f8f6;
-  --color-mist: #f4f6fa;
-  --color-steam: #eceef2;
-  --color-crease-soft: #e3e6ec;
-  --color-crease: #d9dce3;
-  --color-crease-strong: #c3c8d3;
+    /* Neutrals: one ramp, all tinted from the navy. */
+    --color-paper: #f8f8f6;
+    --color-mist: #f4f6fa;
+    --color-steam: #eceef2;
+    --color-crease-soft: #e3e6ec;
+    --color-crease: #d9dce3;
+    --color-crease-strong: #c3c8d3;
 
-  --color-ink: #071130;
-  --color-ink-soft: #3a4660;
-  --color-ink-muted: #595c6a;
-  --color-ink-faint: #7b8090;
+    --color-ink: #071130;
+    --color-ink-soft: #3a4660;
+    --color-ink-muted: #595c6a;
+    --color-ink-faint: #7b8090;
 
-  --color-suds: var(--color-navy-50);
+    --color-suds: var(--color-navy-50);
 
-  /* Status colours are semantic only (order and payment states). */
-  --color-status-pending-bg: #e6ecfa;
-  --color-status-pending-text: #34498a;
+    /* Status colours are semantic only (order and payment states). */
+    --color-status-pending-bg: #e6ecfa;
+    --color-status-pending-text: #34498a;
 
-  --color-status-progress-bg: #ffefc2;
-  --color-status-progress-text: #7a4f00;
+    --color-status-progress-bg: #ffefc2;
+    --color-status-progress-text: #7a4f00;
 
-  --color-status-ready-bg: #dff3e5;
-  --color-status-ready-text: #1b6a3d;
+    --color-status-ready-bg: #dff3e5;
+    --color-status-ready-text: #1b6a3d;
 
-  --color-status-cancelled-bg: #fce6e3;
-  --color-status-cancelled-text: #9b3a3a;
+    --color-status-cancelled-bg: #fce6e3;
+    --color-status-cancelled-text: #9b3a3a;
 
-  --color-status-confirmed-bg: #e7f0ff;
-  --color-status-confirmed-text: #2458a6;
-  --color-status-delivery-bg: #eee9fb;
-  --color-status-delivery-text: #62459a;
-  --color-status-complete-bg: #dff3e5;
-  --color-status-complete-text: #1b6a3d;
-  --color-status-ready-alt-bg: #dff5f2;
-  --color-status-ready-alt-text: #176c69;
+    --color-status-confirmed-bg: #e7f0ff;
+    --color-status-confirmed-text: #2458a6;
+    --color-status-delivery-bg: #eee9fb;
+    --color-status-delivery-text: #62459a;
+    --color-status-complete-bg: #dff3e5;
+    --color-status-complete-text: #1b6a3d;
+    --color-status-ready-alt-bg: #dff5f2;
+    --color-status-ready-alt-text: #176c69;
 
-  /*
-      Legacy "Fold Line" supporting colours. They are not in the flyer, so
-      they are no longer used for brand surfaces on the pricing page. Kept
-      for the dashboard and contact screens until those are re-themed.
-    */
-  --color-coral: #e15a3b;
-  --color-coral-50: #fdece7;
-  --color-coral-600: #a83a1e;
+    /*
+        Legacy "Fold Line" supporting colours. They are not in the flyer, so
+        they are no longer used for brand surfaces on the pricing page. Kept
+        for the dashboard and contact screens until those are re-themed.
+      */
+    --color-coral: #e15a3b;
+    --color-coral-50: #fdece7;
+    --color-coral-600: #a83a1e;
 
-  --color-turquoise: #1d8f8c;
-  --color-turquoise-50: #e5f4f3;
-  --color-turquoise-600: #146f6d;
+    --color-turquoise: #1d8f8c;
+    --color-turquoise-50: #e5f4f3;
+    --color-turquoise-600: #146f6d;
 
-  --color-sun: #e8a324;
-  --color-sun-50: #fcf1da;
-  --color-sun-600: #8a5a0f;
+    --color-sun: #e8a324;
+    --color-sun-50: #fcf1da;
+    --color-sun-600: #8a5a0f;
 
-  --color-clothesline: #4c9a63;
-  --color-clothesline-50: #e9f5ec;
-  --color-clothesline-600: #35784a;
+    --color-clothesline: #4c9a63;
+    --color-clothesline-50: #e9f5ec;
+    --color-clothesline-600: #35784a;
 
-  /* Analytics: an energetic green reserved for positive revenue movement. */
-  --color-revenue-green: #18a85b;
-  --color-revenue-green-dark: #08783b;
-  --color-revenue-green-soft: #e2f7ea;
+    /* Analytics: an energetic green reserved for positive revenue movement. */
+    --color-revenue-green: #18a85b;
+    --color-revenue-green-dark: #08783b;
+    --color-revenue-green-soft: #e2f7ea;
 
-  /* Dashboard action blue: reserved for navigation, focus and primary data. */
-  --color-dashboard-blue: #1688f8;
-  --color-dashboard-blue-50: #eaf4ff;
+    /* Dashboard action blue: reserved for navigation, focus and primary data. */
+    --color-dashboard-blue: #1688f8;
+    --color-dashboard-blue-50: #eaf4ff;
 
-  /* Elevation. Every shadow is navy-tinted and built from tokens. */
-  --shadow-card-sm: 0 1px 2px
-    color-mix(in srgb, var(--color-navy) 4%, transparent);
-  --shadow-card:
-    0 1px 2px color-mix(in srgb, var(--color-navy) 4%, transparent),
+    /* Elevation. Every shadow is navy-tinted and built from tokens. */
+    --shadow-card-sm: 0 1px 2px color-mix(in srgb, var(--color-navy) 4%, transparent);
+    --shadow-card: 0 1px 2px color-mix(in srgb, var(--color-navy) 4%, transparent),
     0 14px 34px -18px color-mix(in srgb, var(--color-navy) 20%, transparent);
-  --shadow-float: 0 6px 20px -10px
-    color-mix(in srgb, var(--color-navy) 25%, transparent);
-  --shadow-pop:
-    0 4px 8px color-mix(in srgb, var(--color-navy) 5%, transparent),
+    --shadow-float: 0 6px 20px -10px color-mix(in srgb, var(--color-navy) 25%, transparent);
+    --shadow-pop: 0 4px 8px color-mix(in srgb, var(--color-navy) 5%, transparent),
     0 24px 48px -12px color-mix(in srgb, var(--color-navy) 28%, transparent);
-  --shadow-lift: 0 30px 60px -25px
-    color-mix(in srgb, var(--color-navy-600) 55%, transparent);
-  --shadow-frame: 0 20px 45px -24px
-    color-mix(in srgb, var(--color-navy-600) 35%, transparent);
-  --shadow-btn-navy: 0 6px 16px -6px
-    color-mix(in srgb, var(--color-navy) 50%, transparent);
-  --shadow-btn-navy-hover: 0 10px 20px -8px
-    color-mix(in srgb, var(--color-navy) 55%, transparent);
-  --shadow-btn-gold: 0 6px 16px -6px
-    color-mix(in srgb, var(--color-gold) 70%, transparent);
-  --shadow-nav-active: 0 6px 16px
-    color-mix(in srgb, var(--color-dashboard-blue) 22%, transparent);
-  --shadow-stat: 0 8px 24px
-    color-mix(in srgb, var(--color-navy-600) 8%, transparent);
+    --shadow-lift: 0 30px 60px -25px color-mix(in srgb, var(--color-navy-600) 55%, transparent);
+    --shadow-frame: 0 20px 45px -24px color-mix(in srgb, var(--color-navy-600) 35%, transparent);
+    --shadow-btn-navy: 0 6px 16px -6px color-mix(in srgb, var(--color-navy) 50%, transparent);
+    --shadow-btn-navy-hover: 0 10px 20px -8px color-mix(in srgb, var(--color-navy) 55%, transparent);
+    --shadow-btn-gold: 0 6px 16px -6px color-mix(in srgb, var(--color-gold) 70%, transparent);
+    --shadow-nav-active: 0 6px 16px color-mix(in srgb, var(--color-dashboard-blue) 22%, transparent);
+    --shadow-stat: 0 8px 24px color-mix(in srgb, var(--color-navy-600) 8%, transparent);
 
-  /* Fonts */
-  --font-sans:
-    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    /* Fonts */
+    --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
 
-  --font-display: "Outfit", "DM Sans", -apple-system, "Segoe UI", sans-serif;
+    --font-display: "Outfit", "DM Sans", -apple-system, "Segoe UI", sans-serif;
 
-  /* Radius */
-  --radius-card: 16px;
+    /* Radius */
+    --radius-card: 16px;
 }
 
 /* ============================================================
@@ -153,219 +141,232 @@
    Weights stay light at large sizes (300–400) and rise as size falls.
    ============================================================ */
 @layer base {
-  html {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    font-feature-settings: "ss01", "kern";
-    min-width: 320px;
-    scroll-behavior: smooth;
-  }
-  body {
-    min-width: 320px;
-    background: var(--color-paper);
-    color: var(--color-ink);
-    caret-color: var(--color-gold-600);
-    scrollbar-color: var(--color-crease-strong) var(--color-paper);
-    scrollbar-width: thin;
-  }
-  :where(
+    html {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "ss01", "kern";
+        min-width: 320px;
+        scroll-behavior: smooth;
+    }
+
+    body {
+        min-width: 320px;
+        background: var(--color-paper);
+        color: var(--color-ink);
+        caret-color: var(--color-gold-600);
+        scrollbar-color: var(--color-crease-strong) var(--color-paper);
+        scrollbar-width: thin;
+    }
+
+    :where(
     a,
     button,
     summary,
     [role="button"],
     [tabindex]:not([tabindex="-1"])
   ):focus-visible {
-    outline: 2px solid var(--color-gold);
-    outline-offset: 3px;
-  }
-  ::-webkit-scrollbar {
-    width: 0.75rem;
-    height: 0.75rem;
-  }
-  ::-webkit-scrollbar-track {
-    background: var(--color-paper);
-  }
-  ::-webkit-scrollbar-thumb {
-    border: 3px solid var(--color-paper);
-    border-radius: 999px;
-    background: var(--color-crease-strong);
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-silver-600);
-  }
-  ::selection {
-    background: var(--color-gold-300);
-    color: var(--color-navy);
-  }
-  h1,
-  h2,
-  h3,
-  h4 {
-    font-family: var(--font-display);
-    text-wrap: balance;
-  }
-  h1 {
-    letter-spacing: -0.03em;
-  }
-  h2,
-  h3 {
-    letter-spacing: -0.015em;
-  }
-  p {
-    text-wrap: pretty;
-  }
-  button,
-  summary,
-  th,
-  legend,
-  [role="tab"],
-  [role="menuitem"] {
-    font-family: var(--font-display);
-  }
-  /* Money, counts, dates: aligned digits wherever numbers are compared. */
-  table,
-  .tabular-nums {
-    font-variant-numeric: tabular-nums;
-  }
-  /* Outfit's heaviest cut reads clumsy at UI sizes — cap display bold at 600. */
-  .font-display.font-bold,
-  h1.font-bold,
-  h2.font-bold,
-  h3.font-bold {
-    font-weight: 600;
-  }
+        outline: 2px solid var(--color-gold);
+        outline-offset: 3px;
+    }
+
+    ::-webkit-scrollbar {
+        width: 0.75rem;
+        height: 0.75rem;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--color-paper);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        border: 3px solid var(--color-paper);
+        border-radius: 999px;
+        background: var(--color-crease-strong);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-silver-600);
+    }
+
+    ::selection {
+        background: var(--color-gold-300);
+        color: var(--color-navy);
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+        font-family: var(--font-display);
+        text-wrap: balance;
+    }
+
+    h1 {
+        letter-spacing: -0.03em;
+    }
+
+    h2,
+    h3 {
+        letter-spacing: -0.015em;
+    }
+
+    p {
+        text-wrap: pretty;
+    }
+
+    button,
+    summary,
+    th,
+    legend,
+    [role="tab"],
+    [role="menuitem"] {
+        font-family: var(--font-display);
+    }
+
+    /* Money, counts, dates: aligned digits wherever numbers are compared. */
+    table,
+    .tabular-nums {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Outfit's heaviest cut reads clumsy at UI sizes — cap display bold at 600. */
+    .font-display.font-bold,
+    h1.font-bold,
+    h2.font-bold,
+    h3.font-bold {
+        font-weight: 600;
+    }
 }
 
 .dashboard-canvas {
-  background:
-    radial-gradient(
-      60rem 36rem at 0% 0%,
-      color-mix(in srgb, var(--color-turquoise) 22%, transparent),
-      transparent 60%
+    background: radial-gradient(
+            60rem 36rem at 0% 0%,
+            color-mix(in srgb, var(--color-turquoise) 22%, transparent),
+            transparent 60%
     ),
     radial-gradient(
-      56rem 34rem at 100% 100%,
-      color-mix(in srgb, var(--color-gold) 22%, transparent),
-      transparent 60%
+            56rem 34rem at 100% 100%,
+            color-mix(in srgb, var(--color-gold) 22%, transparent),
+            transparent 60%
     ),
     linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--color-navy) 45%, var(--color-white)) 0%,
-      color-mix(in srgb, var(--color-navy) 35%, var(--color-white)) 45%,
-      color-mix(in srgb, var(--color-navy) 30%, var(--color-white)) 100%
+            135deg,
+            color-mix(in srgb, var(--color-navy) 45%, var(--color-white)) 0%,
+            color-mix(in srgb, var(--color-navy) 35%, var(--color-white)) 45%,
+            color-mix(in srgb, var(--color-navy) 30%, var(--color-white)) 100%
     );
 }
 
 .dashboard-shell {
-  position: relative;
-  isolation: isolate;
-  background: linear-gradient(
-    180deg,
-    var(--color-paper) 0%,
-    var(--color-mist) 100%
-  );
-  box-shadow: 0 30px 80px color-mix(in srgb, var(--color-navy) 20%, transparent);
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(
+            180deg,
+            var(--color-paper) 0%,
+            var(--color-mist) 100%
+    );
+    box-shadow: 0 30px 80px color-mix(in srgb, var(--color-navy) 20%, transparent);
 }
 
 .dashboard-shell::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  top: -10rem;
-  right: -8rem;
-  width: 42rem;
-  height: 32rem;
-  border-radius: 999px;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--color-gold-300) 38%, transparent) 0%,
-    color-mix(in srgb, var(--color-gold-300) 18%, transparent) 40%,
-    transparent 72%
-  );
-  pointer-events: none;
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: -10rem;
+    right: -8rem;
+    width: 42rem;
+    height: 32rem;
+    border-radius: 999px;
+    background: radial-gradient(
+            circle,
+            color-mix(in srgb, var(--color-gold-300) 38%, transparent) 0%,
+            color-mix(in srgb, var(--color-gold-300) 18%, transparent) 40%,
+            transparent 72%
+    );
+    pointer-events: none;
 }
 
 /* Cool counter-glow, bottom-left — the turquoise answers the gold top-right. */
 .dashboard-shell::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  bottom: -12rem;
-  left: -10rem;
-  width: 40rem;
-  height: 30rem;
-  border-radius: 999px;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--color-turquoise) 16%, transparent) 0%,
-    color-mix(in srgb, var(--color-turquoise) 6%, transparent) 45%,
-    transparent 72%
-  );
-  pointer-events: none;
+    content: "";
+    position: absolute;
+    z-index: -1;
+    bottom: -12rem;
+    left: -10rem;
+    width: 40rem;
+    height: 30rem;
+    border-radius: 999px;
+    background: radial-gradient(
+            circle,
+            color-mix(in srgb, var(--color-turquoise) 16%, transparent) 0%,
+            color-mix(in srgb, var(--color-turquoise) 6%, transparent) 45%,
+            transparent 72%
+    );
+    pointer-events: none;
 }
 
 /* Navy hero panel: depth from two off-axis glows (gold warm, turquoise cool). */
 .hero-navy {
-  background:
-    radial-gradient(
-      34rem 20rem at 100% 0%,
-      color-mix(in srgb, var(--color-gold) 34%, transparent),
-      transparent 62%
+    background: radial-gradient(
+            34rem 20rem at 100% 0%,
+            color-mix(in srgb, var(--color-gold) 34%, transparent),
+            transparent 62%
     ),
     radial-gradient(
-      28rem 18rem at 0% 100%,
-      color-mix(in srgb, var(--color-silver) 22%, transparent),
-      transparent 65%
+            28rem 18rem at 0% 100%,
+            color-mix(in srgb, var(--color-silver) 22%, transparent),
+            transparent 65%
     ),
     linear-gradient(135deg, var(--color-navy-700) 0%, var(--color-navy) 70%);
 }
 
 /* Warm gold promo panel. */
 .card-gold {
-  background:
-    radial-gradient(
-      14rem 10rem at 100% 0%,
-      color-mix(in srgb, var(--color-white) 42%, transparent),
-      transparent 65%
+    background: radial-gradient(
+            14rem 10rem at 100% 0%,
+            color-mix(in srgb, var(--color-white) 42%, transparent),
+            transparent 65%
     ),
     linear-gradient(135deg, var(--color-gold-bright) 0%, var(--color-gold) 100%);
 }
 
 @media (max-width: 639px) {
-  .dashboard-shell {
-    box-shadow: none;
-  }
+    .dashboard-shell {
+        box-shadow: none;
+    }
 }
 
 /* Mobile is the baseline: readable 16px type, safe-area aware chrome, and
    enough room for the thumb navigation used by the authenticated shells. */
 .mobile-safe-top {
-  padding-top: env(safe-area-inset-top);
+    padding-top: env(safe-area-inset-top);
 }
+
 .mobile-safe-bottom {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
+
 .dashboard-scroll {
-  padding-bottom: calc(5.25rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(5.25rem + env(safe-area-inset-bottom));
 }
 
 @media (min-width: 1024px) {
-  .dashboard-scroll {
-    padding-bottom: 0;
-  }
+    .dashboard-scroll {
+        padding-bottom: 0;
+    }
 }
 
 @media (pointer: coarse) {
-  button,
-  a,
-  summary {
-    -webkit-tap-highlight-color: color-mix(
-      in srgb,
-      var(--color-gold) 20%,
-      transparent
-    );
-  }
+    button,
+    a,
+    summary {
+        -webkit-tap-highlight-color: color-mix(
+                in srgb,
+                var(--color-gold) 20%,
+                transparent
+        );
+    }
 }
 
 /* ============================================================
@@ -375,196 +376,203 @@
    ============================================================ */
 
 @layer components {
-  .ui-control {
-    width: 100%;
-    border-radius: 0.875rem;
-    border: 1px solid var(--color-crease-soft);
-    background-color: var(--color-mist);
-    padding: 0.65rem 0.95rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    color: var(--color-ink);
-    box-shadow:
-      inset 0 1px 2px color-mix(in srgb, var(--color-navy) 4%, transparent),
-      0 1px 0 color-mix(in srgb, var(--color-white) 80%, transparent);
-    transition:
-      border-color 0.2s ease,
-      background-color 0.2s ease,
-      box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .ui-control::placeholder {
-    color: var(--color-ink-faint);
-  }
-  .ui-control:hover:not(:disabled):not(:focus) {
-    border-color: var(--color-crease-strong);
-    background-color: var(--color-white);
-  }
-  .ui-control:focus {
-    outline: none;
-    border-color: var(--color-gold);
-    background-color: var(--color-white);
-    box-shadow:
-      0 0 0 4px color-mix(in srgb, var(--color-gold) 18%, transparent),
-      0 6px 16px -8px color-mix(in srgb, var(--color-navy) 18%, transparent);
-  }
-  .ui-control:disabled {
-    cursor: not-allowed;
-    background-color: var(--color-steam);
-    color: var(--color-ink-muted);
-    box-shadow: none;
-    opacity: 0.8;
-  }
-  .ui-control[aria-invalid="true"],
-  .ui-control.is-invalid {
-    border-color: color-mix(
-      in srgb,
-      var(--color-status-cancelled-text) 55%,
-      transparent
-    );
-    background-color: color-mix(
-      in srgb,
-      var(--color-status-cancelled-bg) 30%,
-      var(--color-white)
-    );
-  }
-  .ui-control[aria-invalid="true"]:focus,
-  .ui-control.is-invalid:focus {
-    border-color: var(--color-status-cancelled-text);
-    box-shadow: 0 0 0 4px
-      color-mix(in srgb, var(--color-status-cancelled-text) 14%, transparent);
-  }
+    .ui-control {
+        width: 100%;
+        border-radius: 0.875rem;
+        border: 1px solid var(--color-crease-soft);
+        background-color: var(--color-mist);
+        padding: 0.65rem 0.95rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        color: var(--color-ink);
+        box-shadow: inset 0 1px 2px color-mix(in srgb, var(--color-navy) 4%, transparent),
+        0 1px 0 color-mix(in srgb, var(--color-white) 80%, transparent);
+        transition: border-color 0.2s ease,
+        background-color 0.2s ease,
+        box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-  /* Pill variant — search boxes, chat composer (matches the reference's filter pills). */
-  .ui-control-pill {
-    border-radius: 999px;
-    padding-left: 1.1rem;
-    padding-right: 1.1rem;
-  }
+    .ui-control::placeholder {
+        color: var(--color-ink-faint);
+    }
 
-  textarea.ui-control {
-    border-radius: 1rem;
-    resize: vertical;
-  }
+    .ui-control:hover:not(:disabled):not(:focus) {
+        border-color: var(--color-crease-strong);
+        background-color: var(--color-white);
+    }
 
-  select.ui-control {
-    appearance: none;
-    cursor: pointer;
-    padding-right: 2.5rem;
-    background-image:
-      linear-gradient(45deg, transparent 50%, var(--color-ink-muted) 50%),
-      linear-gradient(135deg, var(--color-ink-muted) 50%, transparent 50%);
-    background-repeat: no-repeat;
-    background-position:
-      calc(100% - 1.2rem) calc(50% + 1px),
-      calc(100% - 0.85rem) calc(50% + 1px);
-    background-size:
-      0.4rem 0.4rem,
-      0.4rem 0.4rem;
-  }
+    .ui-control:focus {
+        outline: none;
+        border-color: var(--color-gold);
+        background-color: var(--color-white);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-gold) 18%, transparent),
+        0 6px 16px -8px color-mix(in srgb, var(--color-navy) 18%, transparent);
+    }
 
-  input[type="search"].ui-control::-webkit-search-cancel-button {
-    cursor: pointer;
-  }
+    .ui-control:disabled {
+        cursor: not-allowed;
+        background-color: var(--color-steam);
+        color: var(--color-ink-muted);
+        box-shadow: none;
+        opacity: 0.8;
+    }
+
+    .ui-control[aria-invalid="true"],
+    .ui-control.is-invalid {
+        border-color: color-mix(
+                in srgb,
+                var(--color-status-cancelled-text) 55%,
+                transparent
+        );
+        background-color: color-mix(
+                in srgb,
+                var(--color-status-cancelled-bg) 30%,
+                var(--color-white)
+        );
+    }
+
+    .ui-control[aria-invalid="true"]:focus,
+    .ui-control.is-invalid:focus {
+        border-color: var(--color-status-cancelled-text);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-status-cancelled-text) 14%, transparent);
+    }
+
+    /* Pill variant — search boxes, chat composer (matches the reference's filter pills). */
+    .ui-control-pill {
+        border-radius: 999px;
+        padding-left: 1.1rem;
+        padding-right: 1.1rem;
+    }
+
+    textarea.ui-control {
+        border-radius: 1rem;
+        resize: vertical;
+    }
+
+    select.ui-control {
+        appearance: none;
+        cursor: pointer;
+        padding-right: 2.5rem;
+        background-image: linear-gradient(45deg, transparent 50%, var(--color-ink-muted) 50%),
+        linear-gradient(135deg, var(--color-ink-muted) 50%, transparent 50%);
+        background-repeat: no-repeat;
+        background-position: calc(100% - 1.2rem) calc(50% + 1px),
+        calc(100% - 0.85rem) calc(50% + 1px);
+        background-size: 0.4rem 0.4rem,
+        0.4rem 0.4rem;
+    }
+
+    input[type="search"].ui-control::-webkit-search-cancel-button {
+        cursor: pointer;
+    }
 }
 
 @keyframes ui-menu-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
+
 .ui-menu-in {
-  animation: ui-menu-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-  transform-origin: top center;
+    animation: ui-menu-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: top center;
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .ui-menu-in {
-    animation: none;
-  }
+    .ui-menu-in {
+        animation: none;
+    }
 }
 
 /* Native checkboxes & radios (the sr-only switch in notifications is left alone). */
 input[type="checkbox"]:not(.sr-only),
 input[type="radio"]:not(.sr-only) {
-  appearance: none;
-  -webkit-appearance: none;
-  flex-shrink: 0;
-  width: 1.15rem;
-  height: 1.15rem;
-  margin: 0;
-  border: 1.5px solid var(--color-crease-strong);
-  background-color: var(--color-white);
-  background-repeat: no-repeat;
-  background-position: center;
-  cursor: pointer;
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-navy) 6%, transparent);
-  transition:
-    background-color 0.18s ease,
+    appearance: none;
+    -webkit-appearance: none;
+    flex-shrink: 0;
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0;
+    border: 1.5px solid var(--color-crease-strong);
+    background-color: var(--color-white);
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--color-navy) 6%, transparent);
+    transition: background-color 0.18s ease,
     border-color 0.18s ease,
     box-shadow 0.2s ease,
     transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 input[type="checkbox"]:not(.sr-only) {
-  border-radius: 0.4rem;
+    border-radius: 0.4rem;
 }
+
 input[type="radio"]:not(.sr-only) {
-  border-radius: 999px;
+    border-radius: 999px;
 }
+
 input[type="checkbox"]:not(.sr-only):hover:not(:disabled),
 input[type="radio"]:not(.sr-only):hover:not(:disabled) {
-  border-color: var(--color-navy);
+    border-color: var(--color-navy);
 }
+
 input[type="checkbox"]:not(.sr-only):active:not(:disabled),
 input[type="radio"]:not(.sr-only):active:not(:disabled) {
-  transform: scale(0.9);
+    transform: scale(0.9);
 }
+
 input[type="checkbox"]:not(.sr-only):checked {
-  border-color: var(--color-navy);
-  background-color: var(--color-navy);
-  display: grid;
-  place-content: center;
+    border-color: var(--color-navy);
+    background-color: var(--color-navy);
+    display: grid;
+    place-content: center;
 }
+
 /* The tick is a mask, so its colour comes from a token rather than a data URI. */
 input[type="checkbox"]:not(.sr-only):checked::after {
-  content: "";
-  width: 0.8rem;
-  height: 0.8rem;
-  background-color: var(--color-gold-300);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.5 8.5 3 3 6-7'/%3E%3C/svg%3E")
-    center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.5 8.5 3 3 6-7'/%3E%3C/svg%3E")
-    center / contain no-repeat;
+    content: "";
+    width: 0.8rem;
+    height: 0.8rem;
+    background-color: var(--color-gold-300);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.5 8.5 3 3 6-7'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.5 8.5 3 3 6-7'/%3E%3C/svg%3E") center / contain no-repeat;
 }
+
 input[type="radio"]:not(.sr-only):checked {
-  border-color: var(--color-navy);
-  background-color: var(--color-navy);
-  background-image: radial-gradient(
-    circle,
-    var(--color-gold-300) 0 34%,
-    transparent 38%
-  );
+    border-color: var(--color-navy);
+    background-color: var(--color-navy);
+    background-image: radial-gradient(
+            circle,
+            var(--color-gold-300) 0 34%,
+            transparent 38%
+    );
 }
+
 input[type="checkbox"]:not(.sr-only):focus-visible,
 input[type="radio"]:not(.sr-only):focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-gold) 25%, transparent);
+    outline: none;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-gold) 25%, transparent);
 }
+
 input[type="checkbox"]:not(.sr-only):disabled,
 input[type="radio"]:not(.sr-only):disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
+    cursor: not-allowed;
+    opacity: 0.45;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ui-control,
-  input[type="checkbox"]:not(.sr-only),
-  input[type="radio"]:not(.sr-only) {
-    transition: none;
-  }
+    .ui-control,
+    input[type="checkbox"]:not(.sr-only),
+    input[type="radio"]:not(.sr-only) {
+        transition: none;
+    }
 }
 
 /* ============================================================
@@ -581,242 +589,262 @@ input[type="radio"]:not(.sr-only):disabled {
    ============================================================ */
 
 .atelier {
-  /* Midnight ground. The legacy variable names remain to avoid churn in
-       the components; ivory is the clean white foreground, while panel is
-       the slightly lifted navy used for alternating section bands. */
-  --at-ink: var(--color-navy);
-  --at-ink-soft: var(--color-navy-700);
-  --at-panel: var(--color-navy-700);
-  --at-ivory: var(--color-white);
-  --at-ivory-dim: var(--color-paper);
-  --at-slate: var(--color-crease);
-  --at-brass: var(--color-gold);
-  --at-brass-bright: var(--color-gold-bright);
-  --at-line: color-mix(in srgb, var(--color-white) 12%, transparent);
-  --at-line-strong: color-mix(in srgb, var(--color-gold) 50%, transparent);
+    /* Midnight ground. The legacy variable names remain to avoid churn in
+         the components; ivory is the clean white foreground, while panel is
+         the slightly lifted navy used for alternating section bands. */
+    --at-ink: var(--color-navy);
+    --at-ink-soft: var(--color-navy-700);
+    --at-panel: var(--color-navy-700);
+    --at-ivory: var(--color-white);
+    --at-ivory-dim: var(--color-paper);
+    --at-slate: var(--color-crease);
+    --at-brass: var(--color-gold);
+    --at-brass-bright: var(--color-gold-bright);
+    --at-line: color-mix(in srgb, var(--color-white) 12%, transparent);
+    --at-line-strong: color-mix(in srgb, var(--color-gold) 50%, transparent);
 
-  background: var(--at-ink);
-  color: var(--at-ivory);
-  font-family: var(--font-sans);
+    background: var(--at-ink);
+    color: var(--at-ivory);
+    font-family: var(--font-sans);
 }
 
 .atelier ::selection {
-  background: var(--at-brass);
-  color: var(--at-ink);
+    background: var(--at-brass);
+    color: var(--at-ink);
 }
 
 .atelier .at-display {
-  font-family: var(--font-display);
+    font-family: var(--font-display);
 }
 
 .atelier .at-serif-num {
-  font-family: var(--font-display);
-  font-variant-numeric: tabular-nums;
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
 }
 
 /* Hairline rule used as the page's recurring signature device — a single
    thread that draws itself in on scroll, standing in for the "crease" motif
    without borrowing its playful execution. */
 .atelier .at-thread {
-  position: relative;
-  overflow: hidden;
+    position: relative;
+    overflow: hidden;
 }
+
 .atelier .at-thread::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--at-brass) 45%,
-    var(--at-brass) 55%,
-    transparent
-  );
-  transform: translateX(-101%);
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+            90deg,
+            transparent,
+            var(--at-brass) 45%,
+            var(--at-brass) 55%,
+            transparent
+    );
+    transform: translateX(-101%);
 }
+
 .atelier .at-thread.is-drawn::after {
-  transform: translateX(0%);
-  transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateX(0%);
+    transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes at-fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(22px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(22px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes at-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes at-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
+    to {
+        stroke-dashoffset: 0;
+    }
 }
 
 @keyframes at-drift {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  50% {
-    transform: translate(0, -14px);
-  }
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+    50% {
+        transform: translate(0, -14px);
+    }
 }
 
 @keyframes at-marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
 }
 
 @keyframes at-shimmer {
-  from {
-    background-position: 200% 0;
-  }
-  to {
-    background-position: -200% 0;
-  }
+    from {
+        background-position: 200% 0;
+    }
+    to {
+        background-position: -200% 0;
+    }
 }
 
 .atelier .at-animate-in {
-  opacity: 0;
-  animation: at-fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    animation: at-fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .atelier .at-marquee-track {
-  animation: at-marquee 32s linear infinite;
+    animation: at-marquee 32s linear infinite;
 }
 
 .atelier .at-drift {
-  animation: at-drift 7s ease-in-out infinite;
+    animation: at-drift 7s ease-in-out infinite;
 }
 
 .atelier .at-shimmer-text {
-  background: linear-gradient(
-    100deg,
-    var(--at-ivory) 0%,
-    var(--at-brass-bright) 30%,
-    var(--at-ivory) 55%,
-    var(--at-brass-bright) 80%,
-    var(--at-ivory) 100%
-  );
-  background-size: 250% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: at-shimmer 9s linear infinite;
+    background: linear-gradient(
+            100deg,
+            var(--at-ivory) 0%,
+            var(--at-brass-bright) 30%,
+            var(--at-ivory) 55%,
+            var(--at-brass-bright) 80%,
+            var(--at-ivory) 100%
+    );
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: at-shimmer 9s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .atelier .at-animate-in {
-    opacity: 1;
-    animation: none;
-  }
-  .atelier .at-thread::after {
-    transition: none;
-  }
-  .atelier .at-marquee-track,
-  .atelier .at-drift,
-  .atelier .at-shimmer-text {
-    animation: none;
-  }
-  .atelier .at-shimmer-text {
-    color: var(--at-brass-bright);
-    background: none;
-    -webkit-background-clip: unset;
-    background-clip: unset;
-  }
+    .atelier .at-animate-in {
+        opacity: 1;
+        animation: none;
+    }
+
+    .atelier .at-thread::after {
+        transition: none;
+    }
+
+    .atelier .at-marquee-track,
+    .atelier .at-drift,
+    .atelier .at-shimmer-text {
+        animation: none;
+    }
+
+    .atelier .at-shimmer-text {
+        color: var(--at-brass-bright);
+        background: none;
+        -webkit-background-clip: unset;
+        background-clip: unset;
+    }
 }
 
 .atelier .at-btn-primary {
-  background: var(--color-gold);
-  color: var(--color-navy);
+    background: var(--color-gold);
+    color: var(--color-navy);
 }
+
 .atelier .at-btn-primary:hover {
-  background: var(--color-gold-bright);
-  color: var(--color-navy);
+    background: var(--color-gold-bright);
+    color: var(--color-navy);
 }
 
 .atelier .at-focus:focus-visible {
-  outline: 2px solid var(--at-brass-bright);
-  outline-offset: 3px;
+    outline: 2px solid var(--at-brass-bright);
+    outline-offset: 3px;
 }
 
 /* Date inputs: iOS Safari gives them an intrinsic width that overflows
    narrow grid cells and collapses empty ones. Pin width and height. */
 input[type="date"].ui-control {
-  -webkit-appearance: none;
-  appearance: none;
-  display: block;
-  min-width: 0;
-  max-width: 100%;
-  height: calc(2.55rem + 2px);
-  text-align: left;
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    height: calc(2.55rem + 2px);
+    text-align: left;
 }
+
 input[type="date"].ui-control::-webkit-date-and-time-value {
-  text-align: left;
-  min-height: 1.25rem;
+    text-align: left;
+    min-height: 1.25rem;
 }
+
 .ui-date input {
-  position: relative;
+    position: relative;
 }
+
 .ui-date input::-webkit-calendar-picker-indicator {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
 }
+
 .ui-date input.is-empty:not(:focus)::-webkit-datetime-edit {
-  opacity: 0;
+    opacity: 0;
 }
+
 .ui-date:focus-within .ui-date-placeholder {
-  display: none;
+    display: none;
 }
 
 /* Loader: the drum inside the logomark spins; the body wobbles slightly. */
 @keyframes wm-spin {
-  to {
-    transform: rotate(360deg);
-  }
+    to {
+        transform: rotate(360deg);
+    }
 }
+
 @keyframes wm-wobble {
-  0%,
-  100% {
-    transform: rotate(-0.8deg) translateY(0);
-  }
-  50% {
-    transform: rotate(0.8deg) translateY(-1px);
-  }
+    0%,
+    100% {
+        transform: rotate(-0.8deg) translateY(0);
+    }
+    50% {
+        transform: rotate(0.8deg) translateY(-1px);
+    }
 }
+
 .wm-drum {
-  animation: wm-spin 2.6s linear infinite;
+    animation: wm-spin 2.6s linear infinite;
 }
+
 .wm-loader {
-  animation: wm-wobble 0.6s ease-in-out infinite;
-  transform-origin: 50% 90%;
+    animation: wm-wobble 0.6s ease-in-out infinite;
+    transform-origin: 50% 90%;
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .wm-drum {
-    animation-duration: 8s;
-  }
-  .wm-loader {
-    animation: none;
-  }
+    .wm-drum {
+        animation-duration: 8s;
+    }
+
+    .wm-loader {
+        animation: none;
+    }
 }
+
+/*body {*/
+/*    display: none !important;*/
+/*}*/

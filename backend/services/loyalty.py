@@ -31,32 +31,92 @@ def _tier_for_lifetime_points(lifetime_points: int) -> str:
 @transaction.atomic
 def award_points_for_order(order):
     """Call this once an order is marked DELIVERED and paid."""
-    from apps.discounts.models import LoyaltyRule, LoyaltyTransaction
+    from apps.discounts.models import LoyaltyProgramSettings, LoyaltyTransaction
     from apps.users.models import LoyaltyAccount
 
-    rule = LoyaltyRule.objects.filter(is_active=True, min_spend__lte=order.total_amount).order_by(
-        "-min_spend"
-    ).first()
-    if rule is None:
+    if not LoyaltyProgramSettings.get_current().credit_points_enabled:
         return None
 
-    points_earned = int(Decimal(order.total_amount) * rule.points_per_currency_unit)
+    points_earned = int(Decimal(order.total_amount))
     if points_earned <= 0:
         return None
 
     account, _ = LoyaltyAccount.objects.select_for_update().get_or_create(user=order.user)
+    existing = LoyaltyTransaction.objects.filter(
+        loyalty_account=account,
+        transaction_type=LoyaltyTransaction.TransactionType.EARN,
+        order=order,
+    ).first()
+    if existing:
+        return existing
     account.points_balance += points_earned
     account.lifetime_points_earned += points_earned
     account.tier = _tier_for_lifetime_points(account.lifetime_points_earned)
     account.save(update_fields=["points_balance", "lifetime_points_earned", "tier"])
 
-    return LoyaltyTransaction.objects.create(
+    transaction_row = LoyaltyTransaction.objects.create(
         loyalty_account=account,
         points=points_earned,
         transaction_type=LoyaltyTransaction.TransactionType.EARN,
         order=order,
         note=f"Earned from Order #{order.pk}",
     )
+    return transaction_row
+
+
+@transaction.atomic
+def award_badge_for_order(order):
+    from apps.discounts.models import (
+        BadgeAccount, BadgeAward, LoyaltyProgramSettings, LoyaltyReward,
+        LoyaltyRewardGrant,
+    )
+
+    if not LoyaltyProgramSettings.get_current().badge_tiers_enabled:
+        return None
+    account, _ = BadgeAccount.objects.select_for_update().get_or_create(user=order.user)
+    if BadgeAward.objects.filter(order=order).exists():
+        return None
+    BadgeAward.objects.create(badge_account=account, order=order)
+    account.badges += 1
+    account.lifetime_badges += 1
+    if account.badges >= 10:
+        account.badges -= 10
+        account.completed_cards += 1
+        tiers = ["BASIC", "BRONZE", "SILVER", "GOLD"]
+        account.tier = tiers[min(tiers.index(account.tier) + 1, len(tiers) - 1)]
+        reward = LoyaltyReward.objects.filter(
+            track=LoyaltyReward.Track.BADGE, is_active=True
+        ).first()
+        if reward:
+            LoyaltyRewardGrant.objects.create(reward=reward, user=order.user, order=order)
+    account.save(update_fields=["badges", "lifetime_badges", "completed_cards", "tier", "updated_at"])
+    return account
+
+
+@transaction.atomic
+def award_ambassador_credit(promo_usage):
+    from apps.discounts.models import AmbassadorCredit, AmbassadorProfile
+
+    try:
+        ambassador = AmbassadorProfile.objects.select_for_update().get(
+            promo_code=promo_usage.promo_code, is_active=True
+        )
+    except AmbassadorProfile.DoesNotExist:
+        return None
+    credit = (Decimal(promo_usage.order.total_amount) * Decimal("0.10")).quantize(Decimal("1"))
+    entry, created = AmbassadorCredit.objects.get_or_create(
+        order=promo_usage.order,
+        defaults={
+            "ambassador": ambassador,
+            "order_amount": promo_usage.order.total_amount,
+            "credit_amount": credit,
+        },
+    )
+    if created:
+        ambassador.credit_balance += credit
+        ambassador.lifetime_credits += credit
+        ambassador.save(update_fields=["credit_balance", "lifetime_credits", "updated_at"])
+    return entry
 
 
 @transaction.atomic

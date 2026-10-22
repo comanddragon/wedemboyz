@@ -162,7 +162,7 @@ export function AtelierServices() {
                       ? undefined
                       : {
                           backgroundColor:
-                            "color-mix(in srgb, var(--color-gold) 6%, transparent)",
+                            "rgba(223, 160, 19, 0.06)",
                         }
                   }
                   transition={{ duration: 0.3 }}

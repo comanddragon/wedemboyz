@@ -38,8 +38,9 @@ def assign_driver(self, order_id: int, driver_id: int):
 @app.task
 def award_loyalty_points_for_delivered_order(order_id: int):
     from apps.orders.models import Order
-    from services.loyalty import award_points_for_order
+    from services.loyalty import award_badge_for_order, award_points_for_order
 
     order = Order.objects.get(pk=order_id)
     if order.status == "DELIVERED":
         award_points_for_order(order)
+        award_badge_for_order(order)

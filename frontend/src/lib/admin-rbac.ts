@@ -48,6 +48,7 @@ export function requiredPermissionForPath(pathname: string): AdminPermission {
   if (pathname.startsWith("/admin/finance")) return "finance.view";
   if (pathname.startsWith("/admin/discounts")) return "discounts.manage";
   if (pathname.startsWith("/admin/loyalty")) return "loyalty.manage";
+  if (pathname.startsWith("/admin/ambassadors")) return "staff.manage";
   if (pathname.startsWith("/admin/inventory")) return "inventory.view";
   if (pathname.startsWith("/admin/customers")) return "customers.view";
   if (pathname.startsWith("/admin/chat")) return "chat.manage";

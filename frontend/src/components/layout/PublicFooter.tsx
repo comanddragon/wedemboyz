@@ -1,7 +1,10 @@
-import Link from "next/link";
+"use client";
+
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import Image from "next/image";
 
 import { BUSINESS } from "@/src/lib/constants";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 function LogoMark() {
   return (
@@ -26,6 +29,7 @@ function LogoMark() {
  * SiteShell — it wasn't reskinned, it was unstyled.
  */
 export function PublicFooter() {
+  const { t } = useI18n();
   return (
     <footer className="border-t border-crease px-6 py-14">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
@@ -40,28 +44,27 @@ export function PublicFooter() {
           </Link>
 
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
-            Pickup-and-delivery garment care for Yaoundé. Wash, press, or
-            dry-clean — collected and returned to your door.
+            {t("footer.description")}
           </p>
         </div>
 
         <div>
           <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-gold-600">
-            Site
+            {t("footer.site")}
           </p>
           <nav className="mt-4 flex flex-col gap-2.5 text-sm text-ink-muted">
             <Link href="/pricing" className="transition-colors hover:text-ink">
-              Pricing
+              {t("publicNav.pricing")}
             </Link>
             <Link href="/contact" className="transition-colors hover:text-ink">
-              Contact
+              {t("publicNav.contact")}
             </Link>
           </nav>
         </div>
 
         <div>
           <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-gold-600">
-            Reach us
+            {t("footer.reach")}
           </p>
           <div className="mt-4 flex flex-col gap-2.5 text-sm text-ink-muted">
             <a
@@ -75,7 +78,7 @@ export function PublicFooter() {
 
         <div>
           <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-gold-600">
-            Hours
+            {t("footer.hours")}
           </p>
           <div className="mt-4 flex flex-col gap-2.5 text-sm text-ink-muted">
             <span>{BUSINESS.hours}</span>
@@ -93,8 +96,7 @@ export function PublicFooter() {
 
       <div className="mx-auto mt-12 flex max-w-7xl flex-col gap-3 border-t border-crease pt-6 text-xs text-ink-muted sm:flex-row sm:items-center sm:justify-between">
         <span>
-          &copy; {new Date().getFullYear()} Wedemboyz Lavomatique. All rights
-          reserved.
+          &copy; {new Date().getFullYear()} Wedemboyz Lavomatique. {t("footer.rights")}
         </span>
         <span>Cash · MTN Mobile Money · Orange Money</span>
       </div>

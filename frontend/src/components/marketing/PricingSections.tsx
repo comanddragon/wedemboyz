@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Award, Check } from "lucide-react";
 

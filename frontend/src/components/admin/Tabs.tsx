@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/src/lib/utils";

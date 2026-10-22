@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 
 import { Card } from "@/src/components/ui";
 

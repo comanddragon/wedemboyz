@@ -30,6 +30,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     staff_role = serializers.SerializerMethodField()
     staff_permissions = serializers.SerializerMethodField()
     staff_access_active = serializers.SerializerMethodField()
+    is_ambassador = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
@@ -45,6 +46,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "staff_role",
             "staff_permissions",
             "staff_access_active",
+            "is_ambassador",
             "is_phone_verified",
             "avatar",
             "address_line",
@@ -55,7 +57,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id", "phone_number", "is_phone_verified", "is_staff",
-            "is_superuser", "is_guest", "staff_role", "staff_permissions", "staff_access_active",
+            "is_superuser", "is_guest", "staff_role", "staff_permissions", "staff_access_active", "is_ambassador",
         ]
 
     def get_staff_role(self, obj):
@@ -66,6 +68,9 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def get_staff_access_active(self, obj):
         return get_staff_role(obj) is not None
+
+    def get_is_ambassador(self, obj):
+        return hasattr(obj, "ambassador_profile") and obj.ambassador_profile.is_active
 
     def update(self, instance, validated_data):
         profile_data = validated_data.pop("profile", {})

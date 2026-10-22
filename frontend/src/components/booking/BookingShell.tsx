@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { WizardSteps } from "./WizardSteps";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 /**
  * Booking steps live inside the dashboard's own scroll area. The page flows
@@ -22,6 +23,7 @@ export function BookingShell({
   actions: ReactNode;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   const endRef = useRef<HTMLDivElement>(null);
   const [overlapping, setOverlapping] = useState(false);
 
@@ -41,9 +43,9 @@ export function BookingShell({
       <div className="mx-auto flex min-h-0 w-full max-w-[1540px] flex-1 flex-col">
         <div className="shrink-0 px-5 pt-6 sm:px-8 lg:px-10 lg:pt-5">
           <h1 className="font-display mb-1 text-[1.75rem] font-light leading-tight tracking-[-0.03em] text-navy sm:text-[2rem] lg:text-[1.75rem]">
-            Book a pickup
+            {t("booking.title")}
           </h1>
-          <p className="mb-3 text-sm text-ink-muted">{subtitle}</p>
+          <p className="mb-3 text-sm text-ink-muted">{subtitle.startsWith("booking.") ? t(subtitle) : subtitle}</p>
           <WizardSteps current={step} />
         </div>
 

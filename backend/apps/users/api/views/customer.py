@@ -75,7 +75,12 @@ class CustomerListView(generics.ListCreateAPIView):
 
         ordering = self.request.query_params.get("ordering")
         if ordering in ALLOWED_ORDERINGS:
-            qs = qs.order_by(ordering)
+            qs = qs.order_by(ordering, "-id")
+        else:
+            # Pagination needs deterministic ordering. Aggregation can cause
+            # Django to treat the model's Meta ordering as absent, so make the
+            # default explicit and use the primary key to break timestamp ties.
+            qs = qs.order_by("-created_at", "-id")
 
         tier = self.request.query_params.get("tier")
         if tier:

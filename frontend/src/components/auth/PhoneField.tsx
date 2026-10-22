@@ -3,6 +3,7 @@
 import { useId } from "react";
 
 import { Field, Input } from "@/src/components/ui";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 interface PhoneFieldProps {
   label?: string;
@@ -19,16 +20,17 @@ interface PhoneFieldProps {
  * same as the API has always expected; the prefix is display chrome.
  */
 export function PhoneField({
-  label = "Phone number",
+  label,
   hint,
   error,
   value,
   onChange,
 }: PhoneFieldProps) {
   const id = useId();
+  const { t } = useI18n();
 
   return (
-    <Field label={label} htmlFor={id} hint={hint} error={error}>
+    <Field label={label ?? t("auth.phone")} htmlFor={id} hint={hint} error={error}>
       <div className="flex">
         <span className="flex select-none items-center rounded-l-[0.875rem] border border-r-0 border-crease-soft bg-steam px-3.5 text-sm font-medium text-ink-muted">
           +237

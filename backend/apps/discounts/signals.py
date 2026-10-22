@@ -13,6 +13,10 @@ def on_promo_used(sender, instance, created, **kwargs):
     if not created:
         return
 
+    from services.loyalty import award_ambassador_credit
+
+    award_ambassador_credit(instance)
+
     promo = instance.promo_code
     if promo.max_uses is not None and promo.times_used() >= promo.max_uses:
         promo.is_active = False

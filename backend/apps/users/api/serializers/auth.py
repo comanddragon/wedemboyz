@@ -60,6 +60,7 @@ class LoginSerializer(TokenObtainPairSerializer):
             "staff_role": get_staff_role(self.user),
             "staff_permissions": get_staff_permissions(self.user),
             "staff_access_active": get_staff_role(self.user) is not None,
+            "is_ambassador": hasattr(self.user, "ambassador_profile") and self.user.ambassador_profile.is_active,
         }
 
         return data
@@ -89,6 +90,7 @@ def auth_payload(user) -> Dict[str, Any]:
             "staff_role": get_staff_role(user),
             "staff_permissions": get_staff_permissions(user),
             "staff_access_active": get_staff_role(user) is not None,
+            "is_ambassador": hasattr(user, "ambassador_profile") and user.ambassador_profile.is_active,
         },
     }
 

@@ -1,7 +1,11 @@
+"use client";
+
+import { useI18n } from "@/src/i18n/I18nProvider";
+
 import type {
   ChatRoomStatus,
-  OrderStatus,
   OrderPaymentStatus,
+  OrderStatus,
   PaymentStatus,
   RefundStatus,
   StaffInviteStatus,
@@ -45,6 +49,44 @@ export function StatusBadge({
   label: string;
   tone: StatusTone;
 }) {
+  const { t } = useI18n();
+  const statusKeys: Record<string, string> = {
+    PENDING: "pending",
+    CONFIRMED: "confirmed",
+    IN_PROGRESS: "inProgress",
+    READY: "ready",
+    OUT_FOR_DELIVERY: "outForDelivery",
+    DELIVERED: "delivered",
+    CANCELLED: "cancelled",
+    SUCCEEDED: "succeeded",
+    PAID: "paid",
+    NO_CHARGE: "noCharge",
+    FAILED: "failed",
+    UNPAID: "unpaid",
+    VOID: "void",
+    PARTIALLY_PAID: "partiallyPaid",
+    OVERPAID: "overpaid",
+    WAIVED: "waived",
+    REFUNDED: "refunded",
+    PARTIALLY_REFUNDED: "partiallyRefunded",
+    APPROVED: "approved",
+    PROCESSED: "processed",
+    REJECTED: "rejected",
+    OPEN: "open",
+    CLOSED: "closed",
+    ACCEPTED: "accepted",
+    REVOKED: "revoked",
+    EXPIRED: "expired",
+    ACTIVE: "active",
+    PAUSED: "paused",
+    MANAGER: "manager",
+    ATTENDANT: "attendant",
+    CASHIER: "cashier",
+    DRIVER: "driver",
+  };
+  const translated = statusKeys[label.toUpperCase()]
+    ? t(`common.statuses.${statusKeys[label.toUpperCase()]}`)
+    : label.toLowerCase().replace(/_/g, " ");
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${TONE_CLASSES[tone]}`}
@@ -53,7 +95,7 @@ export function StatusBadge({
         className={`h-1.5 w-1.5 rounded-full ${DOT_CLASSES[tone]}`}
         aria-hidden="true"
       />
-      {label.toLowerCase().replace(/_/g, " ")}
+      {translated}
     </span>
   );
 }

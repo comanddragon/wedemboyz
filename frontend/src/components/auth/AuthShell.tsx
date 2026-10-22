@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import type { ReactNode } from "react";
 
 import { FoldStackIllustration } from "@/src/components/marketing";
 import { CreaseDivider, EyebrowLabel } from "@/src/components/ui";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 interface AuthShellProps {
   eyebrow: string[];
@@ -27,6 +28,7 @@ export function AuthShell({
   subtitle,
   children,
 }: AuthShellProps) {
+  const { t } = useI18n();
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative flex flex-col justify-between overflow-hidden bg-navy px-6 py-6 text-white lg:sticky lg:top-0 lg:h-screen lg:px-12 lg:py-10">
@@ -49,7 +51,7 @@ export function AuthShell({
             href="/"
             className="inline-flex w-fit items-center gap-2 rounded-md text-sm font-medium text-white/80 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           >
-            <span aria-hidden="true">&larr;</span> Back to home
+            <span aria-hidden="true">&larr;</span> {t("auth.back")}
           </Link>
 
           <div className="hidden flex-1 flex-col items-center justify-center gap-8 lg:flex">
@@ -57,7 +59,7 @@ export function AuthShell({
               <FoldStackIllustration />
             </div>
             <p className="max-w-xs text-center font-display text-xl font-medium leading-snug text-white">
-              Fresh laundry, picked up and dropped back at your door.
+              {t("auth.promise")}
             </p>
           </div>
 
@@ -66,12 +68,12 @@ export function AuthShell({
               <Image src="/icon-mark.png" alt="" width={26} height={32} />
             </span>
             <p className="font-display text-base font-medium leading-snug text-white">
-              Fresh laundry, picked up and dropped back at your door.
+              {t("auth.promise")}
             </p>
           </div>
 
           <p className="hidden text-xs text-white/50 lg:block">
-            Yaoundé &middot; Cash, MTN &amp; Orange Money accepted
+            {t("auth.location")}
           </p>
         </div>
       </div>
@@ -79,11 +81,11 @@ export function AuthShell({
       {/* Form panel */}
       <div className="flex items-center justify-center bg-paper px-6 py-12 lg:px-12">
         <div className="w-full max-w-sm">
-          <EyebrowLabel words={eyebrow} />
+          <EyebrowLabel words={eyebrow.map((word) => word.startsWith("auth.") ? t(word) : word)} />
           <h1 className="mt-2 text-balance font-display text-3xl font-bold text-navy">
-            {title}
+            {title.startsWith("auth.") ? t(title) : title}
           </h1>
-          <p className="mt-2 text-sm text-ink-muted">{subtitle}</p>
+          <p className="mt-2 text-sm text-ink-muted">{subtitle.startsWith("auth.") ? t(subtitle) : subtitle}</p>
           <CreaseDivider />
           {children}
         </div>

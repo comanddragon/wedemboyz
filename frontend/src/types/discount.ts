@@ -53,7 +53,8 @@ export interface ListPromoCodesParams {
   page?: number;
 }
 
-export type DiscountCampaignSegment = "ALL" | "NEW_CUSTOMERS" | "LAPSED" | "LOYALTY_GOLD";
+export type DiscountCampaignSegment =
+  "ALL" | "NEW_CUSTOMERS" | "LAPSED" | "LOYALTY_GOLD";
 
 /** Mirrors apps.discounts.api.serializers.promo.DiscountCampaignSerializer */
 export interface DiscountCampaign {
@@ -111,12 +112,79 @@ export interface StampCardProgress {
   free_washes_available: number;
 }
 
+export type BadgeTier = "BASIC" | "BRONZE" | "SILVER" | "GOLD";
+
+export interface BadgeProgramProgress {
+  tier: BadgeTier;
+  badges: number;
+  badges_required: number;
+  lifetime_badges: number;
+  completed_cards: number;
+}
+
+export interface LoyaltyProgramSettings {
+  credit_points_enabled: boolean;
+  badge_tiers_enabled: boolean;
+  updated_at: string;
+}
+
+export type LoyaltyRewardTrack = "CREDIT" | "BADGE";
+
+export interface LoyaltyReward {
+  id: number;
+  name: string;
+  description: string;
+  track: LoyaltyRewardTrack;
+  points_cost: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface LoyaltyRewardGrant {
+  id: number;
+  reward: LoyaltyReward;
+  order: number | null;
+  is_redeemed: boolean;
+  redeemed_at: string | null;
+  created_at: string;
+}
+
 /** GET /loyalty/ — mirrors apps.discounts.api.views.loyalty.LoyaltyAccountView */
 export interface LoyaltyAccount {
   points_balance: number;
   lifetime_points_earned: number;
   tier: LoyaltyTier;
-  stamp_card: StampCardProgress;
+  badge_program: BadgeProgramProgress;
+  programmes: LoyaltyProgramSettings;
+  rewards: LoyaltyReward[];
+  reward_grants: LoyaltyRewardGrant[];
+}
+
+export interface AmbassadorProfile {
+  id: number;
+  user_id: number;
+  name: string;
+  phone_number: string;
+  promo_code: string;
+  credit_balance: string;
+  lifetime_credits: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface AmbassadorLeaderboardRow {
+  rank: number;
+  ambassador: AmbassadorProfile;
+  period_credits: number;
+  orders: number;
+  referred_revenue: number;
+}
+
+export interface AmbassadorLeaderboard {
+  period: "month" | "year" | "all";
+  period_label: string;
+  current_ambassador_id: number;
+  results: AmbassadorLeaderboardRow[];
 }
 
 export interface RedeemPointsInput {

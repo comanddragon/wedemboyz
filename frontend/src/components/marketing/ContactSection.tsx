@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, Clock, MapPin, Phone, MessageCircle } from "lucide-react";
 

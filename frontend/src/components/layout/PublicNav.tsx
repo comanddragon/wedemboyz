@@ -1,12 +1,14 @@
 "use client";
 
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useState } from "react";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { buttonStyles } from "@/src/components/ui";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
 import Image from "next/image";
 import { BUSINESS } from "@/src/lib/constants";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -17,6 +19,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
 }
 
 export function PublicNav() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const { accessToken, isHydrated } = useAuthStore();
   const isAuthenticated = !!accessToken;
@@ -40,30 +43,31 @@ export function PublicNav() {
         </Link>
         <div className="font-display hidden items-center gap-8 text-sm text-ink-muted md:flex">
           <Link href="/book" className="transition-colors hover:text-ink">
-            Book a pickup
+            {t("publicNav.book")}
           </Link>
           <Link href="/pricing" className="transition-colors hover:text-ink">
-            Pricing
+            {t("publicNav.pricing")}
           </Link>
           <Link href="/contact" className="transition-colors hover:text-ink">
-            Contact
+            {t("publicNav.contact")}
           </Link>
         </div>
 
         <div className="font-display hidden items-center justify-end gap-3 md:flex">
+          <LanguageSwitcher compact />
           <a
             href={BUSINESS.whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
             className="grid h-10 w-10 place-items-center rounded-full border border-crease bg-white transition-colors hover:border-[#25D366]/50 hover:bg-[#25D366]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]"
-            aria-label="Message the owner on WhatsApp"
+            aria-label={t("publicNav.whatsapp")}
           >
             <WhatsAppIcon className="h-[22px] w-[22px]" />
           </a>
           {isHydrated && isAuthenticated ? (
             <Link href="/dashboard">
               <span className={buttonStyles({ variant: "gold" })}>
-                Dashboard
+                {t("publicNav.dashboard")}
               </span>
             </Link>
           ) : (
@@ -72,11 +76,11 @@ export function PublicNav() {
                 href="/login"
                 className="text-sm text-ink-muted hover:text-ink"
               >
-                Log in
+                {t("publicNav.login")}
               </Link>
 
               <Link href="/register">
-                <span className={buttonStyles()}>Get started</span>
+                <span className={buttonStyles()}>{t("publicNav.start")}</span>
               </Link>
             </>
           )}
@@ -88,7 +92,7 @@ export function PublicNav() {
             target="_blank"
             rel="noopener noreferrer"
             className="grid h-11 w-11 place-items-center rounded-full border border-crease bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]"
-            aria-label="Message the owner on WhatsApp"
+            aria-label={t("publicNav.whatsapp")}
           >
             <WhatsAppIcon className="h-6 w-6" />
           </a>
@@ -97,7 +101,7 @@ export function PublicNav() {
             className="flex h-11 w-11 items-center justify-center rounded-full bg-navy text-white"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
-            aria-label={open ? "Close menu" : "Open menu"}
+            aria-label={t("publicNav.menu")}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -107,6 +111,7 @@ export function PublicNav() {
       {open && (
         <div className="absolute inset-x-0 top-full z-50 h-[calc(100dvh-4rem-env(safe-area-inset-top))] bg-white px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-8 sm:h-[calc(100dvh-4.5rem-env(safe-area-inset-top))] md:hidden">
           <div className="font-display flex h-full flex-col text-ink-muted">
+            <div className="mb-5"><LanguageSwitcher /></div>
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.16em] text-gold-600">
               Explore Wedemboyz Lavomatique
             </p>
@@ -115,7 +120,7 @@ export function PublicNav() {
               onClick={() => setOpen(false)}
               className="flex min-h-16 items-center justify-between border-b border-crease text-2xl font-medium text-navy"
             >
-              Book a pickup
+              {t("publicNav.book")}
               <ArrowRight className="h-5 w-5 text-gold" />
             </Link>
             <Link
@@ -123,7 +128,7 @@ export function PublicNav() {
               onClick={() => setOpen(false)}
               className="flex min-h-16 items-center justify-between border-b border-crease text-2xl font-medium text-navy"
             >
-              Pricing
+              {t("publicNav.pricing")}
               <ArrowRight className="h-5 w-5 text-gold" />
             </Link>
             <Link
@@ -131,7 +136,7 @@ export function PublicNav() {
               onClick={() => setOpen(false)}
               className="flex min-h-16 items-center justify-between border-b border-crease text-2xl font-medium text-navy"
             >
-              Contact
+              {t("publicNav.contact")}
               <ArrowRight className="h-5 w-5 text-gold" />
             </Link>
             <div className="mt-auto grid gap-3 pt-8">
@@ -144,7 +149,7 @@ export function PublicNav() {
                     className: "min-h-12 w-full",
                   })}
                 >
-                  Dashboard
+                  {t("publicNav.dashboard")}
                 </Link>
               ) : (
                 <>
@@ -153,7 +158,7 @@ export function PublicNav() {
                     onClick={() => setOpen(false)}
                     className={buttonStyles({ className: "min-h-12 w-full" })}
                   >
-                    Get started
+                    {t("publicNav.start")}
                   </Link>
                   <Link
                     href="/login"
@@ -163,7 +168,7 @@ export function PublicNav() {
                       className: "min-h-12 w-full",
                     })}
                   >
-                    Log in
+                    {t("publicNav.login")}
                   </Link>
                 </>
               )}

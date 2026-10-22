@@ -14,7 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 

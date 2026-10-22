@@ -15,6 +15,11 @@ import type {
   LoyaltyRule,
   LoyaltyTierConfig,
   StampCardConfig,
+  LoyaltyProgramSettings,
+  LoyaltyReward,
+  LoyaltyRewardGrant,
+  AmbassadorProfile,
+  AmbassadorLeaderboard,
 } from "@/src/types";
 
 // --- Promo codes (customer-redeemable, staff-managed) -----------------------------
@@ -150,12 +155,17 @@ export async function listLoyaltyRules(): Promise<Paginated<LoyaltyRule>> {
   return unwrap<Paginated<LoyaltyRule>>(res);
 }
 
-export async function createLoyaltyRule(input: Omit<LoyaltyRule, "id" | "created_at">): Promise<LoyaltyRule> {
+export async function createLoyaltyRule(
+  input: Omit<LoyaltyRule, "id" | "created_at">,
+): Promise<LoyaltyRule> {
   const res = await apiClient.post("/loyalty/admin/rules/", input);
   return unwrap<LoyaltyRule>(res);
 }
 
-export async function updateLoyaltyRule(id: number, input: Partial<LoyaltyRule>): Promise<LoyaltyRule> {
+export async function updateLoyaltyRule(
+  id: number,
+  input: Partial<LoyaltyRule>,
+): Promise<LoyaltyRule> {
   const res = await apiClient.patch(`/loyalty/admin/rules/${id}/`, input);
   return unwrap<LoyaltyRule>(res);
 }
@@ -165,27 +175,121 @@ export async function listLoyaltyTiers(): Promise<LoyaltyTierConfig[]> {
   return unwrap<LoyaltyTierConfig[]>(res);
 }
 
-export async function updateLoyaltyTier(id: number, input: Partial<LoyaltyTierConfig>): Promise<LoyaltyTierConfig> {
+export async function updateLoyaltyTier(
+  id: number,
+  input: Partial<LoyaltyTierConfig>,
+): Promise<LoyaltyTierConfig> {
   const res = await apiClient.patch(`/loyalty/admin/tiers/${id}/`, input);
   return unwrap<LoyaltyTierConfig>(res);
 }
 
-export async function listStampCardConfigs(): Promise<Paginated<StampCardConfig>> {
+export async function listStampCardConfigs(): Promise<
+  Paginated<StampCardConfig>
+> {
   const res = await apiClient.get("/loyalty/admin/stamp-card-config/");
   return unwrap<Paginated<StampCardConfig>>(res);
 }
 
-export async function createStampCardConfig(input: Omit<StampCardConfig, "id" | "created_at">): Promise<StampCardConfig> {
+export async function createStampCardConfig(
+  input: Omit<StampCardConfig, "id" | "created_at">,
+): Promise<StampCardConfig> {
   const res = await apiClient.post("/loyalty/admin/stamp-card-config/", input);
   return unwrap<StampCardConfig>(res);
 }
 
-export async function adjustCustomerLoyalty(userId: number, points: number, reason: string): Promise<LoyaltyTransaction> {
-  const res = await apiClient.post(`/loyalty/admin/customers/${userId}/adjust/`, { points, reason });
+export async function adjustCustomerLoyalty(
+  userId: number,
+  points: number,
+  reason: string,
+): Promise<LoyaltyTransaction> {
+  const res = await apiClient.post(
+    `/loyalty/admin/customers/${userId}/adjust/`,
+    { points, reason },
+  );
   return unwrap<LoyaltyTransaction>(res);
 }
 
-export async function listCustomerLoyaltyTransactions(userId: number, page = 1): Promise<Paginated<LoyaltyTransaction>> {
-  const res = await apiClient.get(`/loyalty/admin/customers/${userId}/transactions/`, { params: { page } });
+export async function listCustomerLoyaltyTransactions(
+  userId: number,
+  page = 1,
+): Promise<Paginated<LoyaltyTransaction>> {
+  const res = await apiClient.get(
+    `/loyalty/admin/customers/${userId}/transactions/`,
+    { params: { page } },
+  );
   return unwrap<Paginated<LoyaltyTransaction>>(res);
+}
+
+export async function getLoyaltyProgramSettings(): Promise<LoyaltyProgramSettings> {
+  const res = await apiClient.get("/loyalty/admin/settings/");
+  return unwrap<LoyaltyProgramSettings>(res);
+}
+
+export async function updateLoyaltyProgramSettings(
+  input: Partial<LoyaltyProgramSettings>,
+): Promise<LoyaltyProgramSettings> {
+  const res = await apiClient.patch("/loyalty/admin/settings/", input);
+  return unwrap<LoyaltyProgramSettings>(res);
+}
+
+export async function listLoyaltyRewards(): Promise<LoyaltyReward[]> {
+  const res = await apiClient.get("/loyalty/admin/rewards/");
+  return unwrap<LoyaltyReward[]>(res);
+}
+
+export async function createLoyaltyReward(
+  input: Omit<LoyaltyReward, "id" | "created_at">,
+): Promise<LoyaltyReward> {
+  const res = await apiClient.post("/loyalty/admin/rewards/", input);
+  return unwrap<LoyaltyReward>(res);
+}
+
+export async function updateLoyaltyReward(
+  id: number,
+  input: Partial<LoyaltyReward>,
+): Promise<LoyaltyReward> {
+  const res = await apiClient.patch(`/loyalty/admin/rewards/${id}/`, input);
+  return unwrap<LoyaltyReward>(res);
+}
+
+export async function redeemLoyaltyReward(
+  rewardId: number,
+): Promise<LoyaltyRewardGrant> {
+  const res = await apiClient.post("/loyalty/rewards/redeem/", {
+    reward_id: rewardId,
+  });
+  return unwrap<LoyaltyRewardGrant>(res);
+}
+
+export async function listAmbassadors(): Promise<AmbassadorProfile[]> {
+  const res = await apiClient.get("/loyalty/admin/ambassadors/");
+  return unwrap<AmbassadorProfile[]>(res);
+}
+
+export async function createAmbassador(
+  userId: number,
+): Promise<AmbassadorProfile> {
+  const res = await apiClient.post("/loyalty/admin/ambassadors/", {
+    user_id: userId,
+  });
+  return unwrap<AmbassadorProfile>(res);
+}
+
+export async function updateAmbassador(
+  id: number,
+  isActive: boolean,
+): Promise<AmbassadorProfile> {
+  const res = await apiClient.patch(`/loyalty/admin/ambassadors/${id}/`, {
+    is_active: isActive,
+  });
+  return unwrap<AmbassadorProfile>(res);
+}
+
+export async function getAmbassadorLeaderboard(
+  period: "month" | "year" | "all" = "month",
+): Promise<AmbassadorLeaderboard> {
+  const res = await apiClient.get("/loyalty/ambassadors/leaderboard/", {
+    params: { period },
+  });
+  return unwrap<AmbassadorLeaderboard>(res);
 }

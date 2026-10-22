@@ -1,7 +1,7 @@
 "use client";
 
 import { Bell, MessageCircle, Search } from "lucide-react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { usePathname } from "next/navigation";
 
 const LABELS: Record<string, string> = {

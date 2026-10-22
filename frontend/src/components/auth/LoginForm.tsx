@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import React from "react";
@@ -11,8 +11,10 @@ import { PhoneField } from "@/src/components/auth/PhoneField";
 import { Button } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/useAuth";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 export function LoginForm() {
+  const { t } = useI18n();
   const router = useRouter();
   const { login, isLoggingIn } = useAuth();
 
@@ -53,7 +55,7 @@ export function LoginForm() {
       <PhoneField value={phoneNumber} onChange={setPhoneNumber} />
 
       <PasswordField
-        label="Password"
+        label={t("auth.password")}
         value={password}
         onChange={setPassword}
         autoComplete="current-password"
@@ -64,7 +66,7 @@ export function LoginForm() {
           href="/forgot-password"
           className="text-sm text-navy underline-offset-2 hover:underline"
         >
-          Forgot password?
+          {t("auth.forgot")}
         </Link>
       </div>
 
@@ -72,7 +74,7 @@ export function LoginForm() {
         {justSucceeded ? (
           <>
             <Check className="h-4 w-4" aria-hidden="true" />
-            Welcome back
+            {t("auth.welcome")}
           </>
         ) : isLoggingIn ? (
           <>
@@ -80,20 +82,20 @@ export function LoginForm() {
               className="h-4 w-4 animate-spin motion-reduce:animate-none"
               aria-hidden="true"
             />
-            Logging in&hellip;
+            {t("auth.loggingIn")}
           </>
         ) : (
-          "Log in"
+          t("auth.login")
         )}
       </Button>
 
       <p className="mt-6 text-center text-sm text-ink-muted">
-        No account?{" "}
+        {t("auth.noAccount")} {" "}
         <Link
           href="/register"
           className="font-medium text-navy underline-offset-2 hover:underline"
         >
-          Register
+          {t("auth.register")}
         </Link>
       </p>
     </form>

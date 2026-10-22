@@ -6,6 +6,7 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 const STEPS: Array<{ path: string; label: string; icon: LucideIcon }> = [
   { path: "/book", label: "Services", icon: Sparkles },
@@ -15,6 +16,8 @@ const STEPS: Array<{ path: string; label: string; icon: LucideIcon }> = [
 ];
 
 export function WizardSteps({ current }: { current: number }) {
+  const { t } = useI18n();
+  const labels = [t("booking.services"), t("booking.scheduleStep"), t("booking.reviewStep"), t("booking.paymentStep")];
   return (
     <ol className="mb-5 grid grid-cols-4 items-start sm:mb-6 lg:mb-3">
       {STEPS.map((step, index) => {
@@ -53,8 +56,8 @@ export function WizardSteps({ current }: { current: number }) {
                 <Icon className="h-4 w-4" aria-hidden="true" />
               )}
               <span className="sr-only">
-                Step {stepNumber}: {step.label}
-                {isComplete ? " (completed)" : ""}
+                {t("booking.step")} {stepNumber}: {labels[index]}
+                {isComplete ? ` (${t("booking.completed")})` : ""}
               </span>
             </span>
 
@@ -63,7 +66,7 @@ export function WizardSteps({ current }: { current: number }) {
                 isCurrent ? "font-medium text-ink" : "text-ink-muted"
               }`}
             >
-              {step.label}
+              {labels[index]}
             </span>
           </li>
         );

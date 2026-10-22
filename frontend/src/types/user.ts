@@ -30,11 +30,21 @@ export interface UserProfile {
   staff_role: "OWNER" | "MANAGER" | "ATTENDANT" | null;
   staff_permissions: string[];
   staff_access_active: boolean;
+  is_ambassador: boolean;
 }
 
 /** Fields the client may PATCH on /users/me/ — everything else is read-only. */
 export type ProfileUpdateInput = Partial<
-  Pick<UserProfile, "first_name" | "last_name" | "email" | "address_line" | "city" | "date_of_birth" | "contact_phone">
+  Pick<
+    UserProfile,
+    | "first_name"
+    | "last_name"
+    | "email"
+    | "address_line"
+    | "city"
+    | "date_of_birth"
+    | "contact_phone"
+  >
 > & {
   avatar?: File | null;
 };
@@ -73,6 +83,7 @@ export interface AuthTokens {
     staff_role: "OWNER" | "MANAGER" | "ATTENDANT" | null;
     staff_permissions: string[];
     staff_access_active: boolean;
+    is_ambassador: boolean;
   };
 }
 

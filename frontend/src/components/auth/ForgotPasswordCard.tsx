@@ -1,7 +1,10 @@
+"use client";
+
 import { Clock, Phone } from "lucide-react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 
 import { BUSINESS } from "@/src/lib/constants";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 /**
  * There's no /auth/password/reset/ endpoint yet (see the backend note this
@@ -14,6 +17,7 @@ import { BUSINESS } from "@/src/lib/constants";
  * the real storefront number — as a live tel: link.
  */
 export function ForgotPasswordCard() {
+  const { t } = useI18n();
   return (
     <div>
       <div className="rounded-card border border-crease bg-white p-5">
@@ -22,7 +26,7 @@ export function ForgotPasswordCard() {
             <Phone className="h-5 w-5" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-sm font-medium text-ink">Call or WhatsApp us</p>
+            <p className="text-sm font-medium text-ink">{t("auth.call")}</p>
             <a
               href={BUSINESS.telHref}
               className="mt-0.5 block text-base font-semibold text-navy hover:underline"
@@ -37,24 +41,23 @@ export function ForgotPasswordCard() {
             <Clock className="h-5 w-5" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-sm font-medium text-ink">{`We're around`}</p>
+            <p className="text-sm font-medium text-ink">{t("auth.available")}</p>
             <p className="mt-0.5 text-sm text-ink-muted">{BUSINESS.hours}</p>
           </div>
         </div>
       </div>
 
       <p className="mt-4 text-sm text-ink-muted">
-        {`Tell us your phone number and we'll get you logged back in — usually within a few
-              minutes during those hours.`}
+        {t("auth.resetHelp")}
       </p>
 
       <p className="mt-6 text-center text-sm text-ink-muted">
-        Remembered it after all?{" "}
+        {t("auth.remembered")} {" "}
         <Link
           href="/login"
           className="font-medium text-navy underline-offset-2 hover:underline"
         >
-          Log in
+          {t("auth.login")}
         </Link>
       </p>
     </div>

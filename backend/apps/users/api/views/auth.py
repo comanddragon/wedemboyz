@@ -30,20 +30,7 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        refresh = RefreshToken.for_user(user)
-        return Response(
-            {
-                "user": {
-                    "id": user.pk,
-                    "phone_number": user.phone_number,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                },
-                "refresh": str(refresh),
-                "access": str(refresh.access_token),
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        return Response(auth_payload(user), status=status.HTTP_201_CREATED)
 
 
 class LoginView(TokenObtainPairView):

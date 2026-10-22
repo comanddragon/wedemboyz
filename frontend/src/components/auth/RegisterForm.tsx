@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 
@@ -11,10 +11,12 @@ import { PhoneField } from "@/src/components/auth/PhoneField";
 import { Button, Field, Input } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/useAuth";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 const SUCCESS_PAUSE_MS = 500;
 
 export function RegisterForm() {
+  const { t } = useI18n();
   const router = useRouter();
   const { register, isRegistering, isGuest } = useAuth();
   const firstNameId = useId();
@@ -68,19 +70,18 @@ export function RegisterForm() {
       {errorMessage && <FormErrorBanner message={errorMessage} />}
       {isGuest && (
         <p className="mb-4 rounded-xl bg-gold-50 px-3.5 py-2.5 text-sm text-navy">
-          Creating an account keeps the orders you&apos;ve already booked as a
-          guest — nothing is lost.
+          {t("auth.guestCreate")}
         </p>
       )}
 
       <PhoneField
         value={phoneNumber}
         onChange={setPhoneNumber}
-        hint="We'll text you a code to confirm it's really you."
+        hint={t("auth.phoneHint")}
       />
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="First name" htmlFor={firstNameId}>
+        <Field label={t("auth.firstName")} htmlFor={firstNameId}>
           <Input
             id={firstNameId}
             type="text"
@@ -89,7 +90,7 @@ export function RegisterForm() {
             onChange={(e) => setFirstName(e.target.value)}
           />
         </Field>
-        <Field label="Last name" htmlFor={lastNameId}>
+        <Field label={t("auth.lastName")} htmlFor={lastNameId}>
           <Input
             id={lastNameId}
             type="text"
@@ -101,9 +102,9 @@ export function RegisterForm() {
       </div>
 
       <Field
-        label="Email"
+        label={t("auth.email")}
         htmlFor={emailId}
-        hint="Optional — only if you'd like order updates by email too."
+        hint={t("auth.emailHint")}
       >
         <Input
           id={emailId}
@@ -115,19 +116,19 @@ export function RegisterForm() {
       </Field>
 
       <PasswordField
-        label="Password"
+        label={t("auth.password")}
         value={password}
         onChange={setPassword}
         autoComplete="new-password"
-        hint="At least 8 characters."
+        hint={t("auth.passwordHint")}
       />
 
       <PasswordField
-        label="Confirm password"
+        label={t("auth.confirmPassword")}
         value={password2}
         onChange={updatePassword2}
         autoComplete="new-password"
-        error={mismatch ? "Passwords don't match." : undefined}
+        error={mismatch ? t("auth.mismatch") : undefined}
       />
 
       <Button
@@ -139,7 +140,7 @@ export function RegisterForm() {
         {justSucceeded ? (
           <>
             <Check className="h-4 w-4" aria-hidden="true" />
-            Account created
+            {t("auth.created")}
           </>
         ) : isRegistering ? (
           <>
@@ -147,20 +148,20 @@ export function RegisterForm() {
               className="h-4 w-4 animate-spin motion-reduce:animate-none"
               aria-hidden="true"
             />
-            Creating account&hellip;
+            {t("auth.creating")}
           </>
         ) : (
-          "Create account"
+          t("auth.create")
         )}
       </Button>
 
       <p className="mt-6 text-center text-sm text-ink-muted">
-        Already have an account?{" "}
+        {t("auth.hasAccount")} {" "}
         <Link
           href="/login"
           className="font-medium text-navy underline-offset-2 hover:underline"
         >
-          Log in
+          {t("auth.login")}
         </Link>
       </p>
     </form>

@@ -35,7 +35,9 @@ def cancel_order(order, *, changed_by=None, reason=""):
         subscription.kg_remaining += used_kg
         subscription.save(update_fields=["kg_remaining", "updated_at"])
 
-    order.promo_usages.all().delete()
+    # Ordinary promotion usage is reversed on cancellation. Ambassador codes
+    # count when the order is placed, so their referral record is historical.
+    order.promo_usages.filter(promo_code__ambassador_profile__isnull=True).delete()
 
     from apps.inventory.models import InventoryTransaction
 

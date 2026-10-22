@@ -14,6 +14,7 @@ interface AuthUser {
   staff_role: "OWNER" | "MANAGER" | "ATTENDANT" | null;
   staff_permissions: string[];
   staff_access_active: boolean;
+  is_ambassador: boolean;
 }
 
 export interface AuthState {

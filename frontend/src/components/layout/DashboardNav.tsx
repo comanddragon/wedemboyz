@@ -24,9 +24,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { LogoutButton } from "@/src/components/auth/LogoutButton";
 import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
@@ -40,12 +41,17 @@ import {
 } from "@/src/lib/admin-rbac";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
 import { queryKeys } from "@/src/lib/query-keys";
+import { stripLocale } from "@/src/i18n/config";
+import { useI18n } from "@/src/i18n/I18nProvider";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
   permission?: AdminPermission;
+  superuserOnly?: boolean;
+  ambassadorOnly?: boolean;
 };
 
 const ADMIN_LINKS: NavItem[] = [
@@ -116,6 +122,18 @@ const ADMIN_LINKS: NavItem[] = [
     permission: "discounts.manage",
   },
   {
+    href: "/admin/loyalty",
+    label: "Loyalty",
+    icon: Sparkles,
+    permission: "loyalty.manage",
+  },
+  {
+    href: "/admin/ambassadors",
+    label: "Ambassadors",
+    icon: Users,
+    superuserOnly: true,
+  },
+  {
     href: "/admin/finance/credit",
     label: "Credit",
     icon: CreditCard,
@@ -130,6 +148,12 @@ const CUSTOMER_LINKS: NavItem[] = [
   { href: "/payments", label: "Payments", icon: Receipt },
   { href: "/chat", label: "Support", icon: MessageCircle },
   { href: "/loyalty", label: "Rewards", icon: Sparkles },
+  {
+    href: "/ambassadors",
+    label: "Leaderboard",
+    icon: Users,
+    ambassadorOnly: true,
+  },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -204,6 +228,7 @@ function NavMore({ items, pathname }: { items: NavItem[]; pathname: string }) {
 }
 
 function isActive(pathname: string, href: string) {
+  pathname = stripLocale(pathname);
   return (
     pathname === href ||
     (href !== "/admin" &&
@@ -213,18 +238,27 @@ function isActive(pathname: string, href: string) {
 }
 
 export function DashboardNav({ admin = false }: { admin?: boolean }) {
+  const { t } = useI18n();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const user = useAuthStore((state) => state.user);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const isHydrated = useAuthStore((state) => state.isHydrated);
   const permissions = user?.staff_permissions ?? [];
   const role = user?.staff_role as AdminRole | null | undefined;
   const name =
     [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
     user?.phone_number ||
-    (admin ? "Staff" : "Customer");
-  const links = (admin ? ADMIN_LINKS : CUSTOMER_LINKS).filter(
-    (item) => !item.permission || canAccess(permissions, item.permission),
-  );
+    (admin ? t("common.staff") : t("common.customer"));
+  const labelKeys: Record<string, string> = {
+    Dashboard: "nav.dashboard", "Quick sale": "nav.quickSale", Orders: "nav.orders", Customers: "nav.customers", Inventory: "nav.inventory", Payments: "nav.payments", Analytics: "nav.analytics", Inbox: "nav.inbox", Staff: "nav.staff", Payroll: "nav.payroll", Discounts: "nav.discounts", Loyalty: "nav.loyalty", Ambassadors: "nav.ambassadors", Credit: "nav.credit", "Book pickup": "nav.book", Support: "nav.support", Rewards: "nav.rewards", Leaderboard: "nav.leaderboard", Settings: "nav.settings",
+  };
+  const links = (admin ? ADMIN_LINKS : CUSTOMER_LINKS).filter((item) => {
+    if (item.superuserOnly && !user?.is_superuser) return false;
+    if (item.ambassadorOnly && !user?.is_ambassador) return false;
+    return !item.permission || canAccess(permissions, item.permission);
+  }).map((item) => ({ ...item, label: t(labelKeys[item.label] ?? item.label) }));
   const mobileLinks = admin
     ? links.filter((item) =>
         [
@@ -240,19 +274,20 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
   const { data: chatRooms } = useQuery({
     queryKey: queryKeys.chat.rooms,
     queryFn: () => chatApi.listChatRooms(),
-    enabled: Boolean(user && admin),
+    enabled: isHydrated && Boolean(accessToken && user && admin),
     refetchInterval: 20_000,
   });
   const { data: unreadNotifications } = useQuery({
     queryKey: queryKeys.notifications.unread,
     queryFn: () => notificationsApi.listNotifications(1, false),
-    enabled: Boolean(user && !admin),
+    enabled: isHydrated && Boolean(accessToken && user && !admin),
     refetchInterval: 30_000,
   });
   const attentionCount = admin
     ? (chatRooms?.reduce((total, room) => total + room.unread_count, 0) ?? 0)
     : (unreadNotifications?.count ?? 0);
   useLockBodyScroll(open);
+  useEffect(() => setMounted(true), []);
 
   return (
     <>
@@ -294,6 +329,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-0">
+          <div className="hidden xl:block"><LanguageSwitcher compact /></div>
           <Link
             href={admin ? "/admin/chat" : "/notifications"}
             className="relative grid h-11 w-11 place-items-center rounded-full bg-mist text-navy transition-colors hover:bg-gold-50 sm:bg-white/90 sm:shadow-float lg:h-10 lg:w-10"
@@ -356,111 +392,121 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
         </div>
       </header>
 
-      <nav
-        className="mobile-safe-bottom fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-crease/80 bg-white/95 px-2 pt-2 shadow-[0_-12px_32px_-20px_color-mix(in_srgb,var(--color-navy)_45%,transparent)] backdrop-blur-xl lg:hidden"
-        aria-label={
-          admin ? "Admin quick navigation" : "Customer quick navigation"
-        }
-      >
-        {mobileLinks.map(({ href, label, icon: Icon }) => {
-          const active = isActive(pathname, href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[0.68rem] font-semibold transition-colors ${active ? "bg-navy text-white" : "text-ink-muted active:bg-steam active:text-navy"}`}
-              aria-current={active ? "page" : undefined}
-            >
-              <Icon
-                className={`h-[19px] w-[19px] ${active ? "text-gold" : ""}`}
-                aria-hidden="true"
-              />
-              <span className="max-w-full truncate">
-                {label.replace(" pickup", "")}
-              </span>
-            </Link>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[0.68rem] font-semibold text-ink-muted active:bg-steam active:text-navy"
-          aria-label="Open all navigation"
-        >
-          <Menu className="h-[19px] w-[19px]" aria-hidden="true" />
-          More
-        </button>
-      </nav>
-
-      {open && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            className="absolute inset-0 bg-navy/45 backdrop-blur-[2px]"
-            onClick={() => setOpen(false)}
-            aria-label="Close navigation"
-          />
-          <div className="mobile-safe-top mobile-safe-bottom absolute inset-y-0 right-0 flex w-[min(92vw,380px)] flex-col bg-white p-5 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <p className="font-display text-lg font-bold text-navy">Menu</p>
-              <button
-                onClick={() => setOpen(false)}
-                className="grid h-10 w-10 place-items-center rounded-full bg-mist text-navy"
-                aria-label="Close menu"
+      {mounted
+        ? createPortal(
+            <>
+              <nav
+                className="mobile-safe-bottom fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-crease/80 bg-white/95 px-2 pt-2 shadow-[0_-12px_32px_-20px_color-mix(in_srgb,var(--color-navy)_45%,transparent)] backdrop-blur-xl lg:hidden"
+                aria-label={
+                  admin ? "Admin quick navigation" : "Customer quick navigation"
+                }
               >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <nav
-              className="mt-6 grid grid-cols-2 gap-2 overflow-y-auto"
-              aria-label="All navigation"
-            >
-              {links.map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  className={`flex min-h-14 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold ${isActive(pathname, href) ? "bg-navy text-white" : "bg-mist text-ink-soft active:bg-steam"}`}
+                {mobileLinks.map(({ href, label, icon: Icon }) => {
+                  const active = isActive(pathname, href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[0.68rem] font-semibold transition-colors ${active ? "bg-navy text-white" : "text-ink-muted active:bg-steam active:text-navy"}`}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      <Icon
+                        className={`h-[19px] w-[19px] ${active ? "text-gold" : ""}`}
+                        aria-hidden="true"
+                      />
+                      <span className="max-w-full truncate">
+                        {label.replace(" pickup", "")}
+                      </span>
+                    </Link>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setOpen(true)}
+                  className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[0.68rem] font-semibold text-ink-muted active:bg-steam active:text-navy"
+                  aria-label="Open all navigation"
                 >
-                  <Icon className="h-[18px] w-[18px]" />
-                  {label}
-                </Link>
-              ))}
-            </nav>
-            <div className="mt-auto border-t border-crease-soft pt-4">
-              {user?.is_staff && (
-                <Link
-                  href={admin ? "/dashboard" : "/admin"}
-                  onClick={() => setOpen(false)}
-                  className="mb-3 flex min-h-12 items-center gap-3 rounded-xl bg-gold-50 px-3 py-3 text-sm font-semibold text-navy active:bg-steam"
-                >
-                  {admin ? (
-                    <LayoutDashboard className="h-[18px] w-[18px]" />
-                  ) : (
-                    <UserCog className="h-[18px] w-[18px]" />
-                  )}
-                  {admin ? "Customer view" : "Admin console"}
-                </Link>
-              )}
-              <div className="mb-2 flex items-center gap-3 px-2">
-                <CustomerAvatar name={name} size="sm" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-navy">
-                    {name}
-                  </p>
-                  <p className="text-xs text-ink-muted">
-                    {admin && role
-                      ? ROLE_LABELS[role]
-                      : user?.is_guest
-                        ? "Guest — not saved to an account"
-                        : "Customer account"}
-                  </p>
+                  <Menu className="h-[19px] w-[19px]" aria-hidden="true" />
+                  {t("common.more")}
+                </button>
+              </nav>
+
+              {open ? (
+                <div className="fixed inset-0 z-50 lg:hidden">
+                  <button
+                    className="absolute inset-0 bg-navy/45 backdrop-blur-[2px]"
+                    onClick={() => setOpen(false)}
+                    aria-label="Close navigation"
+                  />
+                  <div className="mobile-safe-top mobile-safe-bottom absolute inset-y-0 right-0 flex w-[min(92vw,380px)] flex-col bg-white p-5 shadow-2xl">
+                    <div className="flex items-center justify-between">
+                      <p className="font-display text-lg font-bold text-navy">
+                        Menu
+                      </p>
+                      <button
+                        onClick={() => setOpen(false)}
+                        className="grid h-10 w-10 place-items-center rounded-full bg-mist text-navy"
+                        aria-label="Close menu"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                    <div className="mt-4"><LanguageSwitcher /></div>
+                    <nav
+                      className="mt-6 grid grid-cols-2 gap-2 overflow-y-auto"
+                      aria-label="All navigation"
+                    >
+                      {links.map(({ href, label, icon: Icon }) => (
+                        <Link
+                          key={href}
+                          href={href}
+                          onClick={() => setOpen(false)}
+                          className={`flex min-h-14 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold ${isActive(pathname, href) ? "bg-navy text-white" : "bg-mist text-ink-soft active:bg-steam"}`}
+                        >
+                          <Icon className="h-[18px] w-[18px]" />
+                          {label}
+                        </Link>
+                      ))}
+                    </nav>
+                    <div className="mt-auto border-t border-crease-soft pt-4">
+                      {user?.is_staff && (
+                        <Link
+                          href={admin ? "/dashboard" : "/admin"}
+                          onClick={() => setOpen(false)}
+                          className="mb-3 flex min-h-12 items-center gap-3 rounded-xl bg-gold-50 px-3 py-3 text-sm font-semibold text-navy active:bg-steam"
+                        >
+                          {admin ? (
+                            <LayoutDashboard className="h-[18px] w-[18px]" />
+                          ) : (
+                            <UserCog className="h-[18px] w-[18px]" />
+                          )}
+                          {admin ? "Customer view" : "Admin console"}
+                        </Link>
+                      )}
+                      <div className="mb-2 flex items-center gap-3 px-2">
+                        <CustomerAvatar name={name} size="sm" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-navy">
+                            {name}
+                          </p>
+                          <p className="text-xs text-ink-muted">
+                            {admin && role
+                              ? ROLE_LABELS[role]
+                              : user?.is_guest
+                                ? "Guest — not saved to an account"
+                                : "Customer account"}
+                          </p>
+                        </div>
+                      </div>
+                      <LogoutButton className="w-full justify-start" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <LogoutButton className="w-full justify-start" />
-            </div>
-          </div>
-        </div>
-      )}
+              ) : null}
+            </>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

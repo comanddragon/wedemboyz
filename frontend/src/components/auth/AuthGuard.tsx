@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import React from "react";
 import { GuardLoading } from "@/src/components/auth/GuardLoading";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
+import { localizeHref, localeFromPathname, stripLocale } from "@/src/i18n/config";
 
 /**
  * Client-side stand-in for the guide's middleware.ts. Next.js middleware
@@ -22,17 +23,18 @@ const PUBLIC_PREFIXES = ["/book"];
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const routePathname = stripLocale(pathname);
   const isPublic = PUBLIC_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    (prefix) => routePathname === prefix || routePathname.startsWith(`${prefix}/`),
   );
   const accessToken = useAuthStore((state) => state.accessToken);
   const isHydrated = useAuthStore((state) => state.isHydrated);
 
   useEffect(() => {
     if (isHydrated && !accessToken && !isPublic) {
-      router.replace("/login");
+      router.replace(localizeHref("/login", localeFromPathname(pathname)));
     }
-  }, [isHydrated, accessToken, isPublic, router]);
+  }, [isHydrated, accessToken, isPublic, pathname, router]);
 
   // Render nothing until hydration finishes, to avoid a flash of protected
   // content for a user who turns out to be logged out.

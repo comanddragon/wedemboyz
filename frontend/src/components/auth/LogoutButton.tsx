@@ -1,16 +1,18 @@
 "use client";
 
 import { LogOut } from "lucide-react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/src/hooks/useAuth";
 import { cn } from "@/src/lib/utils";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 const BUTTON_CLASS =
   "inline-flex items-center gap-2 rounded-md px-2.5 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-steam hover:text-status-cancelled-text disabled:cursor-not-allowed disabled:opacity-50";
 
 export function LogoutButton({ className = "" }: { className?: string }) {
+  const { t } = useI18n();
   const router = useRouter();
   const { logout, isLoggingOut, isAuthenticated, isGuest } = useAuth();
 
@@ -19,7 +21,7 @@ export function LogoutButton({ className = "" }: { className?: string }) {
     return (
       <Link href="/login" className={cn(BUTTON_CLASS, className)}>
         <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
-        Log in
+        {t("auth.login")}
       </Link>
     );
   }
@@ -29,7 +31,7 @@ export function LogoutButton({ className = "" }: { className?: string }) {
     if (
       isGuest &&
       !window.confirm(
-        "You're on a guest session. If you log out, you won't be able to get back to your orders unless you create an account first.\n\nLog out anyway?",
+        t("auth.guestLogout"),
       )
     ) {
       return;
@@ -46,7 +48,7 @@ export function LogoutButton({ className = "" }: { className?: string }) {
       className={cn(BUTTON_CLASS, className)}
     >
       <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
-      {isLoggingOut ? "Logging out…" : "Log out"}
+      {isLoggingOut ? t("auth.loggingOut") : t("auth.logout")}
     </button>
   );
 }

@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { PublicNav } from './PublicNav'
 import { PublicFooter } from './PublicFooter'
+import { stripLocale } from '@/src/i18n/config'
 
 const hiddenRoutes = [
     '/register',
@@ -21,7 +22,8 @@ const hiddenRoutes = [
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
-    const hide = hiddenRoutes.some(route => pathname.startsWith(route))
+    const routePathname = stripLocale(pathname)
+    const hide = hiddenRoutes.some(route => routePathname.startsWith(route))
 
     return (
         <>
