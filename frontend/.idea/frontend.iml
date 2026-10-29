@@ -5,6 +5,8 @@
       <excludeFolder url="file://$MODULE_DIR$/.idea" />
       <excludeFolder url="file://$MODULE_DIR$/next-env.d.ts" />
       <excludeFolder url="file://$MODULE_DIR$/tsconfig.tsbuildinfo" />
+      <excludeFolder url="file://$MODULE_DIR$/.open-next" />
+      <excludeFolder url="file://$MODULE_DIR$/.wrangler" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
   </component>

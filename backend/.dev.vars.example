@@ -20,3 +20,8 @@ AWS_STORAGE_BUCKET_NAME=wedemboyz-media
 AWS_S3_REGION_NAME=auto
 AWS_S3_ENDPOINT_URL=https://ACCOUNT_ID.r2.cloudflarestorage.com
 AWS_S3_CUSTOM_DOMAIN=media.example.com
+
+# Resend: use a sender on a verified domain.
+RESEND_API_KEY=
+RESEND_FROM=
+ORDER_NOTIFICATION_EMAIL=ntsemancho@gmail.com

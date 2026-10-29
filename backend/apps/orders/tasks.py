@@ -44,3 +44,13 @@ def award_loyalty_points_for_delivered_order(order_id: int):
     if order.status == "DELIVERED":
         award_points_for_order(order)
         award_badge_for_order(order)
+
+
+@app.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_owner_order_email(self, order_id, payload):
+    from services.order_email import send_order_email
+
+    try:
+        return send_order_email(order_id, payload)
+    except Exception as exc:
+        raise self.retry(exc=exc)

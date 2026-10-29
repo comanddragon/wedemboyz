@@ -272,6 +272,11 @@ WHATSAPP_FROM_NUMBER = config("WHATSAPP_FROM_NUMBER", default="")  # e.g. "whats
 # Push notifications — Firebase Cloud Messaging (legacy HTTP API).
 FCM_SERVER_KEY = config("FCM_SERVER_KEY", default="")
 
+# Owner order emails use Resend independently of customer notification preferences.
+RESEND_API_KEY = config("RESEND_API_KEY", default="")
+RESEND_FROM = config("RESEND_FROM", default="")
+ORDER_NOTIFICATION_EMAIL = config("ORDER_NOTIFICATION_EMAIL", default="ntsemancho@gmail.com")
+
 EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = config("EMAIL_HOST", default="smtp.sendgrid.net")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)

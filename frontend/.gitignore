@@ -43,3 +43,4 @@ bun-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 cloudflare-env.d.ts
+/wrangler.jsonc

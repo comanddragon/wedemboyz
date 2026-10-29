@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { CircleCheck, HandCoins, Truck } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { BookingShell } from "@/src/components/booking/BookingShell";
 import { Button, Card, Field, Input } from "@/src/components/ui";
@@ -15,6 +15,7 @@ import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { ensureSession } from "@/src/lib/guest-session";
 import type { PaymentOption } from "@/src/lib/stores/booking.store";
+import { ownerWhatsAppOrderUrl } from "@/src/lib/whatsapp-order";
 
 const PAYMENT_OPTIONS: Array<{
   value: PaymentOption;
@@ -39,7 +40,8 @@ const PAYMENT_OPTIONS: Array<{
 export default function BookConfirmPage() {
   const router = useRouter();
   const booking = useBooking();
-  const { isAuthenticated, isGuest } = useAuth();
+  const { isAuthenticated, isGuest, user } = useAuth();
+  const whatsappWindowRef = useRef<Window | null>(null);
   const needsContact = !isAuthenticated || isGuest;
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -106,10 +108,29 @@ export default function BookConfirmPage() {
       return order;
     },
     onSuccess: (order) => {
+      const whatsappUrl = ownerWhatsAppOrderUrl(order, {
+        customerName: needsContact
+          ? contactName
+          : [user?.first_name, user?.last_name].filter(Boolean).join(" "),
+        customerPhone: needsContact ? contactPhone : user?.phone_number,
+        pickupDate: booking.scheduledPickupDate,
+        pickupSlot: booking.scheduledPickupSlot,
+      });
+      const whatsappWindow = whatsappWindowRef.current;
+      whatsappWindowRef.current = null;
       booking.reset();
-      router.push(`/orders/${order.id}`);
+      if (whatsappWindow && !whatsappWindow.closed) {
+        whatsappWindow.location.href = whatsappUrl;
+        router.push(`/orders/${order.id}`);
+      } else {
+        window.location.assign(whatsappUrl);
+      }
     },
-    onError: (error) => setErrorMessage(getApiErrorMessage(error)),
+    onError: (error) => {
+      whatsappWindowRef.current?.close();
+      whatsappWindowRef.current = null;
+      setErrorMessage(getApiErrorMessage(error));
+    },
   });
 
   return (
@@ -220,7 +241,14 @@ export default function BookConfirmPage() {
             </p>
           ) : null}
           <Button
-            onClick={() => submitMutation.mutate()}
+            onClick={() => {
+              setErrorMessage(null);
+              whatsappWindowRef.current = window.open("", "_blank");
+              if (whatsappWindowRef.current) {
+                whatsappWindowRef.current.opener = null;
+              }
+              submitMutation.mutate();
+            }}
             disabled={
               submitMutation.isPending ||
               booking.items.length === 0 ||

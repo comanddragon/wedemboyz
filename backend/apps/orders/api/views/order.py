@@ -140,6 +140,18 @@ class OrderListCreateView(generics.ListCreateAPIView):
                 for photo in photos:
                     OrderItemPhoto.objects.create(item=created_items[index], image=photo)
         order.refresh_from_db()
+        from core.jobs import enqueue
+        from apps.orders.tasks import send_owner_order_email
+        from services.order_email import order_email_payload
+
+        # Persist alongside the order: a rollback must also discard the email job.
+        # Snapshot the details so retries always send the same Resend payload.
+        enqueue(
+            send_owner_order_email.name,
+            args=[order.pk, order_email_payload(order)],
+            max_attempts=send_owner_order_email.max_attempts,
+            idempotency_key=f"owner-order-email/{order.pk}",
+        )
         output = OrderDetailSerializer(order, context=self.get_serializer_context())
         return Response(output.data, status=status.HTTP_201_CREATED)
 
