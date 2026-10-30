@@ -78,11 +78,17 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as
       InternalAxiosRequestConfig | undefined;
 
-    if (
-      error.response?.status !== 401 ||
-      !originalRequest ||
-      originalRequest._retried
-    ) {
+    if (error.response?.status !== 401 || !originalRequest) {
+      throw error;
+    }
+
+    // The retry with a freshly refreshed token was rejected too: the session
+    // is unusable (e.g. tokens signed by a previous server key, or a deleted
+    // user). Sign out once instead of letting every query keep failing.
+    if (originalRequest._retried) {
+      if (!originalRequest.url?.includes("/auth/")) {
+        useAuthStore.getState().clearAuth();
+      }
       throw error;
     }
 
@@ -98,7 +104,16 @@ apiClient.interceptors.response.use(
       originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
       return apiClient(originalRequest);
     } catch (refreshError) {
-      useAuthStore.getState().clearAuth();
+      // Only sign out when the server actually refused the refresh token (or
+      // there is none). A network failure — offline PWA, server waking up —
+      // must not log the user out.
+      const status = (refreshError as AxiosError).response?.status;
+      const refused =
+        status === 400 ||
+        status === 401 ||
+        status === 403 ||
+        !getAuthState().refreshToken;
+      if (refused) useAuthStore.getState().clearAuth();
       throw refreshError;
     }
   },

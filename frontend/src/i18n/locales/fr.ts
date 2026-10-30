@@ -353,7 +353,14 @@ export const fr: typeof en = {
     edit: "Modifier",
     removePhoto: "Supprimer la photo",
   },
+  pwa: {
+    install: "Installer Wedemboyz",
+    installIos: "Pour installer : Partager → Sur l’écran d’accueil.",
+    dismiss: "Fermer",
+  },
   notifications: {
+    pushDenied: "Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages du navigateur, puis réessayez.",
+    pushUnsupported: "Ce navigateur ne prend pas en charge les notifications push. Sur iPhone, ajoutez d’abord l’app à l’écran d’accueil.",
     eyebrow: "Restez informé",
     title: "Notifications",
     markAll: "Tout marquer comme lu",

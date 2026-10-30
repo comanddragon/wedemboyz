@@ -14,6 +14,7 @@ import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { queryKeys } from "@/src/lib/query-keys";
 import type { NotificationPreference } from "@/src/types";
 import { useI18n } from "@/src/i18n/I18nProvider";
+import { enablePush } from "@/src/lib/pwa/service-worker";
 import type { Locale } from "@/src/i18n/config";
 
 type Filter = "all" | "unread";
@@ -137,9 +138,24 @@ function PreferencesPanel() {
                   className="peer sr-only"
                   checked={checked}
                   disabled={updateMutation.isPending}
-                  onChange={(e) =>
-                    updateMutation.mutate({ [field.key]: e.target.checked })
-                  }
+                  onChange={async (e) => {
+                    const next = e.target.checked;
+                    // Permission must be requested from this click, not on login.
+                    if (field.key === "push_enabled" && next) {
+                      const result = await enablePush();
+                      if (result === "denied" || result === "unsupported") {
+                        setMessage(
+                          t(
+                            result === "denied"
+                              ? "notifications.pushDenied"
+                              : "notifications.pushUnsupported",
+                          ),
+                        );
+                        return;
+                      }
+                    }
+                    updateMutation.mutate({ [field.key]: next });
+                  }}
                 />
                 <span className="absolute inset-0 rounded-full bg-crease transition-colors peer-checked:bg-navy peer-disabled:opacity-50" />
                 <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />

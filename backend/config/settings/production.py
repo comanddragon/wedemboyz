@@ -93,7 +93,7 @@ DATABASES["default"]["OPTIONS"].update(  # noqa: F405
 DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True  # noqa: F405
 
 # Whitenoise serves Django's own static files without needing S3/CDN for those.
-MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
+MIDDLEWARE.insert(1, "core.middleware.AsgiSafeWhiteNoiseMiddleware")  # noqa: F405
 
 # ---------------------------------------------------------------------------
 # Error tracking

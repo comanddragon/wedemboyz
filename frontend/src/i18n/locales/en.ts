@@ -349,7 +349,14 @@ export const en = {
     edit: "Edit",
     removePhoto: "Remove photo",
   },
+  pwa: {
+    install: "Install Wedemboyz",
+    installIos: "To install: tap Share, then Add to Home Screen.",
+    dismiss: "Dismiss",
+  },
   notifications: {
+    pushDenied: "Notifications are blocked for this site. Allow them in your browser settings, then try again.",
+    pushUnsupported: "This browser does not support push notifications. On iPhone, add the app to your Home Screen first.",
     eyebrow: "Stay in the loop",
     title: "Notifications",
     markAll: "Mark all as read",

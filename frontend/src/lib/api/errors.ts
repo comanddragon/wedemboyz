@@ -15,6 +15,12 @@ export function getApiErrorMessage(error: unknown): string {
     return "Something went wrong. Please try again.";
   }
 
+  // No response at all: offline, DNS failure, server unreachable, or the
+  // browser blocked the call (CORS). Say so instead of a bare "Network Error".
+  if (!error.response) {
+    return "Can't reach the server. Check your connection and try again.";
+  }
+
   const body = error.response?.data as { error?: { detail?: unknown } } | undefined;
   const detail = body?.error?.detail;
 

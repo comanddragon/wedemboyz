@@ -20,7 +20,7 @@ django.setup()
 from apps.chat.routing import websocket_urlpatterns  # noqa: E402
 from apps.chat.ws_auth import JWTAuthMiddlewareStack  # noqa: E402
 
-application = ProtocolTypeRouter(
+_router = ProtocolTypeRouter(
     {
         "http": get_asgi_application(),
         "websocket": JWTAuthMiddlewareStack(
@@ -28,3 +28,23 @@ application = ProtocolTypeRouter(
         ),
     }
 )
+
+
+async def application(scope, receive, send):
+    """Top-level ASGI app.
+
+    Channels' ``ProtocolTypeRouter`` raises for ``lifespan`` scopes, which
+    makes granian log "ASGI Lifespan errored, continuing without Lifespan
+    support". Answer the lifespan protocol here and delegate everything
+    else (http / websocket) to the router.
+    """
+    if scope["type"] == "lifespan":
+        while True:
+            message = await receive()
+            if message["type"] == "lifespan.startup":
+                await send({"type": "lifespan.startup.complete"})
+            elif message["type"] == "lifespan.shutdown":
+                await send({"type": "lifespan.shutdown.complete"})
+                return
+    else:
+        await _router(scope, receive, send)

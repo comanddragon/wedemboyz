@@ -9,8 +9,11 @@ from drf_spectacular.views import (
 )
 
 from apps.jobs.views import healthz
+from config.views import favicon, root
 
 urlpatterns = [
+    path("", root, name="root"),
+    path("favicon.ico", favicon, name="favicon"),
     path("admin/", admin.site.urls),
     # Render's default health-check path. Keep /healthz for existing clients.
     path("health", healthz, name="health"),

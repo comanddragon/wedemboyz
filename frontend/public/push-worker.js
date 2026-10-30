@@ -1,6 +1,6 @@
 // Minimal Web Push service worker for WEDEMBOYZ.
 //
-// Registered by hooks/usePushRegistration.ts. This only handles the
+// Registered once by lib/pwa/service-worker.ts. This only handles the
 // browser-side Push API contract (show a notification, focus/open the app
 // on click) — it does not know anything about FCM. See that hook's comment
 // for what's still needed server-side to deliver a push here.
@@ -18,7 +18,8 @@ self.addEventListener("push", (event) => {
     event.waitUntil(
         self.registration.showNotification(payload.title, {
             body: payload.body,
-            icon: "/favicon.ico",
+            icon: "/icons/icon-192.png",
+            badge: "/icons/icon-192.png",
             data: { url: payload.url || "/notifications" },
         }),
     );
