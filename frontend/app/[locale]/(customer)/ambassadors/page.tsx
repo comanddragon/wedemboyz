@@ -14,6 +14,58 @@ import styles from "./leaderboard.module.css";
 type Period = "month" | "year" | "all";
 type Ambassador = AmbassadorLeaderboardRow["ambassador"];
 
+/** Glossy bubbles and gold sparkles from the loyalty-card flyer. Purely decorative. */
+function Decor() {
+  return (
+    <div className={styles.decor} aria-hidden="true">
+      {[1, 2, 3, 4, 5, 6].map((n) => (
+        <span key={`b${n}`} className={`${styles.bubble} ${styles[`b${n}`]}`} />
+      ))}
+      {[1, 2, 3, 4].map((n) => (
+        <span key={`s${n}`} className={`${styles.sparkle} ${styles[`s${n}`]}`} />
+      ))}
+    </div>
+  );
+}
+
+/** Curved gold swoosh that closes the navy stage into the white section. */
+function Wave() {
+  return (
+    <svg
+      className={styles.wave}
+      viewBox="0 0 1440 140"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        <linearGradient id="lb-gold" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" stopColor="#b67a0c" />
+          <stop offset="0.35" stopColor="#f8d77a" />
+          <stop offset="0.7" stopColor="#dfa013" />
+          <stop offset="1" stopColor="#f8d77a" />
+        </linearGradient>
+      </defs>
+      <path d="M0,70 C360,160 800,14 1440,88 L1440,140 L0,140 Z" fill="#f8f8f6" />
+      <path
+        d="M0,58 C360,148 800,2 1440,76"
+        fill="none"
+        stroke="url(#lb-gold)"
+        strokeWidth="5"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        d="M0,74 C360,164 800,18 1440,92"
+        fill="none"
+        stroke="url(#lb-gold)"
+        strokeOpacity="0.55"
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
 function Portrait({
   ambassador,
   champion = false,
@@ -170,6 +222,8 @@ export default function AmbassadorLeaderboardPage() {
         : t("ambassador.all");
   return (
     <main className={styles.page}>
+      <div className={styles.stage}>
+      <Decor />
       <div className={styles.content}>
         <header className={styles.header}>
           <div>
@@ -275,6 +329,11 @@ export default function AmbassadorLeaderboardPage() {
             </div>
           ) : null}
         </section>
+      </div>
+      <Wave />
+      </div>
+      <div className={styles.field}>
+      <div className={styles.content}>
         {field.length ? (
           <section
             className={styles.contenders}
@@ -319,6 +378,7 @@ export default function AmbassadorLeaderboardPage() {
             </div>
           </section>
         ) : null}
+      </div>
       </div>
     </main>
   );

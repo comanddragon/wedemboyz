@@ -378,8 +378,8 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
           <Image
             src="/icon-mark.png"
             alt=""
-            width={24}
-            height={29}
+            width={29}
+            height={28}
             priority
             className="h-7 w-auto"
           />

@@ -100,8 +100,8 @@ function Sidebar({ close }: { close: () => void }) {
           <Image
             src="/icon-mark.png"
             alt=""
-            width={38}
-            height={46}
+            width={46}
+            height={44}
             priority
             className="h-11 w-auto"
           />

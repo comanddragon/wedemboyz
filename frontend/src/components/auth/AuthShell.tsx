@@ -65,7 +65,7 @@ export function AuthShell({
 
           <div className="flex items-center gap-3 lg:hidden">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white">
-              <Image src="/icon-mark.png" alt="" width={26} height={32} />
+              <Image src="/icon-mark.png" alt="" width={30} height={29} />
             </span>
             <p className="font-display text-base font-medium leading-snug text-white">
               {t("auth.promise")}

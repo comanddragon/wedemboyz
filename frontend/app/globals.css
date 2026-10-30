@@ -357,6 +357,34 @@
     }
 }
 
+/* Admin messaging fills the viewport above the bottom tab bar exactly:
+   drop the shell's generic bottom padding for this page and reserve the real
+   tab-bar height (pt-2 + 3rem button + 1px border + safe-area-aware bottom). */
+.dashboard-scroll:has(.admin-chat-root) {
+    padding-bottom: 0;
+}
+
+@media (max-width: 1023.98px) {
+    .admin-chat-root {
+        padding-bottom: calc(
+                1px + 0.5rem + 3rem + max(0.75rem, env(safe-area-inset-bottom))
+        );
+    }
+}
+
+/* iOS Safari zooms the whole page when a field with text smaller than 16px
+   gets focus, and never zooms back out. Keep every text-entry control at 16px
+   on touch devices so focusing a field never changes the zoom. (Unlayered, so
+   it wins over .ui-control and Tailwind's text-* utilities, which are layered.)
+   Pinch-zoom stays available — the viewport is intentionally not locked. */
+@media (pointer: coarse) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="submit"]):not([type="button"]),
+    select,
+    textarea {
+        font-size: 16px;
+    }
+}
+
 @media (pointer: coarse) {
     button,
     a,
@@ -809,39 +837,21 @@ input[type="date"].ui-control::-webkit-date-and-time-value {
     display: none;
 }
 
-/* Loader: the drum inside the logomark spins; the body wobbles slightly. */
+/* Loader: only the drum inside the logomark spins; the body stays still. */
 @keyframes wm-spin {
     to {
         transform: rotate(360deg);
     }
 }
 
-@keyframes wm-wobble {
-    0%,
-    100% {
-        transform: rotate(-0.8deg) translateY(0);
-    }
-    50% {
-        transform: rotate(0.8deg) translateY(-1px);
-    }
-}
-
 .wm-drum {
     animation: wm-spin 2.6s linear infinite;
-}
-
-.wm-loader {
-    animation: wm-wobble 0.6s ease-in-out infinite;
-    transform-origin: 50% 90%;
+    transform-origin: 50% 50%;
 }
 
 @media (prefers-reduced-motion: reduce) {
     .wm-drum {
         animation-duration: 8s;
-    }
-
-    .wm-loader {
-        animation: none;
     }
 }
 
