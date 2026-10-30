@@ -13,7 +13,7 @@ export function Hero() {
         </h1>
         <p className="mt-4 max-w-md text-base text-ink-muted">
           Book a pickup in Yaounde. We wash, iron, or dry-clean it, and deliver
-          it back to your door — pay by cash, MTN, or Orange Money.
+          it back to your door — pay on pickup or delivery.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/register">

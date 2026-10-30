@@ -6,49 +6,30 @@ from django.utils import timezone
 
 from apps.orders.models import OrderPaymentHistory
 from apps.payments.models import Invoice, Refund
-from core.constants import OrderPaymentStatus, OrderStatus, PaymentStatus
+from core.constants import OrderPaymentStatus, PaymentStatus
 
 
 @transaction.atomic
 def recompute_payment_status(order, *, changed_by=None, reason=""):
     order = type(order).objects.select_for_update().get(pk=order.pk)
-    received = (
-        order.payments.filter(voided_at__isnull=True, status=PaymentStatus.SUCCEEDED)
-        .aggregate(total=Sum("amount"))["total"]
-        or Decimal("0")
-    )
-    refunded = (
-        Refund.objects.filter(
-            payment__order=order,
-            status=Refund.Status.PROCESSED,
-        ).aggregate(total=Sum("amount"))["total"]
-        or Decimal("0")
-    )
+    received = order.payments.filter(
+        voided_at__isnull=True, status=PaymentStatus.SUCCEEDED
+    ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    refunded = Refund.objects.filter(
+        payment__order=order,
+        status=Refund.Status.PROCESSED,
+    ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
     net_paid = max(received - refunded, Decimal("0"))
     previous = order.payment_status
 
-    if order.status == OrderStatus.CANCELLED:
-        new_status = OrderPaymentStatus.VOID
-    elif order.payment_waived_reason:
-        new_status = OrderPaymentStatus.WAIVED
-    elif order.total_amount <= 0:
-        new_status = OrderPaymentStatus.NO_CHARGE
-    elif refunded >= received and received > 0:
-        new_status = OrderPaymentStatus.REFUNDED
-    elif refunded > 0:
-        new_status = OrderPaymentStatus.PARTIALLY_REFUNDED
-    elif net_paid <= 0:
-        new_status = OrderPaymentStatus.UNPAID
-    elif net_paid < order.total_amount:
-        new_status = OrderPaymentStatus.PARTIALLY_PAID
-    elif net_paid == order.total_amount:
-        new_status = OrderPaymentStatus.PAID
-    else:
-        new_status = OrderPaymentStatus.OVERPAID
+    # Refunds and partial collections affect the balance, not the public state set.
+    new_status = (
+        OrderPaymentStatus.PAID if net_paid >= order.total_amount else OrderPaymentStatus.UNPAID
+    )
 
     order.amount_paid = net_paid
     order.payment_status = new_status
-    if new_status in {OrderPaymentStatus.PAID, OrderPaymentStatus.OVERPAID}:
+    if new_status == OrderPaymentStatus.PAID:
         order.paid_at = order.paid_at or timezone.now()
     else:
         order.paid_at = None

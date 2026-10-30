@@ -39,7 +39,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
         # check per order.
         qs = Order.objects.select_related(
             "user", "schedule", "assigned_to", "driver"
-        ).prefetch_related("items")
+        ).prefetch_related("items__photos")
         status_filter = self.request.query_params.get("status")
         if not has_staff_permission(self.request.user, StaffPermission.ORDERS_VIEW):
             qs = qs.filter(user=self.request.user)
@@ -76,8 +76,8 @@ class OrderListCreateView(generics.ListCreateAPIView):
         if overdue == "true":
             from django.utils import timezone
 
-            qs = qs.filter(payment_due_date__lt=timezone.localdate()).exclude(
-                payment_status__in=["PAID", "NO_CHARGE", "WAIVED", "VOID"]
+            qs = qs.filter(payment_due_date__lt=timezone.localdate()).exclude(status=OrderStatus.CANCELLED).exclude(
+                payment_status="PAID"
             )
         if search:
             query = (

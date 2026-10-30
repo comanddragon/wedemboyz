@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.db import transaction
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
@@ -13,11 +12,10 @@ from apps.payments.api.serializers import (
     SubscriptionCreateSerializer,
     SubscriptionSerializer,
 )
-from apps.payments.models import Payment, Subscription
+from apps.payments.models import Subscription
 from apps.staff.permissions import HasStaffPermission, StaffPermission
-from core.constants import PaymentGateway, PaymentStatus
+from core.constants import PaymentGateway
 from core.permissions import IsRegisteredUser
-from services.pricing import price_for_subscription_plan
 
 
 class SubscriptionListCreateView(generics.ListCreateAPIView):
@@ -36,7 +34,11 @@ class SubscriptionListCreateView(generics.ListCreateAPIView):
         return Subscription.objects.filter(user=self.request.user)
 
     def get_serializer_class(self):
-        return SubscriptionCreateSerializer if self.request.method == "POST" else SubscriptionSerializer
+        return (
+            SubscriptionCreateSerializer
+            if self.request.method == "POST"
+            else SubscriptionSerializer
+        )
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -56,15 +58,7 @@ class SubscriptionDetailView(generics.RetrieveAPIView):
 
 
 class SubscriptionCheckoutView(APIView):
-    """POST /api/v1/subscriptions/{id}/checkout/  body: {"gateway": "STRIPE"|"PAYPAL"|"MTN_MOMO"|"ORANGE_MONEY"}
-
-    Starts payment for a PENDING subscription. Stripe/PayPal redirect flows
-    return a URL to send the user to; MTN/Orange return the created Payment
-    so the existing mobile-money collection-request flow (same as order
-    payments) can take over from there. The subscription only becomes
-    ACTIVE once the gateway confirms payment — see webhooks.py and
-    apps.payments.tasks.activate_subscription / renew_subscription.
-    """
+    """Save collection timing; staff activates the plan after payment."""
 
     permission_classes = [IsRegisteredUser]
 
@@ -77,110 +71,9 @@ class SubscriptionCheckoutView(APIView):
             data=request.data, context={"subscription": subscription}
         )
         serializer.is_valid(raise_exception=True)
-        gateway = serializer.validated_data["gateway"]
-        self._checkout_data = serializer.validated_data
-
-        if gateway == PaymentGateway.STRIPE:
-            return self._checkout_stripe(subscription)
-        if gateway == PaymentGateway.PAYPAL:
-            return self._checkout_paypal(subscription)
-        return self._checkout_mobile_money(subscription, gateway)
-
-    def _checkout_stripe(self, subscription):
-        from services.billing import stripe_gateway
-
-        # The Stripe API call happens outside any DB transaction — it's a
-        # slow network round-trip and shouldn't hold a row/connection lock.
-        session = stripe_gateway.create_checkout_session(
-            subscription,
-            success_url=f"{settings.FRONTEND_URL}/dashboard?checkout=success&subscription={subscription.pk}",
-            cancel_url=f"{settings.FRONTEND_URL}/dashboard?checkout=cancelled&subscription={subscription.pk}",
-        )
-        with transaction.atomic():
-            Payment.objects.create(
-                subscription=subscription,
-                gateway=PaymentGateway.STRIPE,
-                gateway_reference=session.id,
-                amount=price_for_subscription_plan(subscription.plan),
-                status=PaymentStatus.PENDING,
-            )
-            subscription.gateway = PaymentGateway.STRIPE
-            subscription.save(update_fields=["gateway"])
-        return Response({"checkout_url": session.url}, status=status.HTTP_201_CREATED)
-
-    def _checkout_paypal(self, subscription):
-        from services.billing import paypal_gateway
-
-        return_url = f"{settings.FRONTEND_URL}/dashboard?checkout=success&subscription={subscription.pk}"
-        cancel_url = f"{settings.FRONTEND_URL}/dashboard?checkout=cancelled&subscription={subscription.pk}"
-
-        # Same reasoning as Stripe above — call PayPal first, write second.
-        if subscription.is_recurring:
-            result = paypal_gateway.create_subscription(subscription, return_url, cancel_url)
-            gateway_reference = result["id"]
-        else:
-            result = paypal_gateway.create_order(subscription, return_url, cancel_url)
-            gateway_reference = result["id"]
-
-        with transaction.atomic():
-            Payment.objects.create(
-                subscription=subscription,
-                gateway=PaymentGateway.PAYPAL,
-                gateway_reference=gateway_reference,
-                amount=price_for_subscription_plan(subscription.plan),
-                status=PaymentStatus.PENDING,
-            )
-            subscription.gateway = PaymentGateway.PAYPAL
-            if subscription.is_recurring:
-                subscription.external_subscription_id = result["id"]
-            subscription.save(update_fields=["gateway", "external_subscription_id"])
-        return Response({"approval_url": result["approve_url"]}, status=status.HTTP_201_CREATED)
-
-    @transaction.atomic
-    def _checkout_mobile_money(self, subscription, gateway):
-        # Mirrors the Stripe/PayPal pattern above: call the gateway first
-        # (slow network round-trip, shouldn't hold a row/connection lock),
-        # then write the Payment with the reference CamPay gave us. The
-        # actual confirmation (customer enters their MoMo/OM PIN) happens
-        # after this request returns — CamPayWebhookView flips the Payment
-        # to SUCCEEDED/FAILED once that happens.
-        from services.billing import campay_gateway
-
-        phone_number = self._checkout_data.get("phone_number") or getattr(
-            subscription.user, "phone_number", ""
-        )
-        if not phone_number:
-            raise ValidationError(
-                {"phone_number": "A phone number is required to request MTN/Orange Money payment."}
-            )
-
-        amount = price_for_subscription_plan(subscription.plan)
-        try:
-            result = campay_gateway.initiate_collection(
-                amount=amount,
-                phone_number=phone_number,
-                description=f"Wedemboyz Lavomatique — {subscription.get_plan_display()}",
-                external_reference=f"subscription-{subscription.pk}",
-                user=subscription.user,
-            )
-        except campay_gateway.CamPayAPIError as exc:
-            raise ValidationError({"gateway": str(exc)})
-
-        payment = Payment.objects.create(
-            subscription=subscription,
-            gateway=gateway,
-            gateway_reference=result["reference"],
-            amount=amount,
-            status=PaymentStatus.PENDING,
-        )
-        subscription.gateway = gateway
-        subscription.save(update_fields=["gateway"])
-        from apps.payments.api.serializers import PaymentSerializer
-
-        return Response(
-            {**PaymentSerializer(payment).data, "ussd_code": result.get("ussd_code", "")},
-            status=status.HTTP_201_CREATED,
-        )
+        subscription.payment_option = serializer.validated_data["payment_option"]
+        subscription.save(update_fields=["payment_option", "updated_at"])
+        return Response(SubscriptionSerializer(subscription).data)
 
 
 class SubscriptionActionView(APIView):
@@ -240,7 +133,9 @@ class SubscriptionActionView(APIView):
             if subscription.gateway == PaymentGateway.STRIPE:
                 from services.billing import stripe_gateway
 
-                stripe_gateway.cancel_subscription(subscription.external_subscription_id, at_period_end=True)
+                stripe_gateway.cancel_subscription(
+                    subscription.external_subscription_id, at_period_end=True
+                )
             elif subscription.gateway == PaymentGateway.PAYPAL:
                 from services.billing import paypal_gateway
 
@@ -271,7 +166,12 @@ class AdminSubscriptionListView(generics.ListAPIView):
             queryset = queryset.filter(status=status_filter)
         if search:
             from django.db.models import Q
-            queryset = queryset.filter(Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search) | Q(user__phone_number__icontains=search))
+
+            queryset = queryset.filter(
+                Q(user__first_name__icontains=search)
+                | Q(user__last_name__icontains=search)
+                | Q(user__phone_number__icontains=search)
+            )
         return queryset
 
 
@@ -294,7 +194,9 @@ class AdminSubscriptionActionView(APIView):
         if action in {"activate", "renew"}:
             subscription.status = Subscription.Status.ACTIVE
             subscription.start_date = timezone.localdate()
-            subscription.end_date = subscription.start_date + timedelta(days=SUBSCRIPTION_PERIOD_DAYS)
+            subscription.end_date = subscription.start_date + timedelta(
+                days=SUBSCRIPTION_PERIOD_DAYS
+            )
             subscription.kg_remaining = kg_allowance_for_plan(subscription.plan)
         elif action == "pause":
             subscription.status = Subscription.Status.PAUSED

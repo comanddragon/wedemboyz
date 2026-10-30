@@ -51,7 +51,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         # during checkout so those database-backed orders continue with the
         # same customer instead of creating an unrelated account.
         guest = (
-            CustomUser.objects.select_for_update()
+            CustomUser.objects.select_for_update(of=("self",))
+            .select_related("profile", "staff_profile", "ambassador_profile")
             .filter(is_guest=True, profile__secondary_phone=phone_number)
             .order_by("-updated_at")
             .first()

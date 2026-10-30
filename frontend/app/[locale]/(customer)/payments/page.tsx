@@ -1,4 +1,5 @@
 "use client";
+import { collectionMethods, paymentState } from "@/src/lib/payment-options";
 
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Receipt } from "lucide-react";
@@ -61,7 +62,7 @@ function PaymentRow({ payment }: { payment: Payment }) {
               : `${t("payments.subscription")} #${payment.subscription}`}
           </p>
           <p className="text-xs text-ink-muted">
-            {payment.gateway === "STRIPE" ? t("payments.card") : payment.gateway === "CASH" ? t("payments.cash") : payment.gateway === "CREDIT" ? t("payments.credit") : GATEWAY_LABELS[payment.gateway]} ·{" "}
+            {collectionMethods(locale).find((method) => method.value === payment.payment_method_type)?.label ?? (payment.gateway === "STRIPE" ? t("payments.card") : payment.gateway === "CASH" ? t("payments.cash") : payment.gateway === "CREDIT" ? t("payments.credit") : GATEWAY_LABELS[payment.gateway])} ·{" "}
             {new Date(payment.created_at).toLocaleDateString(locale, {
               year: "numeric",
               month: "short",
@@ -80,7 +81,7 @@ function PaymentRow({ payment }: { payment: Payment }) {
             {formatCurrency(payment.amount)}
           </p>
           <StatusBadge
-            label={payment.status}
+            label={paymentState(payment.status)}
             tone={paymentStatusTone(payment.status)}
           />
         </div>
@@ -152,7 +153,7 @@ export default function PaymentHistoryPage() {
           </ul></div>
 
           {data.num_pages > 1 && (
-            <div className="mt-6 flex items-center justify-between">
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={!data.previous}

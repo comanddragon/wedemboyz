@@ -18,6 +18,7 @@ import { useI18n } from "@/src/i18n/I18nProvider";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const METHODS: Array<[keyof PaymentMethodTotals, string]> = [
+  ["PAY_AT_PICKUP", "Pay on pickup"], ["PAY_AFTER_DELIVERY", "Pay on delivery"],
   ["CASH", "Cash"], ["MTN_MOMO", "MTN MoMo"], ["ORANGE_MONEY", "Orange Money"],
   ["BANK_TRANSFER", "Transfer"], ["OTHER", "Other"],
 ];

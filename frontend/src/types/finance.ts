@@ -42,7 +42,7 @@ export interface PayrollGenerationResult {
   skipped_count: number;
 }
 
-export type PaymentMethodTotals = Partial<Record<"CASH" | "MTN_MOMO" | "ORANGE_MONEY" | "BANK_TRANSFER" | "OTHER", string>>;
+export type PaymentMethodTotals = Partial<Record<"PAY_AT_PICKUP" | "PAY_AFTER_DELIVERY" | "CASH" | "MTN_MOMO" | "ORANGE_MONEY" | "BANK_TRANSFER" | "OTHER", string>>;
 
 export interface CashRegisterDay {
   id: number;

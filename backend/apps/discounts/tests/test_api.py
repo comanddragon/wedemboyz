@@ -39,28 +39,20 @@ def test_admin_can_assign_ambassador_without_profile_photo():
     assert profile.user.profile.avatar == "" or not bool(profile.user.profile.avatar)
 
 
-def test_ambassador_without_photo_is_forbidden_on_leaderboard():
+def test_everyone_can_view_leaderboard_without_photo():
     customer = CustomUser.objects.create_user(phone_number="237677000002", password="customer-pass")
     client = APIClient()
+    # Visitors and ordinary customers can view rankings.
+    response = client.get("/api/v1/loyalty/ambassadors/leaderboard/")
+    assert response.status_code == 200
     client.force_authenticate(user=customer)
+    assert client.get("/api/v1/loyalty/ambassadors/leaderboard/").status_code == 200
 
-    # Not an ambassador yet -> 403 Ambassador access required
-    res = client.get("/api/v1/loyalty/ambassadors/leaderboard/")
-    assert res.status_code == 403
-    payload = res.json().get("data", res.json())
-    assert "Ambassador access required" in str(payload)
-
-    # Assign as ambassador without photo
     admin = CustomUser.objects.create_superuser(phone_number="237699000002", password="admin-pass")
     admin_client = APIClient()
     admin_client.force_authenticate(user=admin)
     admin_client.post("/api/v1/loyalty/admin/ambassadors/", {"user_id": customer.id}, format="json")
-
-    # Now an ambassador, but no photo -> 403 Upload a profile photo
-    res = client.get("/api/v1/loyalty/ambassadors/leaderboard/")
-    assert res.status_code == 403
-    payload = res.json().get("data", res.json())
-    assert "Upload a profile photo before entering the ambassador leaderboard" in str(payload)
+    assert client.get("/api/v1/loyalty/ambassadors/leaderboard/").status_code == 200
 
 
 def test_ambassador_without_photo_must_upload_photo_on_profile_update():
@@ -114,6 +106,13 @@ def test_ambassador_can_upload_photo_and_access_leaderboard_with_photo_displayed
     # Even though user.use_profile_photo is False, leaderboard row profile_photo contains the picture!
     assert leaderboard_row["ambassador"]["profile_photo"] is not None
     assert "sarah" in leaderboard_row["ambassador"]["profile_photo"]
+    # Public rankings never expose contact numbers or private balances.
+    visitor = APIClient()
+    public = visitor.get("/api/v1/loyalty/ambassadors/leaderboard/")
+    assert public.status_code == 200
+    row = public.data["results"][0]["ambassador"]
+    assert set(row) == {"id", "name", "promo_code", "profile_photo"}
+    assert public.data["current_ambassador_id"] is None
 
 
 def test_user_can_upload_photo_and_toggle_display_choice():

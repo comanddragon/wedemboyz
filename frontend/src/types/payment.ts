@@ -3,7 +3,6 @@ import type {
   PaymentGateway,
   PaymentStatus,
   PaymentMethodType,
-  SubscriptionGateway,
 } from "./enums";
 import { OrderCustomerSummary } from "@/src/types/order";
 
@@ -127,6 +126,7 @@ export type SubscriptionBillingCycle = "ONE_TIME" | "MONTHLY";
  * subscription is created PENDING (no pickups granted) and only becomes
  * ACTIVE once checkout (see startSubscriptionCheckout) completes. */
 export interface Subscription {
+  payment_option: "PAY_AT_PICKUP" | "PAY_AFTER_DELIVERY";
   id: number;
   plan: SubscriptionPlan;
   billing_cycle: SubscriptionBillingCycle;
@@ -152,20 +152,8 @@ export interface CreateSubscriptionInput {
   billing_cycle?: SubscriptionBillingCycle;
 }
 
-/** Payload for POST /subscriptions/{id}/checkout/ — MONTHLY subscriptions
- * only accept STRIPE/PAYPAL; ONE_TIME accepts any SubscriptionGateway. */
+/** Choose collection timing; staff activates the plan after payment. */
 export interface SubscriptionCheckoutInput {
-  gateway: SubscriptionGateway;
-  /** Required for MTN_MOMO/ORANGE_MONEY (CamPay pushes the USSD/PIN prompt
-   * to this number); ignored for Stripe/PayPal. Falls back to the user's
-   * account phone_number if omitted. */
-  phone_number?: string;
+  payment_option: "PAY_AT_PICKUP" | "PAY_AFTER_DELIVERY";
 }
-
-/** Response shape varies by gateway:
- * - STRIPE: { checkout_url }
- * - PAYPAL: { approval_url }
- * - MTN_MOMO / ORANGE_MONEY: the created Payment (collection request is
- *   triggered the same way it already is for order payments) */
-export type SubscriptionCheckoutResult =
-  { checkout_url: string } | { approval_url: string } | Payment;
+export type SubscriptionCheckoutResult = Subscription;

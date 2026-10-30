@@ -28,7 +28,11 @@ class QuickSaleItemInputSerializer(serializers.Serializer):
     label = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
     description = serializers.CharField(required=False, allow_blank=True, default="")
     weight_kg = serializers.DecimalField(
-        max_digits=5, decimal_places=2, min_value=Decimal("0.1"), required=False, default=Decimal("1.0")
+        max_digits=5,
+        decimal_places=2,
+        min_value=Decimal("0.1"),
+        required=False,
+        default=Decimal("1.0"),
     )
     quantity = serializers.IntegerField(min_value=1, default=1)
     unit_price = serializers.DecimalField(
@@ -46,13 +50,17 @@ class StaffQuickSaleSerializer(serializers.Serializer):
     phone, items, price, payment method, paid-now/on-credit, in one form."""
 
     customer_phone = serializers.CharField(max_length=15, validators=[phone_validator])
-    customer_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
-    items = QuickSaleItemInputSerializer(many=True)
-    payment_method = serializers.ChoiceField(choices=PaymentMethodType.choices)
-    paid_now = serializers.BooleanField(
-        default=True, help_text="False leaves the order unpaid."
+    customer_name = serializers.CharField(
+        max_length=150, required=False, allow_blank=True, default=""
     )
-    delivery_fee = serializers.DecimalField(max_digits=10, decimal_places=0, required=False, default=Decimal("0"))
+    items = QuickSaleItemInputSerializer(many=True)
+    payment_method = serializers.ChoiceField(
+        choices=[PaymentMethodType.PAY_AT_PICKUP, PaymentMethodType.PAY_AFTER_DELIVERY]
+    )
+    paid_now = serializers.BooleanField(default=True, help_text="False leaves the order unpaid.")
+    delivery_fee = serializers.DecimalField(
+        max_digits=10, decimal_places=0, required=False, default=Decimal("0")
+    )
     notes = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate_items(self, value):
@@ -69,7 +77,11 @@ class StaffQuickSaleSerializer(serializers.Serializer):
 
         customer, created = User.objects.get_or_create(
             phone_number=phone,
-            defaults={"first_name": first_name or "Walk-in", "last_name": last_name, "is_walk_in": True},
+            defaults={
+                "first_name": first_name or "Walk-in",
+                "last_name": last_name,
+                "is_walk_in": True,
+            },
         )
         if created:
             customer.set_unusable_password()
@@ -79,7 +91,9 @@ class StaffQuickSaleSerializer(serializers.Serializer):
             profile.save(update_fields=["source"])
 
         if getattr(customer.profile, "is_blocked", False):
-            raise serializers.ValidationError({"customer_phone": "This customer account is blocked."})
+            raise serializers.ValidationError(
+                {"customer_phone": "This customer account is blocked."}
+            )
 
         order = Order.objects.create(
             user=customer,
@@ -88,6 +102,8 @@ class StaffQuickSaleSerializer(serializers.Serializer):
             delivery_address="In-store",
             notes=validated_data.get("notes", ""),
             source=Order.Source.WALK_IN,
+            fulfillment_type=Order.FulfillmentType.DROP_OFF,
+            payment_option=validated_data["payment_method"],
             created_by=staff_user,
             delivery_fee=validated_data.get("delivery_fee", Decimal("0")),
         )

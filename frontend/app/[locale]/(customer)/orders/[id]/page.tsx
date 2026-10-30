@@ -9,6 +9,8 @@ import {
   Truck,
   WalletCards,
 } from "lucide-react";
+import { PaymentSummary } from "@/src/components/payments/PaymentSummary";
+import { collectionMethods } from "@/src/lib/payment-options";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
@@ -103,7 +105,7 @@ export default function OrderDetailPage() {
         &larr; {t("orders.back")}
       </Link>
 
-      <div className="mb-5 flex items-end justify-between gap-4">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
             {order.ticket_number ?? `${t("orders.order")} #${order.id}`}
@@ -151,6 +153,10 @@ export default function OrderDetailPage() {
         ))}
       </section>
 
+      <Card className="mb-6">
+        <PaymentSummary status={order.payment_status} total={order.total_amount} paid={order.amount_paid} balance={order.balance_due} />
+        <p className="mt-4 text-sm font-medium text-navy">{collectionMethods(locale).find((method) => method.value === order.payment_option)?.label}</p>
+      </Card>
       <div className="grid items-start gap-6 lg:grid-cols-[1.35fr_0.65fr]">
         <Card className="overflow-hidden p-0">
           <div className="border-b border-crease bg-steam/30 p-5">
@@ -168,11 +174,9 @@ export default function OrderDetailPage() {
             {order.items.map((item) => (
               <li key={item.id} className="flex items-start gap-3 px-5 py-4">
                 {(item.photos[0]?.image ?? item.photo) ? (
-                  <a
-                    href={item.photos[0]?.image ?? item.photo ?? ""}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-steam"
+                  <Link
+                    href={`/orders/${orderId}/items/${item.id}`}
+                                                            className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-steam"
                   >
                     <Image
                       src={item.photos[0]?.image ?? item.photo ?? ""}
@@ -186,7 +190,7 @@ export default function OrderDetailPage() {
                         +{item.photos.length - 1}
                       </span>
                     ) : null}
-                  </a>
+                  </Link>
                 ) : (
                   <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-navy-50 text-navy">
                     <ServiceIcon type={item.service_type} />
@@ -194,7 +198,9 @@ export default function OrderDetailPage() {
                 )}
                 <div className="flex-1 text-sm">
                   <p className="font-medium text-ink">
-                    {item.label || serviceLabel(item.service_type)}
+                    <Link className="underline underline-offset-4" href={`/orders/${orderId}/items/${item.id}`}>
+{item.label || serviceLabel(item.service_type)}
+</Link>
                   </p>
                   <p className="text-xs text-ink-muted">
                     {serviceLabel(item.service_type)} — {item.weight_kg}kg x
@@ -292,7 +298,7 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      <div className="mt-6 flex items-center gap-3">
+      <div className="mt-6 flex flex-wrap items-center gap-3">
         {canCancel && (
           <Button
             variant="danger"

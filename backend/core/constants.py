@@ -52,17 +52,12 @@ class PaymentStatus(models.TextChoices):
 
 class OrderPaymentStatus(models.TextChoices):
     UNPAID = "UNPAID", "Unpaid"
-    PARTIALLY_PAID = "PARTIALLY_PAID", "Partially paid"
     PAID = "PAID", "Paid"
-    OVERPAID = "OVERPAID", "Overpaid"
-    PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED", "Partially refunded"
-    REFUNDED = "REFUNDED", "Refunded"
-    WAIVED = "WAIVED", "Waived"
-    NO_CHARGE = "NO_CHARGE", "No charge"
-    VOID = "VOID", "Void"
 
 
 class PaymentMethodType(models.TextChoices):
+    PAY_AT_PICKUP = "PAY_AT_PICKUP", "Pay on pickup"
+    PAY_AFTER_DELIVERY = "PAY_AFTER_DELIVERY", "Pay on delivery"
     CASH = "CASH", "Cash"
     MTN_MOMO = "MTN_MOMO", "MTN Mobile Money"
     ORANGE_MONEY = "ORANGE_MONEY", "Orange Money"

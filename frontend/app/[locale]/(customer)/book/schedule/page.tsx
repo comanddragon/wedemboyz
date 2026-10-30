@@ -1,4 +1,5 @@
 "use client";
+import { buttonStyles } from "@/src/components/ui/Button";
 
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useState } from "react";
@@ -61,10 +62,8 @@ export default function BookSchedulePage() {
       step={2}
       subtitle="booking.step2"
       actions={
-        <div className="flex items-center justify-between">
-          <Link href="/book">
-            <Button variant="ghost">{t("booking.back")}</Button>
-          </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link href="/book" className={buttonStyles({ variant: "ghost" })}>{t("booking.back")}</Link>
           <Link href="/book/review" onClick={handleContinue}>
             <Button>{t("booking.nextReview")}</Button>
           </Link>

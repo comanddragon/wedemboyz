@@ -12,6 +12,13 @@ class CustomUserManager(BaseUserManager):
 
     use_in_migrations = True
 
+    def get_by_natural_key(self, username):
+        # Django's ModelBackend keeps its password and active-user checks;
+        # preload the relations used to build the auth response in one read.
+        return self.select_related(
+            "profile", "staff_profile", "ambassador_profile"
+        ).get(**{self.model.USERNAME_FIELD: username})
+
     def _create_user(self, phone_number, password, **extra_fields):
         if not phone_number:
             raise ValueError("Phone number is required.")

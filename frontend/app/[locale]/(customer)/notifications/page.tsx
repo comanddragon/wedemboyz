@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BellOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
+import { useAuthStore } from "@/src/lib/stores/auth.store";
 import { useState } from "react";
 
 import { NotificationIcon } from "@/src/components/notifications/NotificationIcon";
@@ -155,6 +156,7 @@ function PreferencesPanel() {
 }
 
 export default function NotificationsPage() {
+  const isStaff = useAuthStore((state) => Boolean(state.user?.is_staff));
   const { locale, t } = useI18n();
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<Filter>("all");
@@ -176,7 +178,7 @@ export default function NotificationsPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <EyebrowLabel words={[t("notifications.eyebrow")]} />
           <h1 className="font-display mt-1 text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
@@ -266,7 +268,7 @@ export default function NotificationsPage() {
               <li key={notification.id}>
                 {notification.related_order ? (
                   <Link
-                    href={`/orders/${notification.related_order}`}
+                    href={`${isStaff ? "/admin" : ""}/orders/${notification.related_order}`}
                     onClick={() =>
                       !notification.is_read && markRead(notification.id)
                     }

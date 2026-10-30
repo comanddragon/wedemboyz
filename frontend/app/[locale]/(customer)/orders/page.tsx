@@ -1,4 +1,6 @@
 "use client";
+import { buttonStyles } from "@/src/components/ui/Button";
+import { OrderItemPreviews } from "@/src/components/orders/OrderItemPreviews";
 
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
@@ -8,7 +10,6 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { formatCurrency } from "@/src/lib/constants";
 
 import {
-  Button,
   Card,
   StatusBadge,
   orderStatusTone,
@@ -27,11 +28,9 @@ export default function OrdersPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3"><CustomerAvatar name={user ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() || user.phone_number : t("common.customer")} size="lg" imageUrl={user?.avatar} useProfilePhoto={user?.use_profile_photo} /><div><h1 className="font-display text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">{t("orders.title")}</h1><p className="text-sm text-ink-muted">{t("orders.subtitle")}</p></div></div>
-        <Link href="/book">
-          <Button variant="secondary">{t("orders.book")}</Button>
-        </Link>
+        <Link href="/book" className={buttonStyles({ variant: "secondary" })}>{t("orders.book")}</Link>
       </div>
 
       {isLoading && <p className="text-sm text-ink-muted">{t("orders.loading")}</p>}
@@ -45,8 +44,9 @@ export default function OrdersPage() {
         {data?.results.map((order) => (
           <li key={order.id}>
             <Link href={`/orders/${order.id}`}>
-              <Card className="flex items-center justify-between transition-colors hover:bg-steam">
-                <div>
+              <Card className="flex h-full flex-wrap items-center justify-between gap-3 transition-colors hover:bg-steam">
+                <OrderItemPreviews items={order.items} />
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-ink">
                     {t("orders.order")} #{order.id}
                   </p>

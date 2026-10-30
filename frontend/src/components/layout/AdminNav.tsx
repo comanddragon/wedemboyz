@@ -290,12 +290,7 @@ export function AdminNav() {
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="text-xs font-medium text-ink-muted hover:text-dashboard-blue"
-          >
-            {t("adminCommon.customerView")}
-          </Link>
+
           <LogoutButton />
         </div>
       </div>

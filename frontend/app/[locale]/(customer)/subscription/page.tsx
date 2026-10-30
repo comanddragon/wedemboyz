@@ -1,4 +1,5 @@
 "use client";
+import { collectionMethods } from "@/src/lib/payment-options";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Check, Crown, Droplets, Sparkles } from "lucide-react";
@@ -16,10 +17,8 @@ import { cn } from "@/src/lib/utils";
 import { useI18n } from "@/src/i18n/I18nProvider";
 import { RECURRING_CAPABLE_GATEWAYS } from "@/src/types";
 import type {
-  PaymentGateway,
   Subscription,
   SubscriptionBillingCycle,
-  SubscriptionGateway,
   SubscriptionPlan,
 } from "@/src/types";
 
@@ -68,40 +67,11 @@ const PLANS: {
   },
 ];
 
-const GATEWAY_LABELS: Record<SubscriptionGateway, string> = {
-  STRIPE: "Card (Stripe)",
-  PAYPAL: "PayPal",
-  MTN_MOMO: "MTN Mobile Money",
-  ORANGE_MONEY: "Orange Money",
-};
-
-const ALL_SUBSCRIPTION_GATEWAYS: SubscriptionGateway[] = [
-  "PAYPAL",
-  "MTN_MOMO",
-  "ORANGE_MONEY",
-];
-
 const PLAN_LABELS: Record<SubscriptionPlan, string> = {
   ESSENTIEL: "Essentiel",
   CONFORT: "Confort",
   FAMILLE: "Famille",
 };
-
-function isRedirectResult(
-  result: unknown,
-): result is { checkout_url: string } | { approval_url: string } {
-  return (
-    typeof result === "object" &&
-    result !== null &&
-    ("checkout_url" in result || "approval_url" in result)
-  );
-}
-
-function redirectUrlFrom(
-  result: { checkout_url: string } | { approval_url: string },
-): string {
-  return "checkout_url" in result ? result.checkout_url : result.approval_url;
-}
 
 function PlanPicker({
   onSubscribe,
@@ -178,7 +148,6 @@ function PlanPicker({
         <div className="inline-flex items-center gap-1 rounded-full border border-crease bg-white p-1 text-sm">
           {[
             { value: "ONE_TIME" as const, label: t("subscription.payOnce") },
-            { value: "MONTHLY" as const, label: t("subscription.autoRenew") },
           ].map((opt) => (
             <button
               key={opt.value}
@@ -217,54 +186,19 @@ function PlanPicker({
   );
 }
 
-function CheckoutGatewayPicker({
-  subscription,
-  onCheckout,
-  isPending,
-  errorMessage,
-}: {
+function CheckoutGatewayPicker({ subscription, onCheckout, isPending, errorMessage }: {
   subscription: Subscription;
-  onCheckout: (gateway: SubscriptionGateway) => void;
+  onCheckout: (option: "PAY_AT_PICKUP" | "PAY_AFTER_DELIVERY") => void;
   isPending: boolean;
   errorMessage: string | null;
 }) {
-  const { t } = useI18n();
-  const isRecurring = subscription.billing_cycle === "MONTHLY";
-  const available = isRecurring
-    ? ALL_SUBSCRIPTION_GATEWAYS.filter((g) =>
-        (RECURRING_CAPABLE_GATEWAYS as string[]).includes(g),
-      )
-    : ALL_SUBSCRIPTION_GATEWAYS;
-
-  return (
-    <Card>
-      <h2 className="font-display mb-1 text-sm font-semibold text-navy">
-        {t("subscription.finishPayment")} — {PLAN_LABELS[subscription.plan]}
-      </h2>
-      <p className="mb-4 text-xs text-ink-muted">
-        {isRecurring
-          ? t("subscription.monthlyPayment")
-          : t("subscription.planPayment")}
-      </p>
-      <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {available.map((gateway) => (
-          <Button
-            key={gateway}
-            variant="secondary"
-            onClick={() => onCheckout(gateway)}
-            disabled={isPending}
-            className="justify-center"
-          >
-            <PaymentMethodIcon method={gateway} className="h-8 w-10" />
-            {GATEWAY_LABELS[gateway]}
-          </Button>
-        ))}
-      </div>
-      {errorMessage && (
-        <p className="text-xs text-status-cancelled-text">{errorMessage}</p>
-      )}
-    </Card>
-  );
+  const { locale, t } = useI18n();
+  return <Card>
+    <h2 className="mb-2 font-display text-lg font-semibold text-navy">{PLAN_LABELS[subscription.plan]} — {t("paymentOptions.title")}</h2>
+    <p className="mb-5 text-sm text-ink-muted">{locale === "fr" ? "Votre forfait sera activé par l’équipe après réception du paiement." : "The team will activate your plan after receiving payment."}</p>
+    <div className="grid gap-3 sm:grid-cols-2">{collectionMethods(locale).map((method) => <Button key={method.value} variant={subscription.payment_option === method.value ? "primary" : "secondary"} aria-pressed={subscription.payment_option === method.value} disabled={isPending} onClick={() => onCheckout(method.value as "PAY_AT_PICKUP" | "PAY_AFTER_DELIVERY")}><PaymentMethodIcon method={method.value} />{method.label}</Button>)}</div>
+    {errorMessage ? <p role="alert" className="mt-3 text-sm text-status-cancelled-text">{errorMessage}</p> : null}
+  </Card>;
 }
 
 function ActiveSubscriptionCard({
@@ -312,8 +246,7 @@ function ActiveSubscriptionCard({
           </h2>
           <p className="mt-0.5 text-xs text-ink-muted">
             {isRecurring ? t("subscription.autoRenew") : t("subscription.payOnce")}
-            {subscription.gateway &&
-              ` · ${GATEWAY_LABELS[subscription.gateway as SubscriptionGateway] ?? subscription.gateway}`}
+            {` · ${collectionMethods(locale).find((method) => method.value === subscription.payment_option)?.label ?? ""}`}
           </p>
         </div>
         <StatusBadge
@@ -399,7 +332,6 @@ export default function SubscriptionPage() {
   const queryClient = useQueryClient();
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [pendingInfo, setPendingInfo] = useState<PaymentGateway | null>(null);
 
   const { data: subscriptions, isLoading } = useQuery({
     queryKey: queryKeys.payments.subscriptions,
@@ -423,25 +355,10 @@ export default function SubscriptionPage() {
   });
 
   const checkoutMutation = useMutation({
-    mutationFn: ({
-      id,
-      gateway,
-    }: {
-      id: number;
-      gateway: SubscriptionGateway;
-    }) => paymentsApi.startSubscriptionCheckout(id, { gateway }),
-    onSuccess: (result, variables) => {
+    mutationFn: ({ id, payment_option }: { id: number; payment_option: "PAY_AT_PICKUP" | "PAY_AFTER_DELIVERY" }) => paymentsApi.startSubscriptionCheckout(id, { payment_option }),
+    onSuccess: () => {
       setCheckoutError(null);
-      if (isRedirectResult(result)) {
-        window.location.href = redirectUrlFrom(result);
-        return;
-      }
-      // MTN/Orange: a collection request was just triggered on the
-      // customer's phone — nothing to redirect to, just let them know.
-      setPendingInfo(variables.gateway);
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.payments.subscriptions,
-      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.payments.subscriptions });
     },
     onError: (error) => setCheckoutError(getApiErrorMessage(error)),
   });
@@ -489,42 +406,15 @@ export default function SubscriptionPage() {
       {!isLoading &&
         subscription &&
         subscription.status === "PENDING" &&
-        !pendingInfo && (
+        (
           <CheckoutGatewayPicker
             subscription={subscription}
-            onCheckout={(gateway) =>
-              checkoutMutation.mutate({ id: subscription.id, gateway })
+            onCheckout={(payment_option) =>
+              checkoutMutation.mutate({ id: subscription.id, payment_option })
             }
             isPending={checkoutMutation.isPending}
             errorMessage={checkoutError}
           />
-        )}
-
-      {!isLoading &&
-        subscription &&
-        subscription.status === "PENDING" &&
-        pendingInfo && (
-          <Card>
-            <h2 className="font-display mb-1 text-sm font-semibold text-navy">
-              {t("subscription.approve")}
-            </h2>
-            <p className="mb-4 text-xs text-ink-muted">
-              {t("subscription.approvePrefix")} {" "}
-              {GATEWAY_LABELS[pendingInfo as SubscriptionGateway] ??
-                pendingInfo}{" "}
-              {t("subscription.approveSuffix")}
-            </p>
-            <Button
-              variant="secondary"
-              onClick={() =>
-                queryClient.invalidateQueries({
-                  queryKey: queryKeys.payments.subscriptions,
-                })
-              }
-            >
-              {t("subscription.refresh")}
-            </Button>
-          </Card>
         )}
 
       {!isLoading && subscription && subscription.status !== "PENDING" && (

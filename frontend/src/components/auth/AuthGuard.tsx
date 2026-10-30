@@ -19,13 +19,12 @@ import { localizeHref, localeFromPathname, stripLocale } from "@/src/i18n/config
  * session the moment they start (see lib/guest-session.ts), so nothing
  * further down needs to special-case "not signed in".
  */
-const PUBLIC_PREFIXES = ["/book"];
+const PUBLIC_PREFIXES = ["/book", "/ambassadors"];
 const REGISTERED_ONLY_PREFIXES = [
   "/settings",
   "/loyalty",
   "/payments",
   "/subscription",
-  "/ambassadors",
 ];
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -38,9 +37,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state) => state.user);
   const isGuest = useAuthStore((state) => Boolean(state.user?.is_guest));
   const isHydrated = useAuthStore((state) => state.isHydrated);
-  const isAmbassadorWithoutPhoto = Boolean(
-    user?.is_ambassador && !user.avatar && !isGuest,
-  );
+  const staffOnCustomerRoute = Boolean(user?.is_staff && routePathname !== "/ambassadors");
 
   useEffect(() => {
     if (isHydrated && !accessToken && !isPublic) {
@@ -58,27 +55,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [accessToken, isGuest, isHydrated, pathname, routePathname, router]);
 
   useEffect(() => {
-    if (
-      isHydrated &&
-      accessToken &&
-      isAmbassadorWithoutPhoto &&
-      !routePathname.startsWith("/settings")
-    ) {
-      router.replace(
-        localizeHref(
-          "/settings?reason=ambassador_photo_required",
-          localeFromPathname(pathname),
-        ),
-      );
+    if (isHydrated && staffOnCustomerRoute) {
+      const section = routePathname.split("/")[1];
+      const sharedSections = ["orders", "payments", "chat", "notifications", "loyalty", "settings"];
+      const destination = sharedSections.includes(section)
+        ? `/admin${routePathname === "/settings/payments" ? "/payments" : routePathname === "/settings/preferences" ? "/settings" : routePathname}`
+        : routePathname === "/subscription" ? "/admin/subscriptions" : "/admin";
+      router.replace(localizeHref(destination, localeFromPathname(pathname)));
     }
-  }, [
-    accessToken,
-    isAmbassadorWithoutPhoto,
-    isHydrated,
-    pathname,
-    routePathname,
-    router,
-  ]);
+  }, [isHydrated, staffOnCustomerRoute, pathname, routePathname, router]);
 
   // Render nothing until hydration finishes, to avoid a flash of protected
   // content for a user who turns out to be logged out.
@@ -87,16 +72,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     REGISTERED_ONLY_PREFIXES.some(
       (prefix) => routePathname === prefix || routePathname.startsWith(`${prefix}/`),
     );
-  const ambassadorNeedsPhotoOnBlockedRoute = Boolean(
-    accessToken &&
-      isAmbassadorWithoutPhoto &&
-      !routePathname.startsWith("/settings"),
-  );
   if (
     !isHydrated ||
     (!accessToken && !isPublic) ||
     guestOnRegisteredOnly ||
-    ambassadorNeedsPhotoOnBlockedRoute
+    staffOnCustomerRoute
   )
     return <GuardLoading />;
 

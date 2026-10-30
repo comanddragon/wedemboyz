@@ -58,15 +58,15 @@ export function StatusBadge({
     OUT_FOR_DELIVERY: "outForDelivery",
     DELIVERED: "delivered",
     CANCELLED: "cancelled",
-    SUCCEEDED: "succeeded",
+    SUCCEEDED: "paid",
     PAID: "paid",
-    NO_CHARGE: "noCharge",
-    FAILED: "failed",
+    NO_CHARGE: "paid",
+    FAILED: "unpaid",
     UNPAID: "unpaid",
-    VOID: "void",
-    PARTIALLY_PAID: "partiallyPaid",
-    OVERPAID: "overpaid",
-    WAIVED: "waived",
+    VOID: "unpaid",
+    PARTIALLY_PAID: "unpaid",
+    OVERPAID: "paid",
+    WAIVED: "unpaid",
     REFUNDED: "refunded",
     PARTIALLY_REFUNDED: "partiallyRefunded",
     APPROVED: "approved",
@@ -122,29 +122,8 @@ export function orderStatusTone(status: OrderStatus): StatusTone {
   }
 }
 
-export function paymentStatusTone(
-  status: PaymentStatus | OrderPaymentStatus,
-): StatusTone {
-  switch (status) {
-    case "PENDING":
-      return "pending";
-    case "SUCCEEDED":
-    case "PAID":
-    case "NO_CHARGE":
-      return "ready";
-    case "FAILED":
-    case "UNPAID":
-    case "VOID":
-      return "cancelled";
-    case "PARTIALLY_PAID":
-    case "OVERPAID":
-    case "WAIVED":
-    case "REFUNDED":
-    case "PARTIALLY_REFUNDED":
-      return "progress";
-    default:
-      return "pending";
-  }
+export function paymentStatusTone(status: PaymentStatus | OrderPaymentStatus): StatusTone {
+  return status === "PAID" || status === "SUCCEEDED" ? "ready" : "pending";
 }
 
 export function refundStatusTone(status: RefundStatus): StatusTone {

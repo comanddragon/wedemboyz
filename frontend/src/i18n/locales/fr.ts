@@ -1,6 +1,12 @@
 import type { en } from "./en";
 
 export const fr: typeof en = {
+  paymentOptions: {
+    title: "Options de paiement",
+    pickup: "Paiement à la collecte",
+    delivery: "Paiement à la livraison",
+    body: "Choisissez quand payer lors de votre commande. Aucun moyen de paiement enregistré ni paiement en ligne n’est nécessaire.",
+  },
   common: {
     language: "Langue",
     english: "Anglais",
@@ -176,7 +182,7 @@ export const fr: typeof en = {
   auth: {
     back: "Retour à l’accueil",
     promise: "Votre linge frais, collecté puis livré à votre porte.",
-    location: "Yaoundé · Espèces, MTN et Orange Money acceptés",
+    location: "Yaoundé · Paiement à la collecte ou à la livraison",
     phone: "Numéro de téléphone",
     password: "Mot de passe",
     confirmPassword: "Confirmer le mot de passe",
@@ -254,7 +260,7 @@ export const fr: typeof en = {
     copyFailed: "Échec de la copie — sélectionnez le code manuellement.",
     orders: "Parrainages",
     adminView: "Mode spectateur",
-    adminViewBody: "Vous consultez le classement des ambassadeurs en direct en tant qu’administrateur.",
+    adminViewBody: "Suivez les recommandations et le classement des ambassadeurs, ouverts à tous.",
     hallOfFame: "Le cercle des champions",
     chasingPodium: "À la conquête du podium",
     loadError: "Impossible de charger le classement pour le moment.",
@@ -509,7 +515,7 @@ export const fr: typeof en = {
     title: "Paramètres",
     laundry: "Préférences de lavage",
     laundryBody: "Eau, lessive et pliage",
-    payments: "Moyens de paiement",
+    payments: "Options de paiement",
     paymentsBody: "Cartes et Mobile Money",
     subscription: "Abonnement",
     subscriptionBody: "Forfait, facturation et collectes",
@@ -798,7 +804,7 @@ export const fr: typeof en = {
       "Les vêtements sont triés par matière et type de service, puis lavés, repassés ou nettoyés à sec par un personnel formé à chaque textile.",
     step4Title: "Contrôlé et livré",
     step4Desc:
-      "Plié ou sur cintre, vérifié par rapport au ticket initial et livré à votre porte. Réglez en espèces, MTN ou Orange Money à la réception.",
+      "Plié ou sur cintre, vérifié par rapport au ticket initial et livré à votre porte. Réglez à la collecte ou à la livraison.",
     servicesEyebrow: "Nos prestations",
     servicesTitle:
       "Calibré pour le linge quotidien comme pour vos plus belles pièces.",
@@ -839,7 +845,7 @@ export const fr: typeof en = {
       "Pesé devant vous, étiqueté sur votre commande, revérifié selon le même ticket à la livraison. Rien n'est estimé approximativement.",
     pillar3Title: "Paiement en toute simplicité",
     pillar3Desc:
-      "Espèces, MTN Mobile Money ou Orange Money — confirmé à la réception, sans carte bancaire obligatoire ni solde en suspens.",
+      "Choisissez le paiement à la collecte ou à la livraison. L’équipe enregistre le règlement à sa réception.",
     trustEyebrow: "Témoignages",
     trustTitle: "Ce que disent nos clients à travers Yaoundé.",
     quote1Text:
@@ -879,7 +885,7 @@ export const fr: typeof en = {
     allServicesIncluded:
       "Lavage, essorage, séchage, repassage et plastification",
     noCommitment: "Sans engagement, résiliez quand vous voulez",
-    paypalNote: "Facturé automatiquement tous les 30 jours par PayPal.",
+    paypalNote: "Renouvelez votre forfait avec l’équipe après règlement.",
     choosePlan: "Choisir",
     includedHeading: "Chaque forfait comprend",
     services: {
@@ -922,7 +928,7 @@ export const fr: typeof en = {
       "Non. Les forfaits sont sans engagement et vous pouvez les suspendre ou résilier à tout moment.",
     faqQ4: "Quels sont les moyens de paiement acceptés ?",
     faqA4:
-      "En espèces, par PayPal, MTN Mobile Money ou Orange Money. Le renouvellement automatique est géré via PayPal.",
+      "Réglez à la collecte ou à la livraison. Les forfaits sont renouvelés manuellement après règlement.",
     faqQ5: "Proposez-vous la livraison à domicile ?",
     faqA5:
       "Oui. La collecte et la livraison à domicile sont disponibles dans tout Yaoundé pour un forfait unique de 1 500 FCFA par commande.",
@@ -1830,8 +1836,8 @@ export const fr: typeof en = {
     amountPaid: "Montant payé",
     issued: "Émise",
     issuedAt: "Émise le",
-    settledBadge: "Réglée",
-    outstandingBadge: "En attente",
+    settledBadge: "Payé",
+    outstandingBadge: "Impayé",
     settled: "Réglée",
     unsettled: "En attente de règlement",
     printInvoice: "Imprimer la facture",

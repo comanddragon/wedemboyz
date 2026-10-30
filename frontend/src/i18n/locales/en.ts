@@ -1,4 +1,10 @@
 export const en = {
+  paymentOptions: {
+    title: "Payment options",
+    pickup: "Pay on pickup",
+    delivery: "Pay on delivery",
+    body: "Choose when to pay while placing your order. No saved payment method or online payment is needed.",
+  },
   common: {
     language: "Language",
     english: "English",
@@ -173,7 +179,7 @@ export const en = {
   auth: {
     back: "Back to home",
     promise: "Fresh laundry, picked up and dropped back at your door.",
-    location: "Yaoundé · Cash, MTN & Orange Money accepted",
+    location: "Yaoundé · Pay on pickup or delivery",
     phone: "Phone number",
     password: "Password",
     confirmPassword: "Confirm password",
@@ -199,7 +205,7 @@ export const en = {
     guestCreate:
       "Creating an account keeps the orders you've already booked as a guest — nothing is lost.",
     guestBanner:
-      "Guest mode: your orders are saved, but settings, rewards, payment methods and subscriptions need an account.",
+      "Guest mode: your orders are saved, but settings, rewards, payment history and subscriptions need an account.",
     keepOrders: "Create an account to keep them",
     unlockBenefits: "Create an account to unlock everything",
     logout: "Log out",
@@ -227,7 +233,7 @@ export const en = {
     accountHelp: "Account help",
   },
   ambassador: {
-    restricted: "This leaderboard is available to active ambassadors.",
+    restricted: "The leaderboard is open to everyone.",
     title: "Ambassador leaderboard",
     headline: "Compete, refer, rise.",
     description:
@@ -250,7 +256,7 @@ export const en = {
     copyFailed: "Copy failed — select the code manually.",
     orders: "Referrals",
     adminView: "Spectator mode",
-    adminViewBody: "You are viewing the live ambassador rankings as an administrator.",
+    adminViewBody: "Follow ambassador referrals and rankings, open to everyone.",
     hallOfFame: "The hall of fame",
     chasingPodium: "Chasing the podium",
     loadError: "The leaderboard could not be loaded right now.",
@@ -497,8 +503,8 @@ export const en = {
     title: "Settings",
     laundry: "Laundry preferences",
     laundryBody: "Water, detergent, and folding",
-    payments: "Payment methods",
-    paymentsBody: "Cards and mobile money",
+    payments: "Payment options",
+    paymentsBody: "Pay on pickup or delivery",
     subscription: "Subscription",
     subscriptionBody: "Plan, billing, and pickups",
     notifications: "Notifications",
@@ -783,7 +789,7 @@ export const en = {
       "Garments are sorted by fabric and service line, then cleaned, pressed, or dry-cleaned by staff trained on that specific line — not a single generic wash.",
     step4Title: "Returned, checked",
     step4Desc:
-      "Folded or hung, inspected against the original ticket, and delivered back to your door. You settle by cash, MTN, or Orange Money on arrival.",
+      "Folded or hung, inspected against the original ticket, and delivered back to your door. You pay on pickup or delivery.",
     servicesEyebrow: "The lines",
     servicesTitle: "Calibrated for everyday wear and fine garments alike.",
     servicesDescription:
@@ -823,7 +829,7 @@ export const en = {
       "Weighed in front of you, tagged against your order, checked back against the same ticket at delivery. Nothing is estimated after the fact.",
     pillar3Title: "Settle however suits you",
     pillar3Desc:
-      "Cash, MTN Mobile Money, or Orange Money — confirmed at the door, no card required and no balance carried forward.",
+      "Choose pay on pickup or pay on delivery. The team records your payment when received.",
     trustEyebrow: "On the record",
     trustTitle: "What clients across Yaoundé are saying.",
     quote1Text:
@@ -862,7 +868,7 @@ export const en = {
     kilosCovered: "kg of laundry covered every month",
     allServicesIncluded: "Washing, spinning, drying, ironing and plastic wrap",
     noCommitment: "No commitment, cancel anytime",
-    paypalNote: "Billed automatically every 30 days by PayPal.",
+    paypalNote: "Renew your plan with the team after payment.",
     choosePlan: "Choose",
     includedHeading: "Every plan includes",
     services: {
@@ -903,7 +909,7 @@ export const en = {
     faqA3: "No. Plans have no commitment and you can cancel anytime.",
     faqQ4: "How do I pay?",
     faqA4:
-      "By cash, PayPal, MTN Mobile Money or Orange Money. Auto-renew is available with PayPal.",
+      "Choose pay on pickup or pay on delivery. Plans are renewed manually after payment.",
     faqQ5: "Do you deliver?",
     faqA5:
       "Yes. Home delivery is available. Pickup and delivery is a flat 1,500 FCFA per order.",
@@ -1795,8 +1801,8 @@ export const en = {
     amountPaid: "Amount paid",
     issued: "Issued",
     issuedAt: "Issued on",
-    settledBadge: "Settled",
-    outstandingBadge: "Outstanding",
+    settledBadge: "Paid",
+    outstandingBadge: "Unpaid",
     settled: "Settled",
     unsettled: "Pending settlement",
     printInvoice: "Print invoice",

@@ -1,4 +1,5 @@
 "use client";
+import { buttonStyles } from "@/src/components/ui/Button";
 
 import { useMutation } from "@tanstack/react-query";
 import { CircleCheck, HandCoins, Truck } from "lucide-react";
@@ -25,14 +26,14 @@ const PAYMENT_OPTIONS: Array<{
 }> = [
   {
     value: "PAY_AT_PICKUP",
-    title: "Pay at pickup",
+    title: "Pay on pickup",
     description: "Pay when we collect your items or when you drop them off.",
     icon: HandCoins,
   },
   {
     value: "PAY_AFTER_DELIVERY",
-    title: "Pay after delivery",
-    description: "Pay after your cleaned items have been delivered to you.",
+    title: "Pay on delivery",
+    description: "Pay when your cleaned items are delivered to you.",
     icon: Truck,
   },
 ];
@@ -138,9 +139,7 @@ export default function BookConfirmPage() {
       step={4}
       subtitle="Step 4 — payment option"
       actions={
-        <Link href="/book/review">
-          <Button variant="ghost">Back</Button>
-        </Link>
+        <Link href="/book/review" className={buttonStyles({ variant: "ghost" })}>Back</Link>
       }
     >
       <Card className="grid items-start gap-x-12 gap-y-6 lg:grid-cols-[1.2fr_1fr] lg:p-7">

@@ -49,7 +49,7 @@ export function ownerWhatsAppOrderUrl(
     `Customer: ${customerName}`,
     `Phone: ${customerPhone}`,
     `Fulfilment: ${order.fulfillment_type === "PICKUP" ? "Pickup" : "Drop-off"}`,
-    `Payment: ${order.payment_option === "PAY_AT_PICKUP" ? "Pay at pickup" : "Pay after delivery"}`,
+    `Payment: ${order.payment_option === "PAY_AT_PICKUP" ? "Pay on pickup" : "Pay on delivery"}`,
     ...schedule,
     "",
     "Items:",

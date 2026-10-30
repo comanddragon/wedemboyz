@@ -258,21 +258,12 @@ class AmbassadorAdminDetailView(generics.UpdateAPIView):
 
 
 class AmbassadorLeaderboardView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        current = AmbassadorProfile.objects.select_related("user", "user__profile", "promo_code").filter(
-            user=request.user, is_active=True
-        ).first()
-        if current is None and not request.user.is_staff:
-            return Response({"detail": "Ambassador access required."}, status=status.HTTP_403_FORBIDDEN)
-        if current is not None:
-            profile = getattr(current.user, "profile", None)
-            if not profile or not profile.avatar:
-                return Response(
-                    {"detail": "Upload a profile photo before entering the ambassador leaderboard."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        current = None
+        if request.user.is_authenticated:
+            current = AmbassadorProfile.objects.filter(user=request.user, is_active=True).first()
 
         period = request.query_params.get("period", "month")
         today = timezone.localdate()
@@ -309,7 +300,12 @@ class AmbassadorLeaderboardView(APIView):
                 key.replace("credits__", ""): value for key, value in credit_filter.items()
             })
             rows.append({
-                "ambassador": AmbassadorProfileSerializer(profile).data,
+                "ambassador": {
+                    "id": profile.id,
+                    "name": profile.user.get_full_name() or "Ambassador",
+                    "promo_code": profile.promo_code.code,
+                    "profile_photo": AmbassadorProfileSerializer(profile, context={"request": request}).data["profile_photo"],
+                },
                 "period_credits": int(credits.aggregate(total=Sum("credit_amount"))["total"] or 0),
                 "orders": credits.count(),
                 "referred_revenue": int(credits.aggregate(total=Sum("order_amount"))["total"] or 0),

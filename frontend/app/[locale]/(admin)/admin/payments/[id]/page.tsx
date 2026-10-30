@@ -1,4 +1,5 @@
 "use client";
+import { paymentState } from "@/src/lib/payment-options";
 
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
@@ -38,7 +39,9 @@ export default function AdminPaymentDetailPage() {
     queryFn: () => paymentsApi.getPayment(paymentId),
   });
 
-  const methodLabels: Record<PaymentMethodType, string> = {
+  const methodLabels: Partial<Record<PaymentMethodType, string>> = {
+    PAY_AT_PICKUP: locale === "fr" ? "Paiement à la collecte" : "Pay on pickup",
+    PAY_AFTER_DELIVERY: locale === "fr" ? "Paiement à la livraison" : "Pay on delivery",
     MTN_MOMO: t("adminFinance.methodLabels.MTN_MOMO"),
     ORANGE_MONEY: t("adminFinance.methodLabels.ORANGE_MONEY"),
     CASH: t("adminFinance.methodLabels.CASH"),
@@ -102,8 +105,8 @@ export default function AdminPaymentDetailPage() {
           </div>
         </div>
         <StatusBadge
-          label={payment.status}
-          tone={paymentStatusTone(payment.status)}
+          label={paymentState(payment.status)}
+          tone={paymentStatusTone(paymentState(payment.status))}
         />
       </div>
 

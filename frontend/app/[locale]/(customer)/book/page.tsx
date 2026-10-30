@@ -1,4 +1,5 @@
 "use client";
+import { buttonStyles } from "@/src/components/ui/Button";
 
 import { Camera, ImagePlus, Pencil, Trash2, X } from "lucide-react";
 import Image from "next/image";
@@ -142,14 +143,10 @@ export default function BookServicesPage() {
       step={1}
       subtitle="booking.step1"
       actions={
-        <div className="flex items-center justify-between">
-          <Link href="/dashboard">
-            <Button variant="ghost">{t("booking.back")}</Button>
-          </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link href="/dashboard" className={buttonStyles({ variant: "ghost" })}>{t("booking.back")}</Link>
           {items.length > 0 && (
-            <Link href="/book/schedule">
-              <Button>{t("booking.nextSchedule")}</Button>
-            </Link>
+            <Link href="/book/schedule" className={buttonStyles({  })}>{t("booking.nextSchedule")}</Link>
           )}
         </div>
       }

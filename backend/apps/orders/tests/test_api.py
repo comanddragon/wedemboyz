@@ -122,3 +122,14 @@ class TestOrderPlacementOptions:
 
         assert response.status_code == 201, response.data
         assert len(response.data["items"][0]["photos"]) == 2
+        listed = client.get("/api/v1/orders/")
+        assert listed.status_code == 200
+        previews = listed.data["results"][0]["items"]
+        assert len(previews[0]["photos"]) == 2
+        assert previews[0]["photos"][0]["image"].endswith(".png")
+        # A different customer cannot view this order or its item gallery.
+        from apps.users.models import CustomUser
+        other = CustomUser.objects.create_user(phone_number="237677300099", password="testpass")
+        client.force_authenticate(other)
+        assert client.get(f"/api/v1/orders/{response.data['id']}/").status_code == 404
+        assert client.get("/api/v1/orders/").data["results"] == []

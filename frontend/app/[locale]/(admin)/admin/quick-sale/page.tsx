@@ -1,5 +1,7 @@
 "use client";
 
+import { collectionMethods } from "@/src/lib/payment-options";
+
 import { useMutation } from "@tanstack/react-query";
 import { CircleCheck, ShoppingBag } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
@@ -25,13 +27,7 @@ import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import type { PaymentMethodType, QuickSaleResult } from "@/src/types";
 
-const PAYMENT_METHODS: { value: PaymentMethodType; label: string }[] = [
-  { value: "CASH", label: "Cash" },
-  { value: "MTN_MOMO", label: "MTN Mobile Money" },
-  { value: "ORANGE_MONEY", label: "Orange Money" },
-  { value: "BANK_TRANSFER", label: "Bank transfer" },
-  { value: "OTHER", label: "Other" },
-];
+
 
 function emptyLineItemsTotal(items: QuickSaleLineItem[]): number | null {
   // Only meaningful as an estimate when every item has a manual price — real
@@ -45,23 +41,17 @@ function emptyLineItemsTotal(items: QuickSaleLineItem[]): number | null {
 }
 
 export default function AdminQuickSalePage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [items, setItems] = useState<QuickSaleLineItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("CASH");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("PAY_AT_PICKUP");
   const [paidNow, setPaidNow] = useState(true);
   const [deliveryFee, setDeliveryFee] = useState("");
   const [notes, setNotes] = useState("");
   const [result, setResult] = useState<QuickSaleResult | null>(null);
 
-  const paymentMethods: { value: PaymentMethodType; label: string }[] = [
-    { value: "CASH", label: t("adminFinance.cash") },
-    { value: "MTN_MOMO", label: "MTN Mobile Money" },
-    { value: "ORANGE_MONEY", label: "Orange Money" },
-    { value: "BANK_TRANSFER", label: t("adminFinance.transfer") },
-    { value: "OTHER", label: t("adminFinance.other") },
-  ];
+  const paymentMethods = collectionMethods(locale);
 
   const estimatedTotal = useMemo(() => emptyLineItemsTotal(items), [items]);
 
@@ -84,7 +74,7 @@ export default function AdminQuickSalePage() {
     setCustomerPhone("");
     setCustomerName("");
     setItems([]);
-    setPaymentMethod("CASH");
+    setPaymentMethod("PAY_AT_PICKUP");
     setPaidNow(true);
     setDeliveryFee("");
     setNotes("");

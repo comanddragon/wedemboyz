@@ -52,7 +52,6 @@ type NavItem = {
   icon: LucideIcon;
   permission?: AdminPermission;
   superuserOnly?: boolean;
-  ambassadorOnly?: boolean;
   badgeCount?: number;
 };
 
@@ -159,7 +158,6 @@ const CUSTOMER_LINKS: NavItem[] = [
     href: "/ambassadors",
     label: "Leaderboard",
     icon: Users,
-    ambassadorOnly: true,
   },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -290,9 +288,6 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
     [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
     user?.phone_number ||
     (admin ? t("common.staff") : t("common.customer"));
-  const avatarUrl = profile?.avatar ?? user?.avatar;
-  const isAmbassador = Boolean(profile?.is_ambassador ?? user?.is_ambassador);
-  const needsAmbassadorPhoto = !admin && isAmbassador && !avatarUrl;
   const labelKeys: Record<string, string> = {
     Dashboard: "nav.dashboard", "Quick sale": "nav.quickSale", Orders: "nav.orders", Customers: "nav.customers", Inventory: "nav.inventory", Payments: "nav.payments", Analytics: "nav.analytics", Inbox: "nav.inbox", Staff: "nav.staff", Payroll: "nav.payroll", Discounts: "nav.discounts", Loyalty: "nav.loyalty", Ambassadors: "nav.ambassadors", Credit: "nav.credit", "Book pickup": "nav.book", Support: "nav.support", Rewards: "nav.rewards", Leaderboard: "nav.leaderboard", Settings: "nav.settings",
   };
@@ -300,10 +295,9 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
     if (
       !admin &&
       user?.is_guest &&
-      ["/payments", "/loyalty", "/ambassadors", "/settings"].includes(item.href)
+      ["/payments", "/loyalty", "/settings"].includes(item.href)
     ) return false;
     if (item.superuserOnly && !user?.is_superuser) return false;
-    if (item.ambassadorOnly && !isAmbassador && !user?.is_staff) return false;
     return !item.permission || canAccess(permissions, item.permission);
   }).map((item) => ({ ...item, label: t(labelKeys[item.label] ?? item.label) }));
   const { data: chatRooms } = useQuery({
@@ -335,10 +329,9 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
   const unreadChatCount =
     chatRooms?.reduce((total, room) => total + room.unread_count, 0) ?? 0;
   const links = baseLinks.map((item) => {
-    const isLocked = needsAmbassadorPhoto && item.href !== "/settings";
     return {
       ...item,
-      href: isLocked ? "/settings" : item.href,
+      href: item.href,
       badgeCount:
         item.href === "/chat" || item.href === "/admin/chat"
           ? unreadChatCount
@@ -354,7 +347,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
         ["/admin", "/admin/quick-sale", "/admin/orders", "/admin/chat"].includes(item.href),
       )
     : links.filter((item) =>
-        ["/dashboard", "/book", "/orders", "/chat", "/settings"].includes(item.href),
+        ["/dashboard", "/book", "/orders", "/chat"].includes(item.href),
       );
   useLockBodyScroll(open);
   useEffect(() => setMounted(true), []);
@@ -376,18 +369,6 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
 
   return (
     <>
-      {needsAmbassadorPhoto ? (
-        <div className="bg-gold px-4 py-2.5 text-center text-xs font-semibold text-navy flex items-center justify-center gap-2 shadow-sm">
-          <Sparkles className="h-4 w-4 shrink-0 text-navy" aria-hidden="true" />
-          <span>{t("nav.ambassadorPhotoBanner")}</span>
-          <Link
-            href="/settings"
-            className="underline underline-offset-2 font-bold hover:text-navy-900 ml-1 inline-flex items-center"
-          >
-            {t("nav.uploadPhotoNow")} →
-          </Link>
-        </div>
-      ) : null}
       <header className="mobile-safe-top relative z-40 flex h-[64px] shrink-0 items-center gap-3 border-b border-crease/70 bg-white/95 px-4 backdrop-blur-xl sm:h-[76px] sm:px-6 lg:border-0 lg:bg-gradient-to-b lg:from-crease lg:via-steam lg:to-steam/0 xl:px-7">
         <Link
           href="/"
@@ -433,7 +414,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
         <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-0">
           <div className="hidden xl:block"><LanguageSwitcher compact /></div>
           <Link
-            href="/notifications"
+            href={admin ? "/admin/notifications" : "/notifications"}
             className="relative grid h-11 w-11 place-items-center rounded-full bg-mist text-navy transition-colors hover:bg-gold-50 sm:bg-white/90 sm:shadow-float lg:h-10 lg:w-10"
             aria-label={`Open notifications${attentionCount > 0 ? `, ${attentionCount} unread` : ""}`}
           >
@@ -468,14 +449,6 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                   </p>
                 </div>
               </div>
-              {user?.is_staff && (
-                <Link
-                  href={admin ? "/dashboard" : "/admin"}
-                  className="mt-1 block rounded-lg px-3 py-2 text-sm text-ink-soft hover:bg-mist"
-                >
-                  {admin ? t("adminCommon.customerView") : t("adminCommon.adminConsole")}
-                </Link>
-              )}
               <LogoutButton className="w-full justify-start" />
             </div> : null}
           </div>
@@ -577,20 +550,6 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                       ))}
                     </nav>
                     <div className="mt-auto border-t border-crease-soft pt-4">
-                      {user?.is_staff && (
-                        <Link
-                          href={admin ? "/dashboard" : "/admin"}
-                          onClick={() => setOpen(false)}
-                          className="mb-3 flex min-h-12 items-center gap-3 rounded-xl bg-gold-50 px-3 py-3 text-sm font-semibold text-navy active:bg-steam"
-                        >
-                          {admin ? (
-                            <LayoutDashboard className="h-[18px] w-[18px]" />
-                          ) : (
-                            <UserCog className="h-[18px] w-[18px]" />
-                          )}
-                          {admin ? t("adminCommon.customerView") : t("adminCommon.adminConsole")}
-                        </Link>
-                      )}
                       <div className="mb-2 flex items-center gap-3 px-2">
                         <CustomerAvatar name={name} size="sm" imageUrl={profile?.avatar} useProfilePhoto={profile?.use_profile_photo} />
                         <div className="min-w-0">

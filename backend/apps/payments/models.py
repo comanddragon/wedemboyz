@@ -86,7 +86,7 @@ class Payment(TimeStampedModel):
     payment_method_type = models.CharField(
         max_length=20,
         choices=PaymentMethodType.choices,
-        default=PaymentMethodType.OTHER,
+        default=PaymentMethodType.PAY_AT_PICKUP,
         db_index=True,
     )
     reference = models.CharField(max_length=100, blank=True, db_index=True)
@@ -220,6 +220,7 @@ class Subscription(TimeStampedModel):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="subscriptions"
     )
+    payment_option = models.CharField(max_length=24, choices=[(PaymentMethodType.PAY_AT_PICKUP, "Pay on pickup"), (PaymentMethodType.PAY_AFTER_DELIVERY, "Pay on delivery")], default=PaymentMethodType.PAY_AT_PICKUP)
     plan = models.CharField(max_length=20, choices=Plan.choices)
     billing_cycle = models.CharField(
         max_length=10, choices=BillingCycle.choices, default=BillingCycle.ONE_TIME

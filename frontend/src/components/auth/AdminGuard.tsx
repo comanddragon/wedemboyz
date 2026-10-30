@@ -50,7 +50,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   const isAllowed = canAccess(profile?.staff_permissions, requiredPermission);
 
   // Keep the store's cached user in sync so is_staff-dependent UI elsewhere
-  // (e.g. "Customer view" link visibility) doesn't need its own fetch.
+  // (e.g. account navigation) doesn't need its own fetch.
   useEffect(() => {
     if (profile)
       setUser({
@@ -70,9 +70,9 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
       return;
     }
     if ((isFetched || isError) && !isStaff) {
-      router.replace(localizeHref("/dashboard", localeFromPathname(pathname)));
+      router.replace(localizeHref(profile?.is_staff || isError ? "/login" : "/dashboard", localeFromPathname(pathname)));
     }
-  }, [isHydrated, accessToken, isFetched, isError, isStaff, pathname, router]);
+  }, [isHydrated, accessToken, isFetched, isError, isStaff, profile?.is_staff, pathname, router]);
 
   if (!isHydrated || !accessToken) return <GuardLoading />;
   if (!isFetched && !isError) {

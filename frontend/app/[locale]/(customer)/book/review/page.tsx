@@ -1,4 +1,5 @@
 "use client";
+import { buttonStyles } from "@/src/components/ui/Button";
 
 import { ensureSession } from "@/src/lib/guest-session";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
@@ -7,7 +8,6 @@ import { useState } from "react";
 
 import { BookingShell } from "@/src/components/booking/BookingShell";
 import {
-  Button,
   Card,
   CreaseDivider,
   Field,
@@ -46,13 +46,9 @@ export default function BookReviewPage() {
       step={3}
       subtitle="booking.step3"
       actions={
-        <div className="flex items-center justify-between">
-          <Link href="/book/schedule">
-            <Button variant="ghost">{t("booking.back")}</Button>
-          </Link>
-          <Link href="/book/confirm">
-            <Button>{t("booking.nextPayment")}</Button>
-          </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link href="/book/schedule" className={buttonStyles({ variant: "ghost" })}>{t("booking.back")}</Link>
+          <Link href="/book/confirm" className={buttonStyles({  })}>{t("booking.nextPayment")}</Link>
         </div>
       }
     >

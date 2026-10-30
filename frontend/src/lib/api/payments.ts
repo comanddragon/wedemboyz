@@ -177,7 +177,7 @@ export async function getSubscription(
 }
 
 /** POST /subscriptions/ — creates a PENDING subscription with no pickups
- * granted yet; call startSubscriptionCheckout next to actually pay for it. */
+ * granted yet; choose collection timing with startSubscriptionCheckout. */
 export async function createSubscription(
   input: CreateSubscriptionInput,
 ): Promise<Subscription> {
@@ -185,11 +185,7 @@ export async function createSubscription(
   return unwrap<Subscription>(res);
 }
 
-/** POST /subscriptions/{id}/checkout/ — starts payment against the chosen
- * gateway. MONTHLY subscriptions only accept STRIPE/PAYPAL. Stripe/PayPal
- * responses include a redirect URL — send the browser there next; MTN/Orange
- * return the created Payment and rely on the same collection-request flow
- * used for order payments. */
+/** Save collection timing; staff activates the plan after receiving payment. */
 export async function startSubscriptionCheckout(
   subscriptionId: number,
   input: SubscriptionCheckoutInput,

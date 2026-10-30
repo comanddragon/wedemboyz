@@ -32,9 +32,9 @@ export function buttonStyles({
   className,
 }: ButtonStyleOptions = {}) {
   return cn(
-    "inline-flex items-center justify-center gap-2 rounded-full font-display font-medium tracking-[0.005em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-gold/30 motion-reduce:transition-none disabled:cursor-not-allowed",
+    "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap text-center align-middle rounded-full font-display font-medium tracking-[0.005em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-gold/30 motion-reduce:transition-none disabled:cursor-not-allowed",
     size === "sm"
-      ? "min-h-9 px-3.5 py-1.5 text-xs"
+      ? "min-h-11 px-3.5 py-1.5 text-xs"
       : "min-h-11 px-5 py-2.5 text-sm",
     VARIANT_CLASSES[variant],
     className,

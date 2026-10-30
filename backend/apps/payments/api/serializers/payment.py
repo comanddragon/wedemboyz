@@ -2,44 +2,41 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from apps.orders.models import Order
-from apps.payments.models import Payment, PaymentMethod, generate_display_label
-from core.constants import PaymentGateway, PaymentMethodType, PaymentStatus
-from core.utils import contact_phone
+from apps.payments.models import Payment, PaymentMethod
+from core.constants import PaymentMethodType, PaymentStatus
+
 User = get_user_model()
+
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentMethod
-        fields = ["id", "gateway", "display_label", "phone_number", "provider_token", "is_default", "created_at"]
+        fields = [
+            "id",
+            "gateway",
+            "display_label",
+            "phone_number",
+            "provider_token",
+            "is_default",
+            "created_at",
+        ]
         # phone_number never needs to round-trip back to the client — the
         # frontend only needs id/gateway/display_label to render the
         # picker; the actual number is resolved server-side at payment
         # time (see PaymentInitiateSerializer.create). display_label is
         # computed (see generate_display_label) from gateway + phone_number
         # so it can never say something other than what's actually stored.
-        extra_kwargs = {"provider_token": {"write_only": True}, "phone_number": {"write_only": True}}
+        extra_kwargs = {
+            "provider_token": {"write_only": True},
+            "phone_number": {"write_only": True},
+        }
         read_only_fields = ["id", "display_label", "created_at"]
 
     def validate(self, attrs):
-        gateway = attrs.get("gateway", getattr(self.instance, "gateway", None))
-        phone_number = attrs.get("phone_number", getattr(self.instance, "phone_number", ""))
-        if gateway in (PaymentGateway.MTN_MOMO, PaymentGateway.ORANGE_MONEY) and not phone_number:
-            raise serializers.ValidationError(
-                {"phone_number": "A phone number is required for MTN Mobile Money / Orange Money methods."}
-            )
-        return attrs
-
-    def create(self, validated_data):
-        validated_data["display_label"] = generate_display_label(
-            validated_data["gateway"], validated_data.get("phone_number", "")
+        raise serializers.ValidationError(
+            "Choose pay on pickup or pay on delivery when placing your order."
         )
-        return super().create(validated_data)
 
-    def update(self, instance, validated_data):
-        gateway = validated_data.get("gateway", instance.gateway)
-        phone_number = validated_data.get("phone_number", instance.phone_number)
-        validated_data["display_label"] = generate_display_label(gateway, phone_number)
-        return super().update(instance, validated_data)
 
 class OrderCustomerSerializer(serializers.ModelSerializer):
     """Nested summary of who placed the order — mirrors
@@ -50,6 +47,7 @@ class OrderCustomerSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "first_name", "last_name", "phone_number"]
         read_only_fields = fields
+
 
 class PaymentSerializer(serializers.ModelSerializer):
     method = PaymentMethodSerializer(read_only=True)
@@ -100,7 +98,9 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 class ManualPaymentSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=10, decimal_places=0, min_value=1)
-    payment_method_type = serializers.ChoiceField(choices=PaymentMethodType.choices)
+    payment_method_type = serializers.ChoiceField(
+        choices=[PaymentMethodType.PAY_AT_PICKUP, PaymentMethodType.PAY_AFTER_DELIVERY]
+    )
     reference = serializers.CharField(max_length=100, required=False, allow_blank=True)
     received_at = serializers.DateTimeField(required=False)
     payer_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
@@ -113,14 +113,17 @@ class ManualPaymentSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         order = self.context["order"]
-        if order.payment_status in {"VOID", "WAIVED", "NO_CHARGE"}:
+        if order.status == "CANCELLED" or order.balance_due <= 0:
             raise serializers.ValidationError("This order does not accept payments.")
         if attrs["amount"] > order.balance_due and not attrs["allow_overpayment"]:
             raise serializers.ValidationError(
                 {"amount": "Amount exceeds the balance due. Allow overpayment to continue."}
             )
         tendered = attrs.get("tendered_amount")
-        if attrs["payment_method_type"] == PaymentMethodType.CASH:
+        if attrs["payment_method_type"] in {
+            PaymentMethodType.PAY_AT_PICKUP,
+            PaymentMethodType.PAY_AFTER_DELIVERY,
+        }:
             if tendered is not None and tendered < attrs["amount"]:
                 raise serializers.ValidationError(
                     {"tendered_amount": "Tendered cash cannot be less than the payment."}
@@ -133,21 +136,7 @@ class ManualPaymentSerializer(serializers.Serializer):
 
 
 class PaymentInitiateSerializer(serializers.ModelSerializer):
-    """POST /api/v1/payments/ — creates a PENDING Payment row for an order.
-    For STRIPE/PAYPAL, the actual charge/redirect happens client-side
-    against the chosen gateway's SDK; the gateway's webhook (see
-    api/views/webhooks.py) is what ultimately flips this to
-    SUCCEEDED/FAILED. For MTN_MOMO/ORANGE_MONEY there's no client SDK — this
-    calls CamPay server-side to push a USSD/PIN prompt to the customer's
-    phone (see services.billing.campay_gateway), and CamPayWebhookView
-    confirms success the same way.
-
-    Subscriptions don't use this serializer — they have their own checkout
-    flow (see apps.payments.api.views.subscription.SubscriptionCheckoutView)
-    since recurring billing needs gateway-side setup (a Stripe Checkout
-    Session / PayPal Billing Subscription) that a bare PENDING Payment row
-    can't represent on its own.
-    """
+    """Reject legacy online checkout; orders are paid on pickup or delivery."""
 
     order = serializers.PrimaryKeyRelatedField(queryset=Order.objects.all())
     method = serializers.PrimaryKeyRelatedField(
@@ -162,6 +151,11 @@ class PaymentInitiateSerializer(serializers.ModelSerializer):
         fields = ["id", "order", "method", "gateway", "amount", "currency", "phone_number"]
         read_only_fields = ["id", "amount", "currency"]
 
+    def validate(self, attrs):
+        raise serializers.ValidationError(
+            "Online payments are unavailable. Pay on pickup or pay on delivery."
+        )
+
     def validate_order(self, order):
         user = self.context["request"].user
         if order.user_id != user.id:
@@ -174,51 +168,3 @@ class PaymentInitiateSerializer(serializers.ModelSerializer):
         if method is not None and method.user_id != self.context["request"].user.id:
             raise serializers.ValidationError("Invalid payment method.")
         return method
-
-    def create(self, validated_data):
-        order = validated_data["order"]
-        gateway = validated_data["gateway"]
-        method = validated_data.get("method")
-        phone_number = validated_data.pop("phone_number", "")
-
-        gateway_reference = ""
-        ussd_code = ""
-        if gateway in (PaymentGateway.MTN_MOMO, PaymentGateway.ORANGE_MONEY):
-            from services.billing import campay_gateway
-
-            # Priority: an explicit number typed on the payment screen for
-            # this one payment > the number stored on the selected saved
-            # method > the account's registered number as a last resort.
-            phone_number = (
-                phone_number
-                or (method.phone_number if method else "")
-                or contact_phone(order.user)
-            )
-            if not phone_number:
-                raise serializers.ValidationError(
-                    {"phone_number": "A phone number is required to request MTN/Orange Money payment."}
-                )
-            try:
-                result = campay_gateway.initiate_collection(
-                    amount=order.total_amount,
-                    phone_number=phone_number,
-                    description=f"Wedemboyz Lavomatique — Order #{order.pk}",
-                    external_reference=f"order-{order.pk}",
-                    user=order.user,
-                )
-            except campay_gateway.CamPayAPIError as exc:
-                raise serializers.ValidationError({"gateway": str(exc)})
-            gateway_reference = result["reference"]
-            ussd_code = result.get("ussd_code", "")
-
-        payment = Payment.objects.create(
-            order=order,
-            method=method,
-            gateway=gateway,
-            gateway_reference=gateway_reference,
-            amount=order.total_amount,
-            currency=order.currency,
-            status=PaymentStatus.PENDING,
-        )
-        payment.ussd_code = ussd_code  # transient attr for the response only, not persisted
-        return payment

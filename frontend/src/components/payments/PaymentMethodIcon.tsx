@@ -1,10 +1,12 @@
 import Image from "next/image";
-import { Banknote, CircleEllipsis, CreditCard, Landmark, Wallet, WalletCards } from "lucide-react";
+import { Truck, HandCoins, Banknote, CircleEllipsis, CreditCard, Landmark, Wallet, WalletCards } from "lucide-react";
 
 import { cn } from "@/src/lib/utils";
 import type { PaymentGateway } from "@/src/types";
 
 type PaymentMethod =
+  | "PAY_AT_PICKUP"
+  | "PAY_AFTER_DELIVERY"
   | "CASH"
   | "MTN_MOMO"
   | "ORANGE_MONEY"
@@ -38,7 +40,7 @@ export function PaymentMethodIcon({
     return <span className={frame}><Image src="/brands/orange-money.svg" alt="Orange Money" width={44} height={12} className="h-auto w-full object-contain" /></span>;
   }
 
-  const Icon = resolvedMethod === "CASH"
+  const Icon = resolvedMethod === "PAY_AT_PICKUP" ? HandCoins : resolvedMethod === "PAY_AFTER_DELIVERY" ? Truck : resolvedMethod === "CASH"
     ? Banknote
     : resolvedMethod === "BANK_TRANSFER"
       ? Landmark

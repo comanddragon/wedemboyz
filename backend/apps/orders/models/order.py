@@ -14,8 +14,8 @@ class Order(TimeStampedModel, SoftDeleteModel):
         DROP_OFF = "DROP_OFF", "Drop off"
 
     class PaymentOption(models.TextChoices):
-        PAY_AT_PICKUP = "PAY_AT_PICKUP", "Pay at pickup"
-        PAY_AFTER_DELIVERY = "PAY_AFTER_DELIVERY", "Pay after delivery"
+        PAY_AT_PICKUP = "PAY_AT_PICKUP", "Pay on pickup"
+        PAY_AFTER_DELIVERY = "PAY_AFTER_DELIVERY", "Pay on delivery"
 
     class Source(models.TextChoices):
         ONLINE = "ONLINE", "Online"

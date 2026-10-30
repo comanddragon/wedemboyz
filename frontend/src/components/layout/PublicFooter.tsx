@@ -92,7 +92,7 @@ export function PublicFooter() {
         <span>
           &copy; {new Date().getFullYear()} Wedemboyz Lavomatique. {t("footer.rights")}
         </span>
-        <span>Cash · MTN Mobile Money · Orange Money</span>
+        <span>{t("paymentOptions.pickup")} · {t("paymentOptions.delivery")}</span>
       </div>
     </footer>
   );

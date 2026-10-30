@@ -1,4 +1,5 @@
 "use client";
+import { buttonStyles } from "@/src/components/ui/Button";
 
 import { useQueries, useQuery } from "@tanstack/react-query";
 import {
@@ -18,7 +19,6 @@ import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { KpiTile } from "@/src/components/dashboard/KpiTile";
 import { MembershipCard } from "@/src/components/dashboard/MembershipCard";
 import {
-  Button,
   Card,
   StatusBadge,
   orderStatusTone,
@@ -144,23 +144,13 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex">
-          <Link href="/chat" className="contents sm:block">
-            <Button
-              variant="secondary"
-              className="min-h-12 w-full sm:min-h-0 sm:w-auto"
-            >
+          <Link href="/chat" className={buttonStyles({ variant: "secondary", className: "min-h-12 w-full sm:w-auto" })}>
               <MessageCircle className="h-4 w-4" />
               {t("customerDashboard.help")}
-            </Button>
-          </Link>
-          <Link href="/book" className="contents sm:block">
-            <Button
-              variant="gold"
-              className="min-h-12 w-full sm:min-h-0 sm:w-auto"
-            >
+            </Link>
+          <Link href="/book" className={buttonStyles({ variant: "gold", className: "min-h-12 w-full sm:w-auto" })}>
               {t("publicNav.book")} <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
+            </Link>
         </div>
       </header>
 

@@ -1,4 +1,5 @@
 "use client";
+import { OrderItemPreviews } from "@/src/components/orders/OrderItemPreviews";
 
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Package } from "lucide-react";
@@ -81,12 +82,7 @@ export default function AdminOrdersPage() {
     [
       { value: "ALL", label: t("adminOrders.allPayments") },
       { value: "UNPAID", label: t("common.statuses.unpaid") },
-      { value: "PARTIALLY_PAID", label: t("common.statuses.partiallyPaid") },
       { value: "PAID", label: t("common.statuses.paid") },
-      { value: "OVERPAID", label: t("common.statuses.overpaid") },
-      { value: "NO_CHARGE", label: t("common.statuses.noCharge") },
-      { value: "WAIVED", label: t("common.statuses.waived") },
-      { value: "REFUNDED", label: t("common.statuses.refunded") },
     ];
 
   const staffQuery = useQuery({
@@ -374,6 +370,7 @@ export default function AdminOrdersPage() {
                   )}
                 </Td>
                 <Td className="whitespace-nowrap text-xs text-ink-muted">
+                  <OrderItemPreviews items={order.items} />
                   {order.pieces_count} {t("adminOrders.pc")} ·{" "}
                   {Number(order.weight_kg_total).toFixed(1)} kg
                 </Td>

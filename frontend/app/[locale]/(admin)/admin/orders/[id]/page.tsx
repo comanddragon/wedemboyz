@@ -1,5 +1,7 @@
 "use client";
 
+import { collectionMethods } from "@/src/lib/payment-options";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -49,13 +51,7 @@ import { queryKeys } from "@/src/lib/query-keys";
 import { customerFullName } from "@/src/lib/utils";
 import type { OrderItem, OrderStatus, PaymentMethodType } from "@/src/types";
 
-const PAYMENT_METHODS: Array<{ value: PaymentMethodType; label: string }> = [
-  { value: "CASH", label: "Cash" },
-  { value: "MTN_MOMO", label: "MTN Mobile Money" },
-  { value: "ORANGE_MONEY", label: "Orange Money" },
-  { value: "BANK_TRANSFER", label: "Bank transfer" },
-  { value: "OTHER", label: "Other" },
-];
+
 
 const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ["CONFIRMED", "CANCELLED"],
@@ -80,13 +76,7 @@ export default function AdminOrderDetailPage() {
   const orderId = Number(params.id);
   const queryClient = useQueryClient();
 
-  const paymentMethods: Array<{ value: PaymentMethodType; label: string }> = [
-    { value: "CASH", label: t("adminFinance.cash") },
-    { value: "MTN_MOMO", label: "MTN Mobile Money" },
-    { value: "ORANGE_MONEY", label: "Orange Money" },
-    { value: "BANK_TRANSFER", label: t("adminFinance.transfer") },
-    { value: "OTHER", label: t("adminFinance.other") },
-  ];
+  const paymentMethods = collectionMethods(locale);
 
   const {
     data: order,
@@ -99,7 +89,7 @@ export default function AdminOrderDetailPage() {
 
   const [note, setNote] = useState("");
   const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("CASH");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("PAY_AT_PICKUP");
   const [paymentReference, setPaymentReference] = useState("");
 
   const paymentsQuery = useQuery({
@@ -360,11 +350,9 @@ export default function AdminOrderDetailPage() {
                   <Td>
                     <div className="flex items-start gap-2">
                       {(item.photos[0]?.image ?? item.photo) ? (
-                        <a
-                          href={item.photos[0]?.image ?? item.photo ?? ""}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-steam"
+                        <Link
+                          href={`/admin/orders/${orderId}/items/${item.id}`}
+                                                                              className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-steam"
                         >
                           <Image
                             src={item.photos[0]?.image ?? item.photo ?? ""}
@@ -378,7 +366,7 @@ export default function AdminOrderDetailPage() {
                               +{item.photos.length - 1}
                             </span>
                           ) : null}
-                        </a>
+                        </Link>
                       ) : (
                         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-navy-50 text-navy">
                           <ServiceIcon type={item.service_type} />
@@ -386,7 +374,9 @@ export default function AdminOrderDetailPage() {
                       )}
                       <div>
                         <p className="font-medium text-ink">
-                          {item.label || serviceLabel(item.service_type)}
+                          <Link className="underline underline-offset-4" href={`/admin/orders/${orderId}/items/${item.id}`}>
+{item.label || serviceLabel(item.service_type)}
+</Link>
                         </p>
                         {item.description && (
                           <p className="mt-0.5 text-xs text-ink-muted">
@@ -722,9 +712,7 @@ export default function AdminOrderDetailPage() {
               balance={order.balance_due}
             />
 
-            {!(["PAID", "NO_CHARGE", "WAIVED", "VOID"] as string[]).includes(
-              order.payment_status,
-            ) && (
+            {order.status !== "CANCELLED" && Number(order.balance_due) > 0 && (
               <form
                 className="mt-5 border-t border-crease pt-4"
                 onSubmit={(event) => {
@@ -808,7 +796,7 @@ export default function AdminOrderDetailPage() {
                     <PaymentMethodIcon method={payment.payment_method_type} />
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-ink">
-                        {payment.payment_method_type.replace(/_/g, " ")}
+                        {collectionMethods(locale).find((method) => method.value === payment.payment_method_type)?.label ?? payment.payment_method_type.replace(/_/g, " ")}
                       </p>
                       <p className="mt-0.5 text-xs text-ink-muted">
                         {new Date(payment.received_at).toLocaleString(locale)}
@@ -822,7 +810,7 @@ export default function AdminOrderDetailPage() {
                       {payment.voided_at && (
                         <StatusBadge
                           label={t("adminOrders.voided")}
-                          tone={paymentStatusTone("VOID")}
+                          tone={paymentStatusTone("UNPAID")}
                         />
                       )}
                     </div>

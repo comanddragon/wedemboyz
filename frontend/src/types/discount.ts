@@ -175,7 +175,7 @@ export interface AmbassadorProfile {
 
 export interface AmbassadorLeaderboardRow {
   rank: number;
-  ambassador: AmbassadorProfile;
+  ambassador: Pick<AmbassadorProfile, "id" | "name" | "promo_code" | "profile_photo">;
   period_credits: number;
   orders: number;
   referred_revenue: number;

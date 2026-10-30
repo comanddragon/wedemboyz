@@ -86,6 +86,7 @@ export interface OrderListItem {
   payment_due_date: string | null;
   currency: Currency;
   item_count: number;
+  items: OrderItem[];
   pieces_count: number;
   weight_kg_total: string;
   has_schedule: boolean;

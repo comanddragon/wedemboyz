@@ -8,7 +8,7 @@ const VALUE_PROPS = [
   },
   {
     icon: Banknote,
-    title: "Pay by cash, MTN, or Orange Money",
+    title: "Pay on pickup or delivery",
     description: "Whatever's easiest for you — no card required.",
   },
   {

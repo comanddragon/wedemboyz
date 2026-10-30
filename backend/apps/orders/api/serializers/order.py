@@ -127,7 +127,9 @@ class OrderCustomerSerializer(serializers.ModelSerializer):
 
 
 class OrderListSerializer(serializers.ModelSerializer):
-    """Lightweight shape for GET /api/v1/orders/ — no nested items/history."""
+    """Order summaries with item previews, without histories."""
+
+    items = OrderItemSerializer(many=True, read_only=True)
 
     item_count = serializers.IntegerField(source="items.count", read_only=True)
     customer = OrderCustomerSerializer(source="user", read_only=True)
@@ -156,6 +158,7 @@ class OrderListSerializer(serializers.ModelSerializer):
             "payment_due_date",
             "currency",
             "item_count",
+            "items",
             "pieces_count",
             "weight_kg_total",
             "customer",

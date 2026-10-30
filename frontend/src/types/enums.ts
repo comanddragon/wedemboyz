@@ -36,18 +36,11 @@ export type OrderStatus =
 /** Mirrors core.constants.PaymentStatus */
 export type PaymentStatus = "PENDING" | "SUCCEEDED" | "FAILED" | "REFUNDED" | "PARTIALLY_REFUNDED";
 
-export type OrderPaymentStatus =
-  | "UNPAID"
-  | "PARTIALLY_PAID"
-  | "PAID"
-  | "OVERPAID"
-  | "PARTIALLY_REFUNDED"
-  | "REFUNDED"
-  | "WAIVED"
-  | "NO_CHARGE"
-  | "VOID";
+export type OrderPaymentStatus = "UNPAID" | "PAID";
 
 export type PaymentMethodType =
+  | "PAY_AT_PICKUP"
+  | "PAY_AFTER_DELIVERY"
   | "CASH"
   | "MTN_MOMO"
   | "ORANGE_MONEY"

@@ -1,4 +1,5 @@
 "use client";
+import { collectionMethods } from "@/src/lib/payment-options";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgePercent, RefreshCw } from "lucide-react";
@@ -34,7 +35,7 @@ const STATUS_KEYS: SubscriptionStatus[] = [
 
 export default function AdminSubscriptionsPage() {
   const queryClient = useQueryClient();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<SubscriptionStatus | "">("");
@@ -151,7 +152,7 @@ export default function AdminSubscriptionsPage() {
                   </div>
                 </div>
               </Td>
-              <Td>{subscription.plan}</Td>
+              <Td>{subscription.plan}<p className="mt-1 text-xs text-ink-muted">{collectionMethods(locale).find((method) => method.value === subscription.payment_option)?.label}</p></Td>
               <Td align="right" className="tabular-nums">
                 {Number(subscription.kg_remaining).toFixed(1)}{" "}
                 {t("adminSubscriptions.kg")}

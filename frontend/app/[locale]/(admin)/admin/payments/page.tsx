@@ -1,4 +1,5 @@
 "use client";
+import { COLLECTION_METHODS, paymentState } from "@/src/lib/payment-options";
 
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, CalendarDays, CreditCard, ReceiptText, RotateCcw } from "lucide-react";
@@ -20,14 +21,9 @@ import { customerFullName, customerNumber } from "@/src/lib/utils";
 import type { PaymentMethodType, PaymentStatus } from "@/src/types";
 import { useI18n } from "@/src/i18n/I18nProvider";
 
-const METHOD_LABELS: Record<PaymentMethodType, string> = { MTN_MOMO: "MTN Mobile Money", ORANGE_MONEY: "Orange Money", CASH: "Cash", BANK_TRANSFER: "Bank transfer", OTHER: "Other" };
-const STATUS_OPTIONS: Array<{ value: PaymentStatus | "ALL"; label: string }> = [
-  { value: "ALL", label: "All statuses" }, { value: "PENDING", label: "Pending" }, { value: "SUCCEEDED", label: "Succeeded" },
-  { value: "FAILED", label: "Failed" }, { value: "REFUNDED", label: "Refunded" }, { value: "PARTIALLY_REFUNDED", label: "Partially refunded" },
-];
-const METHOD_OPTIONS: Array<{ value: PaymentMethodType | "ALL"; label: string }> = [
-  { value: "ALL", label: "All methods" }, ...Object.entries(METHOD_LABELS).map(([value, label]) => ({ value: value as PaymentMethodType, label })),
-];
+const METHOD_LABELS: Partial<Record<PaymentMethodType, string>> = { PAY_AT_PICKUP: "Pay on pickup", PAY_AFTER_DELIVERY: "Pay on delivery", MTN_MOMO: "MTN Mobile Money", ORANGE_MONEY: "Orange Money", CASH: "Cash", BANK_TRANSFER: "Bank transfer", OTHER: "Other" };
+const STATUS_OPTIONS = [{ value: "ALL", label: "All statuses" }, { value: "SUCCEEDED", label: "Paid" }, { value: "PENDING", label: "Unpaid" }] as const;
+const METHOD_OPTIONS = [{ value: "ALL", label: "All options" }, ...COLLECTION_METHODS];
 
 export default function AdminPaymentsPage() {
   const { locale, t } = useI18n();
@@ -46,7 +42,7 @@ export default function AdminPaymentsPage() {
       const name = customerFullName(payment.customer)?.toLowerCase() ?? payment.payer_name.toLowerCase();
       const phone = customerNumber(payment.customer)?.toLowerCase() ?? payment.payer_phone.toLowerCase();
       const searchable = `${payment.id} ${payment.order ?? ""} ${payment.reference} ${payment.gateway_reference} ${name} ${phone}`.toLowerCase();
-      return (!term || searchable.includes(term)) && (status === "ALL" || payment.status === status) && (method === "ALL" || payment.payment_method_type === method) && (!cutoff || new Date(payment.received_at).getTime() >= cutoff);
+      return (!term || searchable.includes(term)) && (status === "ALL" || paymentState(payment.status) === (status === "SUCCEEDED" ? "PAID" : "UNPAID")) && (method === "ALL" || payment.payment_method_type === method) && (!cutoff || new Date(payment.received_at).getTime() >= cutoff);
     });
   }, [data, search, status, method, period]);
 
@@ -73,7 +69,7 @@ export default function AdminPaymentsPage() {
 
     <div className="mb-5 grid gap-3 rounded-2xl border border-crease bg-white p-3 sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_180px_190px_170px_auto]">
       <SearchInput placeholder={t("adminFinance.searchPayments")} value={search} onChange={(e) => setSearch(e.target.value)} aria-label={t("adminFinance.searchPayments")} />
-      <Select value={status} onChange={(e) => setStatus(e.target.value as PaymentStatus | "ALL")} aria-label="Filter by status">{STATUS_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.value === "ALL" ? t("adminFinance.allStatuses") : t(`common.statuses.${({ PENDING: "pending", SUCCEEDED: "succeeded", FAILED: "failed", REFUNDED: "refunded", PARTIALLY_REFUNDED: "partiallyRefunded" } as Record<string, string>)[item.value]}`)}</option>)}</Select>
+      <Select value={status} onChange={(e) => setStatus(e.target.value as PaymentStatus | "ALL")} aria-label="Filter by status">{STATUS_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.value === "ALL" ? t("adminFinance.allStatuses") : t(`common.statuses.${item.value === "SUCCEEDED" ? "paid" : "unpaid"}`)}</option>)}</Select>
       <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethodType | "ALL")} aria-label="Filter by payment method">{METHOD_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.value === "ALL" ? t("adminFinance.allMethods") : item.value === "CASH" ? t("adminFinance.cash") : item.value === "BANK_TRANSFER" ? t("adminFinance.transfer") : item.value === "OTHER" ? t("adminFinance.other") : item.label}</option>)}</Select>
       <Select value={period} onChange={(e) => setPeriod(e.target.value)} aria-label="Filter by date"><option value="ALL">{t("adminFinance.anyDate")}</option><option value="7">{t("adminFinance.last7")}</option><option value="30">{t("adminFinance.last30")}</option></Select>
       <Button variant="ghost" onClick={clearFilters} disabled={!hasFilters}>{t("adminFinance.clear")}</Button>
@@ -86,7 +82,7 @@ export default function AdminPaymentsPage() {
         const name = customerFullName(payment.customer) || payment.payer_name || "Customer";
         return <Link key={payment.id} href={`/admin/payments/${payment.id}`} className="grid gap-3 px-4 py-4 transition-colors hover:bg-steam/35 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-gold/30 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:items-center sm:px-5">
           <span className="relative"><CustomerAvatar name={name} /><span className="absolute -bottom-1 -right-2 rounded-md bg-white shadow-card-sm"><PaymentMethodIcon method={payment.payment_method_type} className="h-5 w-7" /></span></span>
-          <span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="font-semibold text-navy">{name}</span><StatusBadge label={payment.status} tone={paymentStatusTone(payment.status)} /></span><span className="mt-1 block truncate text-xs text-ink-muted">{METHOD_LABELS[payment.payment_method_type]} · {payment.order ? `${t("adminFinance.order")} #${payment.order}` : `${t("adminFinance.subscription")} #${payment.subscription}`}{payment.reference ? ` · ${t("adminFinance.ref")} ${payment.reference}` : ""}</span></span>
+          <span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="font-semibold text-navy">{name}</span><StatusBadge label={paymentState(payment.status)} tone={paymentStatusTone(payment.status)} /></span><span className="mt-1 block truncate text-xs text-ink-muted">{METHOD_LABELS[payment.payment_method_type]} · {payment.order ? `${t("adminFinance.order")} #${payment.order}` : `${t("adminFinance.subscription")} #${payment.subscription}`}{payment.reference ? ` · ${t("adminFinance.ref")} ${payment.reference}` : ""}</span></span>
           <span className="sm:text-right"><span className="block font-display text-lg font-semibold tabular-nums text-navy">{formatCurrency(payment.amount)}</span><span className="block text-xs text-ink-muted">{new Date(payment.received_at).toLocaleString(locale)}</span></span>
           <ArrowUpRight className="hidden h-4 w-4 text-ink-muted sm:block" aria-hidden="true" />
         </Link>;

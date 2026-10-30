@@ -21,7 +21,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
 export function PublicNav() {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const { accessToken, isHydrated } = useAuthStore();
+  const { accessToken, isHydrated, user } = useAuthStore();
   const isAuthenticated = !!accessToken;
 
   return (
@@ -48,6 +48,7 @@ export function PublicNav() {
           <Link href="/pricing" className="transition-colors hover:text-ink">
             {t("publicNav.pricing")}
           </Link>
+          <Link href="/ambassadors" className="transition-colors hover:text-ink">{t("nav.leaderboard")}</Link>
           <Link href="/contact" className="transition-colors hover:text-ink">
             {t("publicNav.contact")}
           </Link>
@@ -65,7 +66,7 @@ export function PublicNav() {
             <WhatsAppIcon className="h-[22px] w-[22px]" />
           </a>
           {isHydrated && isAuthenticated ? (
-            <Link href="/dashboard">
+            <Link href={user?.is_staff ? "/admin" : "/dashboard"}>
               <span className={buttonStyles({ variant: "gold" })}>
                 {t("publicNav.dashboard")}
               </span>
@@ -131,6 +132,7 @@ export function PublicNav() {
               {t("publicNav.pricing")}
               <ArrowRight className="h-5 w-5 text-gold" />
             </Link>
+            <Link href="/ambassadors" onClick={() => setOpen(false)} className="flex min-h-16 items-center justify-between border-b border-crease text-2xl font-medium text-navy">{t("nav.leaderboard")}<ArrowRight className="h-5 w-5 text-gold" /></Link>
             <Link
               href="/contact"
               onClick={() => setOpen(false)}
@@ -142,7 +144,7 @@ export function PublicNav() {
             <div className="mt-auto grid gap-3 pt-8">
               {isHydrated && isAuthenticated ? (
                 <Link
-                  href="/dashboard"
+                  href={user?.is_staff ? "/admin" : "/dashboard"}
                   onClick={() => setOpen(false)}
                   className={buttonStyles({
                     variant: "gold",
