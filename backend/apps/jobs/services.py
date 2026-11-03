@@ -42,14 +42,14 @@ def enqueue_periodic_jobs(now=None):
         )
 
 
-def _claim_due_job(now):
+def _claim_due_job(now, *, job_id=None):
     with transaction.atomic():
-        job = (
-            Job.objects.select_for_update(skip_locked=True)
-            .filter(status__in=(Job.Status.PENDING, Job.Status.RETRY), run_at__lte=now)
-            .order_by("run_at", "id")
-            .first()
+        jobs = Job.objects.select_for_update(skip_locked=True).filter(
+            status__in=(Job.Status.PENDING, Job.Status.RETRY), run_at__lte=now
         )
+        if job_id is not None:
+            jobs = jobs.filter(pk=job_id)
+        job = jobs.order_by("run_at", "id").first()
         if job is None:
             return None
         job.status = Job.Status.RUNNING
@@ -96,6 +96,21 @@ def recover_stale_jobs(now=None, stale_after=timedelta(minutes=15)):
     )
 
 
+def _execute_job(job):
+    try:
+        task = import_string(job.task_name)
+        task(*job.args, **job.kwargs)
+    except Exception as exc:
+        return _finish(job, error=exc)
+    return _finish(job)
+
+
+def run_job(job_id):
+    """Attempt exactly one due job, sharing the scheduler's locking and retries."""
+    job = _claim_due_job(timezone.now(), job_id=job_id)
+    return _execute_job(job) if job is not None else "skipped"
+
+
 def run_due_jobs(*, batch_size=25, time_budget_seconds=20):
     """Claim and execute a bounded batch; safe for concurrent cron calls."""
     started = timezone.now()
@@ -112,13 +127,6 @@ def run_due_jobs(*, batch_size=25, time_budget_seconds=20):
             break
 
         result["claimed"] += 1
-        try:
-            task = import_string(job.task_name)
-            task(*job.args, **job.kwargs)
-        except Exception as exc:
-            outcome = _finish(job, error=exc)
-        else:
-            outcome = _finish(job)
-        result[outcome] += 1
+        result[_execute_job(job)] += 1
 
     return result

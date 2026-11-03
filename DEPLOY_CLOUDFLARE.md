@@ -151,3 +151,9 @@ bun run dev:cloudflare
 
 See [backend/EMAIL_DELIVERY.md](backend/EMAIL_DELIVERY.md) for verified-domain setup,
 production variables, template previews, and the jobs runner required for delivery.
+
+The frontend now uses `custom-worker.js` to preserve OpenNext’s fetch handler and
+add a one-minute retry Cron Trigger. Before deploying it, set the server-only
+`INTERNAL_JOBS_SECRET` Worker secret to match Render’s backend value (see the
+email delivery guide). Never expose this as a `NEXT_PUBLIC_*` variable. Verify a
+successful Scheduled invocation after deployment; a dry-run does not activate cron.

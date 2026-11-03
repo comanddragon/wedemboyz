@@ -26,6 +26,8 @@ def test_every_template_renders_escaped_html_and_plaintext(event, language):
         event, language=language, name='<script>alert("x")</script>', body="<b>hello</b>"
     )
     assert f'lang="{language}"' in result["html"]
+    assert 'src="https://wedemboyz-lavomatique.com/logo.png"' in result["html"]
+    assert 'alt="Wedemboyz Lavomatique"' in result["html"]
     assert "<script>" not in result["html"]
     assert "&lt;b&gt;hello&lt;/b&gt;" in result["html"]
     assert "<b>hello</b>" in result["text"]
@@ -267,3 +269,167 @@ def test_schedule_email_contains_dates_and_ignores_note_only_updates(create_user
     schedule.pickup_time_slot = "MIDDAY"
     schedule.save()
     assert email_jobs().count() == 2
+
+
+@pytestmark_db
+def test_welcome_delivery_runs_only_after_commit(create_user, django_capture_on_commit_callbacks):
+    with django_capture_on_commit_callbacks(execute=True):
+        user = create_user(email="ada@example.com")
+        job = email_jobs().get(idempotency_key=f"email/welcome/{user.pk}")
+        assert job.status == Job.Status.PENDING
+        assert len(mail.outbox) == 0
+    job.refresh_from_db()
+    assert job.status == Job.Status.SUCCEEDED
+    assert job.attempts == 1
+    assert len(mail.outbox) == 1
+    # Neither a repeated enqueue nor a scheduled retry can resend a succeeded job.
+    from apps.jobs.services import run_job
+
+    with django_capture_on_commit_callbacks(execute=True):
+        queue_email(user, "welcome", key=f"welcome/{user.pk}")
+    assert run_job(job.pk) == "skipped"
+    assert len(mail.outbox) == 1
+
+
+@pytestmark_db
+def test_immediate_delivery_failure_keeps_account_and_retries(
+    create_user,
+    django_capture_on_commit_callbacks,
+):
+    from apps.users.models import CustomUser
+
+    with patch("services.email.send_payload", side_effect=requests.Timeout("Provider timed out")):
+        with django_capture_on_commit_callbacks(execute=True):
+            user = create_user(email="ada@example.com")
+    assert CustomUser.objects.filter(pk=user.pk).exists()
+    job = email_jobs().get(idempotency_key=f"email/welcome/{user.pk}")
+    assert job.status == Job.Status.RETRY
+    assert job.attempts == 1
+    assert job.run_at > timezone.now()
+    assert "timed out" in job.last_error
+
+
+@pytestmark_db
+def test_immediate_email_does_not_drain_unrelated_jobs(
+    create_user,
+    django_capture_on_commit_callbacks,
+):
+    from core.jobs import enqueue
+
+    unrelated = enqueue("apps.users.tasks.send_welcome_sms", args=[999999])
+    with django_capture_on_commit_callbacks(execute=True):
+        create_user(email="ada@example.com")
+    unrelated.refresh_from_db()
+    assert unrelated.status == Job.Status.PENDING
+    assert unrelated.attempts == 0
+    assert len(mail.outbox) == 1
+
+
+@pytestmark_db
+def test_rolled_back_transaction_does_not_send(create_user, django_capture_on_commit_callbacks):
+    user = create_user()
+    user.email = "ada@example.com"
+    user.save()
+    with django_capture_on_commit_callbacks(execute=True):
+        with pytest.raises(ValueError):
+            with transaction.atomic():
+                queue_email(user, "welcome", key="rolled-back-immediate")
+                raise ValueError("Rollback")
+    assert len(mail.outbox) == 0
+    assert not email_jobs().exists()
+
+
+@pytestmark_db
+def test_notification_email_has_no_scheduler_only_dispatch_hop(
+    create_user,
+    django_capture_on_commit_callbacks,
+):
+    user = create_user(email="ada@example.com")
+    email_jobs().delete()
+    with django_capture_on_commit_callbacks(execute=True):
+        notification = Notification.objects.create(
+            user=user,
+            notification_type="SYSTEM",
+            title="Account update",
+            body="Your update",
+        )
+        job = email_jobs().get(idempotency_key=f"email/notification/{notification.pk}")
+        assert job.status == Job.Status.PENDING
+    job.refresh_from_db()
+    assert job.status == Job.Status.SUCCEEDED
+    assert len(mail.outbox) == 1
+    assert not Job.objects.filter(task_name=send_email.name).exists()
+
+
+@pytestmark_db
+def test_scheduler_retries_a_failed_immediate_email(create_user):
+    from apps.jobs.services import run_due_jobs, run_job
+
+    user = create_user(email="ada@example.com")
+    job = email_jobs().get(idempotency_key=f"email/welcome/{user.pk}")
+    Job.objects.exclude(pk=job.pk).delete()
+    with patch("services.email.send_payload", side_effect=requests.Timeout("Try again")):
+        assert run_job(job.pk) == "retried"
+    Job.objects.filter(pk=job.pk).update(run_at=timezone.now())
+    with patch("apps.jobs.services.enqueue_periodic_jobs"):
+        result = run_due_jobs(batch_size=1)
+    job.refresh_from_db()
+    assert result == {"claimed": 1, "succeeded": 1, "retried": 0, "failed": 0}
+    assert job.status == Job.Status.SUCCEEDED
+    assert job.attempts == 2
+    assert len(mail.outbox) == 1
+
+
+@pytestmark_db
+def test_owner_order_email_attempted_after_commit(
+    api_client,
+    create_user,
+    django_capture_on_commit_callbacks,
+):
+    user = create_user()
+    api_client.force_authenticate(user)
+    with override_settings(
+        RESEND_API_KEY="test-key", RESEND_FROM="hello@wedemboyz-lavomatique.com"
+    ):
+        with patch("services.order_email.requests.post") as post:
+            post.return_value.json.return_value = {"id": "owner-email-test"}
+            with django_capture_on_commit_callbacks(execute=True):
+                response = api_client.post(
+                    "/api/v1/orders/",
+                    {
+                        "pickup_address": "Simbock",
+                        "delivery_address": "Yaounde",
+                        "items": [
+                            {"service_type": "LAVAGE_ESSORAGE", "weight_kg": "5", "quantity": 2}
+                        ],
+                    },
+                    format="json",
+                )
+                post.assert_not_called()
+            assert response.status_code == 201
+            post.assert_called_once()
+            payload = post.call_args.kwargs["json"]
+            assert payload["to"] == [
+                "owner@wedemboyz-lavomatique.com",
+                "dev@wedemboyz-lavomatique.com",
+            ]
+            assert '/logo.png"' in payload["html"]
+    job = Job.objects.get(idempotency_key=f"owner-order-email/{response.data['id']}")
+    assert job.status == Job.Status.SUCCEEDED
+
+
+@pytest.mark.parametrize(
+    "domain", ["wedemboyz-lavomatique.com", "updates.wedemboyz-lavomatique.com"]
+)
+def test_readiness_accepts_root_and_transactional_subdomain(domain):
+    from io import StringIO
+
+    from django.core.management import call_command
+
+    with override_settings(
+        RESEND_API_KEY="test-key",
+        RESEND_FROM=f"Wedemboyz <notifications@{domain}>",
+        EMAIL_BACKEND="services.email_backend.EmailBackend",
+        FRONTEND_URL="https://wedemboyz-lavomatique.com",
+    ):
+        call_command("check_email_setup", stdout=StringIO())

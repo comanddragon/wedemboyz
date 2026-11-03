@@ -151,6 +151,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
             args=[order.pk, order_email_payload(order)],
             max_attempts=send_owner_order_email.max_attempts,
             idempotency_key=f"owner-order-email/{order.pk}",
+            run_on_commit=True,
         )
         output = OrderDetailSerializer(order, context=self.get_serializer_context())
         return Response(output.data, status=status.HTTP_201_CREATED)

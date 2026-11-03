@@ -32,6 +32,7 @@ def render_email(
         "body": body,
         "details": details or [],
         "site_url": settings.FRONTEND_URL.rstrip("/"),
+        "logo_url": settings.EMAIL_LOGO_URL,
         "action_url": f"{settings.FRONTEND_URL.rstrip('/')}/{language}/{path.lstrip('/')}",
         "settings_url": f"{settings.FRONTEND_URL.rstrip('/')}/{language}/settings",
         "support_email": settings.EMAIL_REPLY_TO[0] if settings.EMAIL_REPLY_TO else "",
@@ -74,6 +75,7 @@ def queue_email(
         args=[user.pk, event, payload, key, essential],
         max_attempts=deliver_email.max_attempts,
         idempotency_key=f"email/{key}",
+        run_on_commit=True,
     )
 
 

@@ -59,6 +59,7 @@ def enqueue(
     run_at=None,
     max_attempts=3,
     idempotency_key=None,
+    run_on_commit=False,
 ):
     from apps.jobs.models import Job
 
@@ -70,9 +71,20 @@ def enqueue(
         "max_attempts": max_attempts,
     }
     if idempotency_key:
-        job, _created = Job.objects.get_or_create(idempotency_key=idempotency_key, defaults=values)
-        return job
-    return Job.objects.create(**values)
+        job, created = Job.objects.get_or_create(idempotency_key=idempotency_key, defaults=values)
+    else:
+        job = Job.objects.create(**values)
+        created = True
+    if created and run_on_commit:
+        from django.db import transaction
+
+        from apps.jobs.services import run_job
+
+        # Attempt only this new job, after its business transaction commits.
+        # A callback/transport failure must never turn a committed signup into
+        # an API error. The durable job remains available for scheduled retries.
+        transaction.on_commit(lambda: run_job(job.pk), robust=True)
+    return job
 
 
 def retry_at(attempts, base_delay=60):

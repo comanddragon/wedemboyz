@@ -276,6 +276,10 @@ ORDER_NOTIFICATION_EMAILS = config(
 EMAIL_BACKEND = config("EMAIL_BACKEND", default="services.email_backend.EmailBackend")
 DEFAULT_FROM_EMAIL = RESEND_FROM or "Wedemboyz Lavomatique <hello@wedemboyz-lavomatique.com>"
 EMAIL_REPLY_TO = config("EMAIL_REPLY_TO", default=",".join(ORDER_NOTIFICATION_EMAILS), cast=Csv())
+# Public, stable asset used by email clients; can be moved to a CDN later.
+EMAIL_LOGO_URL = config(
+    "EMAIL_LOGO_URL", default="https://wedemboyz-lavomatique.com/logo.png"
+)
 EMAIL_HOST = config("EMAIL_HOST", default="smtp.sendgrid.net")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)

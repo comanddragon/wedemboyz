@@ -26,8 +26,13 @@ class Command(BaseCommand):
                 "RESEND_FROM, EMAIL_REPLY_TO and ORDER_NOTIFICATION_EMAILS "
                 "must contain valid addresses."
             )
-        if sender and not sender.endswith("@wedemboyz-lavomatique.com"):
-            problems.append("RESEND_FROM must use the verified wedemboyz-lavomatique.com domain.")
+        if sender and sender.rsplit("@", 1)[-1].lower() not in {
+            "wedemboyz-lavomatique.com",
+            "updates.wedemboyz-lavomatique.com",
+        }:
+            problems.append(
+                "RESEND_FROM must use a verified Wedemboyz root or updates sending domain."
+            )
         if not settings.FRONTEND_URL.startswith("https://wedemboyz-lavomatique.com"):
             problems.append("FRONTEND_URL must point to the production HTTPS website.")
         if settings.EMAIL_BACKEND != "services.email_backend.EmailBackend":
