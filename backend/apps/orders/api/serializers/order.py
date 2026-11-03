@@ -430,4 +430,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             subscription.kg_remaining = models.F("kg_remaining") - order_weight
             subscription.save(update_fields=["kg_remaining"])
 
+        from services.email_events import order_email
+
+        order_email(order, received=True)
         return order

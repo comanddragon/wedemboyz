@@ -372,6 +372,27 @@
     }
 }
 
+/* Booking wizard: same tab-bar reservation as admin chat. The Back/Next bar is
+   sticky, so it must sit above the fixed tab bar instead of inside the shell's
+   generic bottom padding, which made it float. */
+.dashboard-scroll:has(.booking-root) {
+    padding-bottom: 0;
+}
+
+@media (max-width: 1023.98px) {
+    .booking-root {
+        padding-bottom: calc(
+                1px + 0.5rem + 3rem + max(0.75rem, env(safe-area-inset-bottom))
+        );
+    }
+
+    .booking-bar {
+        bottom: calc(
+                1px + 0.5rem + 3rem + max(0.75rem, env(safe-area-inset-bottom))
+        );
+    }
+}
+
 /* iOS Safari zooms the whole page when a field with text smaller than 16px
    gets focus, and never zooms back out. Keep every text-entry control at 16px
    on touch devices so focusing a field never changes the zoom. (Unlayered, so

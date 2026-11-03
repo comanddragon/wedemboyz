@@ -65,6 +65,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             guest.is_guest = False
             guest.set_password(password)
             guest.save()
+            from services.email import queue_email
+
+            queue_email(guest, "welcome", key=f"welcome/{guest.pk}")
             return guest
 
         validated_data["phone_number"] = phone_number
@@ -189,6 +192,9 @@ class ClaimAccountSerializer(RegisterSerializer):
         instance.set_password(validated_data["password"])
         instance.is_guest = False
         instance.save()
+        from services.email import queue_email
+
+        queue_email(instance, "welcome", key=f"welcome/{instance.pk}")
         return instance
 
 

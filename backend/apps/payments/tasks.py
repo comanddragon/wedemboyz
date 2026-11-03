@@ -181,40 +181,32 @@ def expire_subscriptions():
 
     from apps.payments.models import Subscription
 
-    Subscription.objects.filter(
-        status=Subscription.Status.ACTIVE, end_date__lt=timezone.localdate()
-    ).update(status=Subscription.Status.EXPIRED)
+    from django.db import transaction
+
+    with transaction.atomic():
+        for subscription in Subscription.objects.select_for_update().filter(
+            status=Subscription.Status.ACTIVE, end_date__lt=timezone.localdate()
+        ):
+            subscription.status = Subscription.Status.EXPIRED
+            subscription.save(update_fields=["status"])
 
 
 @app.task(bind=True, max_retries=3, default_retry_delay=60)
 def send_receipt_email(self, payment_id: int):
-    from django.core.mail import send_mail
+    from apps.payments.models import Payment
+    from core.constants import PaymentStatus
+    from services.email_events import payment_email
 
+    payment = Payment.objects.select_related("order__user", "subscription__user").get(pk=payment_id)
+    if payment.status == PaymentStatus.SUCCEEDED:
+        return payment_email(payment)
+
+
+@app.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_receipt_sms(self, payment_id: int):
     from apps.payments.models import Payment
     from services import sms
 
-    try:
-        payment = Payment.objects.select_related("order__user", "subscription__user").get(
-            pk=payment_id
-        )
-        user = payment.order.user if payment.order_id else payment.subscription.user
-        label = (
-            f"Order #{payment.order_id}"
-            if payment.order_id
-            else f"Subscription #{payment.subscription_id}"
-        )
-
-        sms.send_sms(contact_phone(user), sms.payment_received_message(payment))
-
-        if user.email:
-            send_mail(
-                subject=f"Receipt — {label}",
-                message=(
-                    f"Thanks for your payment of {payment.amount} {payment.currency} for {label}."
-                ),
-                from_email=None,
-                recipient_list=[user.email],
-                fail_silently=True,
-            )
-    except Exception as exc:
-        raise self.retry(exc=exc)
+    payment = Payment.objects.select_related("order__user", "subscription__user").get(pk=payment_id)
+    user = payment.order.user if payment.order_id else payment.subscription.user
+    sms.send_sms(contact_phone(user), sms.payment_received_message(payment))

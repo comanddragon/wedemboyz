@@ -14,16 +14,24 @@ from services.order_email import send_order_email
 def test_order_submission_queues_owner_email(api_client, create_user):
     user = create_user(first_name="Mary")
     api_client.force_authenticate(user)
-    response = api_client.post("/api/v1/orders/", {
-        "pickup_address": "Simbock",
-        "delivery_address": "Yaounde",
-        "notes": "Handle gently",
-        "items": [{"service_type": "LAVAGE_ESSORAGE", "weight_kg": "5", "quantity": 2}],
-    }, format="json")
+    response = api_client.post(
+        "/api/v1/orders/",
+        {
+            "pickup_address": "Simbock",
+            "delivery_address": "Yaounde",
+            "notes": "Handle gently",
+            "items": [{"service_type": "LAVAGE_ESSORAGE", "weight_kg": "5", "quantity": 2}],
+        },
+        format="json",
+    )
     assert response.status_code == 201, response.data
     job = Job.objects.get(task_name=send_owner_order_email.name)
     payload = job.args[1]
-    assert payload["to"] == ["ntsemancho@gmail.com"]
+    assert payload["to"] == [
+        "owner@wedemboyz-lavomatique.com",
+        "dev@wedemboyz-lavomatique.com",
+    ]
+    assert payload["reply_to"] == payload["to"]
     assert response.data["ticket_number"] in payload["subject"]
     assert "Mary" in payload["text"]
     assert "2 x" in payload["text"]

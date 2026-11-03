@@ -4,7 +4,7 @@ from django.dispatch import receiver
 
 from core.tasks_utils import safe_delay
 
-from .models import Order
+from .models import Order, PickupDeliverySchedule
 
 
 @receiver(pre_save, sender=Order)
@@ -30,9 +30,7 @@ def on_order_status_changed(sender, instance, created, **kwargs):
 
     if created:
         if not instance.ticket_number:
-            Order.objects.filter(pk=instance.pk).update(
-                ticket_number=f"WDL-{instance.pk:06d}"
-            )
+            Order.objects.filter(pk=instance.pk).update(ticket_number=f"WDL-{instance.pk:06d}")
         OrderStatusHistory.objects.create(order=instance, status=instance.status)
         from services.order_payments import recompute_payment_status
 
@@ -40,10 +38,73 @@ def on_order_status_changed(sender, instance, created, **kwargs):
         return
 
     if previous_status is not None and previous_status != instance.status:
-        OrderStatusHistory.objects.create(order=instance, status=instance.status)
+        history = OrderStatusHistory.objects.create(order=instance, status=instance.status)
         if getattr(settings, "SEED_DATA_ACTIVE", False):
             return
         safe_delay(send_status_update, instance.pk)
+        from services.email_events import order_email
+
+        order_email(instance, key=f"order/{instance.pk}/status/{history.pk}")
 
         if instance.status == OrderStatus.DELIVERED:
             safe_delay(award_loyalty_points_for_delivered_order, instance.pk)
+
+
+@receiver(pre_save, sender=PickupDeliverySchedule)
+def stash_schedule_email_state(sender, instance, raw=False, **kwargs):
+    if raw:
+        return
+    fields = (
+        "pickup_date",
+        "pickup_time_slot",
+        "delivery_date",
+        "delivery_time_slot",
+        "pickup_status",
+        "delivery_status",
+    )
+    instance._email_previous = (
+        sender.objects.filter(pk=instance.pk).values(*fields).first() if instance.pk else None
+    )
+
+
+@receiver(post_save, sender=PickupDeliverySchedule)
+def on_schedule_email(sender, instance, created, raw=False, **kwargs):
+    if raw or getattr(settings, "SEED_DATA_ACTIVE", False):
+        return
+    from uuid import uuid4
+
+    from services.email import language_for, queue_email
+
+    previous = getattr(instance, "_email_previous", None)
+    if (
+        not created
+        and previous
+        and all(str(previous[field]) == str(getattr(instance, field)) for field in previous)
+    ):
+        return
+    fr = language_for(instance.order.user) == "fr"
+    queue_email(
+        instance.order.user,
+        "order_scheduled",
+        key=f"schedule/{instance.pk}/{uuid4().hex}",
+        details=[
+            ("Commande" if fr else "Order", instance.order.ticket_number),
+            (
+                "Collecte" if fr else "Collection",
+                f"{instance.pickup_date} · {instance.get_pickup_time_slot_display()}",
+            ),
+            (
+                "Livraison" if fr else "Delivery",
+                f"{instance.delivery_date} · {instance.get_delivery_time_slot_display()}",
+            ),
+            (
+                "Statut de collecte" if fr else "Collection status",
+                instance.get_pickup_status_display(),
+            ),
+            (
+                "Statut de livraison" if fr else "Delivery status",
+                instance.get_delivery_status_display(),
+            ),
+        ],
+        path=f"orders/{instance.order_id}",
+    )

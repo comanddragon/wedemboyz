@@ -149,4 +149,7 @@ class StaffQuickSaleSerializer(serializers.Serializer):
 
         order.refresh_from_db()
 
+        from services.email_events import order_email
+
+        order_email(order, received=True)
         return order

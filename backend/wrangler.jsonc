@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "routes": [
     {
-      "pattern": "api.wedemboyz.ntsemancho.online",
+      "pattern": "api.wedemboyz-lavomatique.com",
       "custom_domain": true
     }
   ],

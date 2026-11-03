@@ -1,4 +1,5 @@
 from django.contrib.auth import password_validation
+from django.db import transaction
 from rest_framework import serializers
 
 from apps.staff.permissions import get_staff_permissions, get_staff_role
@@ -144,5 +145,8 @@ class ChangePasswordSerializer(serializers.Serializer):
     def save(self, **kwargs):
         user = self.context["request"].user
         user.set_password(self.validated_data["new_password"])
-        user.save(update_fields=["password"])
+        from services.account_email import password_changed
+        with transaction.atomic():
+            user.save(update_fields=["password"])
+            password_changed(user)
         return user

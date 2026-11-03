@@ -39,7 +39,7 @@ export function BookingShell({
   }, []);
 
   return (
-    <div className="flex min-h-full w-full flex-col">
+    <div className="booking-root flex min-h-full w-full flex-col">
       <div className="mx-auto flex w-full max-w-[1540px] flex-1 flex-col">
         <div className="shrink-0 px-5 pt-6 sm:px-8 lg:px-10 lg:pt-5">
           <h1 className="font-display mb-1 text-[1.75rem] font-light leading-tight tracking-[-0.03em] text-navy sm:text-[2rem] lg:text-[1.75rem]">
@@ -61,7 +61,7 @@ export function BookingShell({
           with the content column. */}
       <div
         data-overlapping={overlapping}
-        className="sticky bottom-0 z-10 w-full shrink-0 bg-mist shadow-[inset_0_1px_0_transparent] data-[overlapping=true]:shadow-[inset_0_1px_0_var(--color-crease-soft)] motion-safe:transition-shadow motion-safe:duration-150"
+        className="booking-bar sticky bottom-0 z-10 w-full shrink-0 bg-mist shadow-[inset_0_1px_0_transparent] data-[overlapping=true]:shadow-[inset_0_1px_0_var(--color-crease-soft)] motion-safe:transition-shadow motion-safe:duration-150"
       >
         <div className="mx-auto w-full max-w-[1540px] px-5 py-3.5 sm:px-8 lg:px-10">
           {actions}

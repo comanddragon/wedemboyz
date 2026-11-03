@@ -1,61 +1,84 @@
 "use client";
 
-import { Clock, Phone } from "lucide-react";
+import { useId, useState, type FormEvent } from "react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
-
-import { BUSINESS } from "@/src/lib/constants";
+import { PhoneField } from "@/src/components/auth/PhoneField";
+import { FormErrorBanner } from "@/src/components/auth/FormErrorBanner";
+import { Button } from "@/src/components/ui/Button";
+import { Field, Input } from "@/src/components/ui/Field";
 import { useI18n } from "@/src/i18n/I18nProvider";
+import { requestPasswordReset } from "@/src/lib/api/auth";
+import { getApiErrorMessage } from "@/src/lib/api/errors";
+import { BUSINESS } from "@/src/lib/constants";
 
-/**
- * There's no /auth/password/reset/ endpoint yet (see the backend note this
- * replaces). Rather than ship a form that pretends to send a reset code,
- * this routes people to a real person — same "real people, real reliable"
- * promise the rest of the site makes. Swap for the real flow once the
- * endpoint exists.
- *
- * The number now points at BUSINESS.phoneDisplay/telHref (lib/constants) —
- * the real storefront number — as a live tel: link.
- */
 export function ForgotPasswordCard() {
   const { t } = useI18n();
+  const emailId = useId();
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await requestPasswordReset({ phone_number: phone, email });
+      setSent(true);
+    } catch (cause) {
+      setError(getApiErrorMessage(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div>
-      <div className="rounded-card border border-crease bg-white p-5">
-        <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold-50 text-gold">
-            <Phone className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-sm font-medium text-ink">{t("auth.call")}</p>
-            <a
-              href={BUSINESS.telHref}
-              className="mt-0.5 block text-base font-semibold text-navy hover:underline"
-            >
-              {BUSINESS.phoneDisplay}
-            </a>
-          </div>
-        </div>
-
-        <div className="mt-4 flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy">
-            <Clock className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-sm font-medium text-ink">{t("auth.available")}</p>
-            <p className="mt-0.5 text-sm text-ink-muted">{BUSINESS.hours}</p>
-          </div>
-        </div>
-      </div>
-
-      <p className="mt-4 text-sm text-ink-muted">
-        {t("auth.resetHelp")}
+      {sent ? (
+        <p role="status" className="text-sm leading-relaxed text-ink">
+          {t("auth.resetSent")}
+        </p>
+      ) : (
+        <form onSubmit={submit} aria-busy={busy}>
+          {error ? <FormErrorBanner message={error} /> : null}
+          <PhoneField value={phone} onChange={setPhone} />
+          <Field label={t("auth.email")} htmlFor={emailId}>
+            <Input
+              id={emailId}
+              type="email"
+              autoComplete="email"
+              required
+              maxLength={254}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </Field>
+          <Button
+            type="submit"
+            variant="gold"
+            disabled={busy}
+            className="w-full"
+          >
+            {t(busy ? "auth.resetSending" : "auth.sendResetLink")}
+          </Button>
+        </form>
+      )}
+      <p className="mt-4 text-sm leading-relaxed text-ink-muted">
+        {t("auth.noEmailHelp")}{" "}
+        <a
+          href={BUSINESS.telHref}
+          className="font-medium text-navy underline underline-offset-2"
+        >
+          {BUSINESS.phoneDisplay}
+        </a>
       </p>
-
       <p className="mt-6 text-center text-sm text-ink-muted">
-        {t("auth.remembered")} {" "}
         <Link
           href="/login"
-          className="font-medium text-navy underline-offset-2 hover:underline"
+          className="font-medium text-navy underline underline-offset-2"
         >
           {t("auth.login")}
         </Link>

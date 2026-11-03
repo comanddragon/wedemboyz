@@ -1,0 +1,19 @@
+{% autoescape off %}{{ greeting }}{% if name %} {{ name }}{% endif %},
+
+{{ heading }}
+
+{{ intro }}
+{% if body %}
+{{ body }}
+{% endif %}
+{% for label, value in details %}{{ label }}: {{ value }}
+{% endfor %}
+{{ action_label }}: {{ action_url }}
+
+{{ help_text }} {{ support_email }}
+
+Wedemboyz Lavomatique · Simbock, Yaoundé, Cameroun
+{{ footer_text }}
+{{ preferences_label }}: {{ settings_url }}
+
+{% endautoescape %}

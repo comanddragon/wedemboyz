@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Gift,
   ReceiptText,
-  Repeat,
   ShieldCheck,
   Sparkles,
   WashingMachine,
@@ -375,27 +374,6 @@ export default function SettingsPage() {
 
               <p className="text-xs text-ink-muted">
                 {t("settings.laundryBody")}
-              </p>
-            </div>
-
-            <ChevronRight
-              className="h-4 w-4 text-ink-muted"
-              aria-hidden="true"
-            />
-          </Card>
-        </Link>
-
-        <Link href="/subscription">
-          <Card className="flex items-center gap-3 transition-colors hover:bg-steam">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-turquoise-50 text-turquoise-600">
-              <Repeat className="h-[18px] w-[18px]" aria-hidden="true" />
-            </span>
-
-            <div className="flex-1">
-              <p className="text-sm font-medium text-ink">{t("settings.subscription")}</p>
-
-              <p className="text-xs text-ink-muted">
-                {t("settings.subscriptionBody")}
               </p>
             </div>
 

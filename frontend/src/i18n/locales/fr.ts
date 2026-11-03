@@ -228,11 +228,19 @@ export const fr: typeof en = {
     registerSubtitle:
       "Programmez une collecte en quelques minutes, sans déplacement ni contrainte.",
     forgotTitle: "Mot de passe oublié ?",
-    forgotSubtitle:
-      "La réinitialisation n’est pas encore disponible dans l’application, mais notre équipe peut vous aider en quelques minutes.",
+    forgotSubtitle: "Indiquez le numéro de téléphone et l’adresse e-mail enregistrés sur votre compte. Nous vous enverrons un lien de réinitialisation.",
     resetTitle: "Réinitialiser votre mot de passe",
-    resetSubtitle:
-      "La réinitialisation en ligne n’est pas encore disponible. Contactez l’équipe pour récupérer votre accès en toute sécurité.",
+    resetSubtitle: "Choisissez un nouveau mot de passe robuste. Votre lien est valable une heure et ne peut être utilisé qu’une fois.",
+    resetSent: "Si ces informations correspondent à un compte, vous recevrez un lien prochainement. Vérifiez votre boîte de réception et vos indésirables. Le lien expire dans une heure.",
+    resetSending: "Envoi du lien…",
+    sendResetLink: "Envoyer un lien de réinitialisation",
+    noEmailHelp: "Aucun e-mail enregistré sur votre compte ? Contactez notre équipe :",
+    resetMismatch: "Les mots de passe ne correspondent pas.",
+    resetInvalid: "Ce lien est absent ou incomplet. Demandez un nouveau lien pour continuer.",
+    resetDone: "Votre mot de passe a été mis à jour. Connectez-vous avec votre nouveau mot de passe.",
+    newResetPassword: "Nouveau mot de passe",
+    confirmResetPassword: "Confirmer le nouveau mot de passe",
+    resetSaving: "Mise à jour…",
     realPeople: "Une équipe à votre écoute",
     accountHelp: "Aide au compte",
   },

@@ -10,7 +10,6 @@ import {
   ListChecks,
   MessageCircle,
   PackageCheck,
-  Repeat,
   Sparkles,
   Truck,
 } from "lucide-react";
@@ -272,48 +271,7 @@ export default function DashboardPage() {
               <p className="mt-1 text-sm text-navy/70">{t("customerDashboard.unlockBody")}</p>
               <Link href="/register" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold">{t("auth.create")} <ArrowRight className="h-4 w-4" /></Link>
             </Card>
-          ) : subscription ? (
-            <Link href="/subscription">
-              <Card className="relative overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-turquoise-50 via-white to-white p-4 text-navy shadow-card transition-all hover:-translate-y-0.5 sm:rounded-[22px] sm:p-5">
-                <div className="flex items-start justify-between">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-turquoise-50 text-turquoise-600 ring-1 ring-turquoise/20">
-                    <Repeat className="h-5 w-5" />
-                  </span>
-                  <span className="rounded-full bg-status-ready-bg px-2.5 py-1 text-xs font-semibold capitalize text-status-ready-text">
-                    {subscription.status.toLowerCase()}
-                  </span>
-                </div>
-                <h2 className="mt-3 font-display text-base font-semibold sm:mt-6 sm:text-xl">
-                  {PLAN_LABELS[subscription.plan]}
-                </h2>
-                <p className="mt-1 text-sm text-ink-muted">
-                  {subscription.status === "ACTIVE"
-                    ? `${subscription.kg_remaining}kg remaining this cycle`
-                    : subscription.status === "PENDING"
-                      ? "Payment is needed to activate your plan"
-                      : "Your subscription is currently paused"}
-                </p>
-              </Card>
-            </Link>
-          ) : (
-            <Card className="card-gold rounded-2xl border-0 p-4 text-navy shadow-btn-gold sm:rounded-[22px] sm:p-5">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/40">
-                <Sparkles className="h-5 w-5" />
-              </span>
-              <h2 className="mt-2 font-display text-base font-semibold sm:mt-4 sm:text-xl">
-                {t("customerDashboard.plans")}
-              </h2>
-              <p className="mt-1 text-sm text-navy/70">
-                {t("customerDashboard.plansBody")}
-              </p>
-              <Link
-                href="/subscription"
-                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold sm:mt-4 sm:text-sm"
-              >
-                {t("customerDashboard.explore")} <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Card>
-          )}
+          ) : null}
           {!isGuest && (loyalty.data ? (
             <MembershipCard
               tier={loyalty.data.tier}

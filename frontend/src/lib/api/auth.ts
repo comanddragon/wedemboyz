@@ -36,3 +36,19 @@ export async function claimGuestAccount(
   const res = await apiClient.post("/auth/guest/claim/", input);
   return unwrap<AuthTokens>(res);
 }
+
+/** Send an expiring recovery link without exposing whether an account exists. */
+export async function requestPasswordReset(input: {
+  phone_number: string;
+  email: string;
+}): Promise<void> {
+  await apiClient.post("/auth/password/reset/", input);
+}
+
+export async function confirmPasswordReset(input: {
+  uid: string;
+  token: string;
+  password: string;
+}): Promise<void> {
+  await apiClient.post("/auth/password/reset/confirm/", input);
+}

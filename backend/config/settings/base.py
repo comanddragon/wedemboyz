@@ -9,6 +9,8 @@ from pathlib import Path
 from corsheaders.defaults import default_headers
 from decouple import Csv, config
 
+from config.database import database_from_url
+
 # backend/config/settings/base.py -> backend/
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -90,29 +92,13 @@ TEMPLATES = [
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
-# DATABASES = {
-#     "default": dj_database_url.parse(
-#         config(
-#             "DATABASE_URL",
-#             default="postgres://postgres:postgres@localhost:5432/laundromat",
-#         ),
-#         conn_max_age=600,
-#     )
-# }
-
+# The same variable is used locally and in production. Shell environment values
+# take precedence over backend/.env, so a command can select its own database.
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME", default="wedemboyz"),
-        "USER": config("DB_USER", default="silkkeith"),
-        "PASSWORD": config("DB_PASSWORD", default="85213"),
-        "HOST": config("DB_HOST", default="localhost"),
-        "PORT": config("DB_PORT", default="5432"),
-        "CONN_MAX_AGE": config("DB_CONN_MAX_AGE", default=60, cast=int),
-        "OPTIONS": {
-            "connect_timeout": 10,
-        },
-    }
+    "default": database_from_url(
+        config("DB_URL"),
+        conn_max_age=config("DB_CONN_MAX_AGE", default=60, cast=int),
+    )
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -166,6 +152,7 @@ SIMPLE_JWT = {
     ),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
+    "CHECK_REVOKE_TOKEN": True,
     # Avoid a synchronous write for every token login.
     "UPDATE_LAST_LOGIN": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
@@ -276,9 +263,19 @@ FCM_SERVER_KEY = config("FCM_SERVER_KEY", default="")
 # Owner order emails use Resend independently of customer notification preferences.
 RESEND_API_KEY = config("RESEND_API_KEY", default="")
 RESEND_FROM = config("RESEND_FROM", default="")
-ORDER_NOTIFICATION_EMAIL = config("ORDER_NOTIFICATION_EMAIL", default="ntsemancho@gmail.com")
+# Comma-separated recipients; keep the legacy singular env key as a fallback.
+ORDER_NOTIFICATION_EMAILS = config(
+    "ORDER_NOTIFICATION_EMAILS",
+    default=config(
+        "ORDER_NOTIFICATION_EMAIL",
+        default="owner@wedemboyz-lavomatique.com,dev@wedemboyz-lavomatique.com",
+    ),
+    cast=Csv(),
+)
 
-EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="services.email_backend.EmailBackend")
+DEFAULT_FROM_EMAIL = RESEND_FROM or "Wedemboyz Lavomatique <hello@wedemboyz-lavomatique.com>"
+EMAIL_REPLY_TO = config("EMAIL_REPLY_TO", default=",".join(ORDER_NOTIFICATION_EMAILS), cast=Csv())
 EMAIL_HOST = config("EMAIL_HOST", default="smtp.sendgrid.net")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
@@ -301,3 +298,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Password recovery links expire one hour after creation.
+PASSWORD_RESET_TIMEOUT = 60 * 60

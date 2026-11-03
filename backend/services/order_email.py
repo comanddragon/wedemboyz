@@ -39,8 +39,13 @@ def order_email_payload(order):
         f"Delivery address: {order.delivery_address}",
         f"Customer notes: {order.notes or 'None'}",
     ])
+    from services.email import render_email
+
+    rendered = render_email("owner_order", body="\n".join(lines), path=f"admin/orders/{order.pk}")
     return {
-        "to": [settings.ORDER_NOTIFICATION_EMAIL],
+        "html": rendered["html"],
+        "reply_to": settings.EMAIL_REPLY_TO,
+        "to": settings.ORDER_NOTIFICATION_EMAILS,
         "subject": f"New Wedemboyz order {order.ticket_number}",
         "text": "\n".join(lines),
     }

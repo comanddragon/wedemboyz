@@ -52,10 +52,10 @@ Add the remaining production values in **Workers & Pages → wedemboyz-api →
 Settings → Variables and Secrets**:
 
 ```text
-DJANGO_ALLOWED_HOSTS=api.wedemboyz.ntsemancho.online,wedemboyz-api.<account-subdomain>.workers.dev
-CORS_ALLOWED_ORIGINS=https://wedemboyz.ntsemancho.online,https://wedemboyz-lavomatique.<account-subdomain>.workers.dev
-CSRF_TRUSTED_ORIGINS=https://wedemboyz.ntsemancho.online,https://wedemboyz-lavomatique.<account-subdomain>.workers.dev
-FRONTEND_URL=https://wedemboyz.ntsemancho.online
+DJANGO_ALLOWED_HOSTS=api.wedemboyz-lavomatique.com,wedemboyz-api.<account-subdomain>.workers.dev
+CORS_ALLOWED_ORIGINS=https://wedemboyz-lavomatique.com,https://wedemboyz-lavomatique.<account-subdomain>.workers.dev
+CSRF_TRUSTED_ORIGINS=https://wedemboyz-lavomatique.com,https://wedemboyz-lavomatique.<account-subdomain>.workers.dev
+FRONTEND_URL=https://wedemboyz-lavomatique.com
 DB_NAME=wedemboyz
 DB_USER=<database-user>
 DB_HOST=<database-host>
@@ -83,11 +83,11 @@ starting Granian on port 8080. After the first successful production migration,
 set `RUN_MIGRATIONS` to `false` in `backend/wrangler.jsonc` if migrations will be
 managed by a separate release process.
 
-The Worker configuration provisions `api.wedemboyz.ntsemancho.online` as its custom
+The Worker configuration provisions `api.wedemboyz-lavomatique.com` as its custom
 domain. After deployment, confirm:
 
 ```text
-https://api.wedemboyz.ntsemancho.online/healthz
+https://api.wedemboyz-lavomatique.com/healthz
 ```
 
 ## 2. Frontend OpenNext Worker
@@ -98,13 +98,34 @@ into the browser bundle, so changing it requires another build and deployment:
 ```bash
 cd frontend
 cp cloudflare.env.example .env.production
-# Set NEXT_PUBLIC_API_BASE_URL=https://api.wedemboyz.ntsemancho.online/api/v1
-# Set NEXT_PUBLIC_WS_BASE_URL=wss://api.wedemboyz.ntsemancho.online
+# Set NEXT_PUBLIC_API_BASE_URL=https://api.wedemboyz-lavomatique.com/api/v1
+# Set NEXT_PUBLIC_WS_BASE_URL=wss://api.wedemboyz-lavomatique.com
 bun install
 bun run deploy:cloudflare
 ```
 
-The frontend Worker configuration provisions `wedemboyz.ntsemancho.online`.
+The frontend Worker configuration provisions `wedemboyz-lavomatique.com`.
+
+If Wrangler reports error `100117` (externally managed DNS records), an existing
+A/AAAA/CNAME record is already using the exact website hostname. Cloudflare
+cannot attach a Worker custom domain while that record exists. The Worker upload
+may have succeeded even though the domain attachment failed.
+
+For the current Render-to-Worker migration, the root CNAME points to
+`wedemboyz-lavomatique.onrender.com`. After approving the live DNS migration:
+
+1. Move that CNAME to `api.wedemboyz-lavomatique.com`, retaining its Render target.
+2. Add `api.wedemboyz-lavomatique.com` as a custom domain on the Render backend and
+   set the backend production allowed hosts, CORS, CSRF and frontend URL values.
+3. Run `cd frontend && bun x wrangler deploy` to deploy the existing OpenNext
+   bundle and attach the root Worker custom domain. Run the full build/deploy
+   script instead if application code or build-time environment values changed.
+4. Verify the website and `https://api.wedemboyz-lavomatique.com/healthz`.
+
+Keep the Resend DKIM, `send`, `rsend`, and `_dmarc` records intact. The `www`
+hostname is separate from the root custom domain and needs its own frontend
+custom domain or redirect if it should serve the website.
+
 Update the backend's `DJANGO_ALLOWED_HOSTS`,
 `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`, and `FRONTEND_URL` whenever
 either custom domain changes.
@@ -125,3 +146,8 @@ cd backend
 cp .dev.vars.example .dev.vars
 bun run dev:cloudflare
 ```
+
+## Transactional email
+
+See [backend/EMAIL_DELIVERY.md](backend/EMAIL_DELIVERY.md) for verified-domain setup,
+production variables, template previews, and the jobs runner required for delivery.

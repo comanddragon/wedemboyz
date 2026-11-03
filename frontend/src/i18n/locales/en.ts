@@ -224,11 +224,19 @@ export const en = {
     registerSubtitle:
       "Book a pickup in a couple minutes. No storefront visit, no hassle.",
     forgotTitle: "Forgot your password?",
-    forgotSubtitle:
-      "We don't do password resets over the app yet — but a real person can sort you out in minutes.",
+    forgotSubtitle: "Enter the phone number and email address saved on your account. We’ll email you a link to choose a new password.",
     resetTitle: "Reset your password",
-    resetSubtitle:
-      "Online password resets aren't available yet. Contact the team and we'll help you regain access securely.",
+    resetSubtitle: "Choose a strong new password. Your reset link is valid for one hour and can only be used once.",
+    resetSent: "If these details match an account, you’ll receive a reset link shortly. Check your inbox and spam folder. The link expires in one hour.",
+    resetSending: "Sending link…",
+    sendResetLink: "Send a reset link",
+    noEmailHelp: "No email saved on your account? Contact our team:",
+    resetMismatch: "The passwords do not match.",
+    resetInvalid: "This reset link is missing or incomplete. Request a new link to continue.",
+    resetDone: "Your password has been updated. Sign in with your new password.",
+    newResetPassword: "New password",
+    confirmResetPassword: "Confirm new password",
+    resetSaving: "Updating password…",
     realPeople: "Real people",
     accountHelp: "Account help",
   },

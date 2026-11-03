@@ -24,3 +24,6 @@ def on_user_created(sender, instance, created, raw=False, using=None, **kwargs):
     from .tasks import send_welcome_sms
 
     safe_delay(send_welcome_sms, instance.pk)
+    from services.email import queue_email
+
+    queue_email(instance, "welcome", key=f"welcome/{instance.pk}")
