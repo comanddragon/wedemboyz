@@ -45,6 +45,7 @@ export function useBooking() {
   return {
     ...store,
     subtotal,
+    hasPendingWeight: store.items.some((item) => item.weight_kg == null && ["LAVAGE_ESSORAGE", "LAVAGE_SECHAGE", "REPASSAGE_PLASTIF"].includes(item.service_type)),
     deliveryFee,
     discount,
     total,

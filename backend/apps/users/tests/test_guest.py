@@ -67,7 +67,7 @@ def test_claiming_keeps_the_same_user_and_orders():
 
     res = client.post(
         CLAIM_URL,
-        {"phone_number": "677000111", "first_name": "Ada", "password": "S3cure-pass!", "password2": "S3cure-pass!"},
+        {"phone_number": "677000111", "first_name": "Ada", "email": "ada@example.com", "password": "S3cure-pass!", "password2": "S3cure-pass!"},
         format="json",
     )
     assert res.status_code == 200, res.content
@@ -86,7 +86,7 @@ def test_claim_rejects_phone_already_registered():
     client, _ = _guest_client()
     res = client.post(
         CLAIM_URL,
-        {"phone_number": "677000222", "password": "S3cure-pass!", "password2": "S3cure-pass!"},
+        {"phone_number": "677000222", "email": "ada@example.com", "password": "S3cure-pass!", "password2": "S3cure-pass!"},
         format="json",
     )
     assert res.status_code == 400
@@ -112,7 +112,7 @@ def test_register_from_another_session_reconnects_guest_orders_by_contact_phone(
 
     register = APIClient().post(
         "/api/v1/auth/register/",
-        {"phone_number": "677000555", "first_name": "Ada",
+        {"phone_number": "677000555", "first_name": "Ada", "email": "ada@example.com",
          "password": "S3cure-pass!", "password2": "S3cure-pass!"},
         format="json",
     )
@@ -128,3 +128,19 @@ def test_sms_skips_guests_without_contact_number(settings):
 
     assert sms.send_sms("999000123456789", "hi") is False
     assert sms.send_sms("", "hi") is False
+
+
+def test_guest_upgrade_requires_email_and_preserves_guest_on_failure():
+    client, data = _guest_client()
+    res = client.post(
+        CLAIM_URL,
+        {
+            "phone_number": "677000111",
+            "password": "S3cure-pass!",
+            "password2": "S3cure-pass!",
+        },
+        format="json",
+    )
+    assert res.status_code == 400
+    assert "email" in res.data["error"]["detail"]
+    assert CustomUser.objects.get(pk=data["user"]["id"]).is_guest

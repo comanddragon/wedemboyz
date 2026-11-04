@@ -29,11 +29,6 @@ class OrderItemInputSerializer(serializers.Serializer):
     )
     quantity = serializers.IntegerField(min_value=1, default=1)
 
-    def validate(self, attrs):
-        if attrs["service_type"].startswith("LAVAGE_") and not attrs.get("weight_kg"):
-            raise serializers.ValidationError({"weight_kg": "Weight is required for per-kilogram services."})
-        return attrs
-
 
 class OrderItemPhotoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -63,24 +58,22 @@ class OrderItemWriteSerializer(serializers.ModelSerializer):
             "stain_notes", "weight_kg", "quantity", "unit_price",
         ]
 
-    def validate(self, attrs):
-        service_type = attrs.get("service_type", getattr(self.instance, "service_type", ""))
-        weight = attrs.get("weight_kg", getattr(self.instance, "weight_kg", None))
-        if service_type.startswith("LAVAGE_") and not weight:
-            raise serializers.ValidationError({"weight_kg": "Weight is required for this service."})
-        return attrs
-
     def create(self, validated_data):
         order = self.context["order"]
         if "unit_price" not in validated_data:
             validated_data["unit_price"] = pricing.price_for_item(
-                validated_data["service_type"], validated_data.get("weight_kg") or Decimal("1")
+                validated_data["service_type"], validated_data.get("weight_kg")
             )
         item = OrderItem.objects.create(order=order, **validated_data)
         order.recalculate_total()
         return item
 
     def update(self, instance, validated_data):
+        if "unit_price" not in validated_data and ("weight_kg" in validated_data or "service_type" in validated_data):
+            validated_data["unit_price"] = pricing.price_for_item(
+                validated_data.get("service_type", instance.service_type),
+                validated_data.get("weight_kg", instance.weight_kg),
+            )
         item = super().update(instance, validated_data)
         item.order.recalculate_total()
         return item
@@ -364,7 +357,10 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             if promo.usages.filter(user=user).count() >= promo.max_uses_per_user:
                 raise serializers.ValidationError({"promo_code": "You've already used this promo code."})
             discount_amount = pricing.apply_discount(subtotal, promo.discount_type, promo.value)
-        elif use_subscription:
+        elif use_subscription and not any(
+            item["service_type"] in pricing.PRICE_PER_KG and item.get("weight_kg") is None
+            for item in items_data
+        ):
             # select_for_update() inside this atomic block prevents two
             # concurrent orders from both claiming the same kilos.
             from apps.payments.models import Subscription
@@ -398,7 +394,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 
         for item in items_data:
             unit_price = pricing.price_for_item(
-                item["service_type"], item.get("weight_kg") or Decimal("1")
+                item["service_type"], item.get("weight_kg")
             )
             OrderItem.objects.create(
                 order=order,

@@ -133,3 +133,46 @@ class TestOrderPlacementOptions:
         client.force_authenticate(other)
         assert client.get(f"/api/v1/orders/{response.data['id']}/").status_code == 404
         assert client.get("/api/v1/orders/").data["results"] == []
+
+
+class TestUnweighedLaundry:
+    def test_photo_order_can_be_placed_before_weighing(self, auth_client):
+        client, user = auth_client
+        sub = _active_subscription(user)
+        image = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        )
+        response = client.post("/api/v1/orders/", {
+            "pickup_address": "Pickup address",
+            "delivery_address": "Delivery address",
+            "items": '[{"service_type":"LAVAGE_SECHAGE","weight_kg":null,"quantity":1}]',
+            "item_photo_0_0": SimpleUploadedFile("laundry.png", image, content_type="image/png"),
+        }, format="multipart")
+        assert response.status_code == 201, response.data
+        item = response.data["items"][0]
+        assert item["weight_kg"] is None
+        assert Decimal(item["subtotal"]) == 0
+        assert len(item["photos"]) == 1
+        assert response.data["subscription"] is None
+        sub.refresh_from_db()
+        assert sub.kg_remaining == Decimal("10")
+
+        # Staff recording the real weight recalculates the line and order.
+        from apps.orders.models import OrderItem
+        from apps.orders.api.serializers.order import OrderItemWriteSerializer
+        instance = OrderItem.objects.get(pk=item["id"])
+        serializer = OrderItemWriteSerializer(instance, data={"weight_kg": "5.00"}, partial=True)
+        assert serializer.is_valid(), serializer.errors
+        updated = serializer.save()
+        assert updated.unit_price == Decimal("5000")
+        updated.order.refresh_from_db()
+        assert updated.order.subtotal == Decimal("5000")
+
+    def test_piece_order_uses_quantity_without_weight(self, auth_client):
+        client, _ = auth_client
+        response = client.post("/api/v1/orders/", {
+            **VALID_ORDER_PAYLOAD,
+            "items": [{"service_type": "TSHIRT", "quantity": 3, "weight_kg": None}],
+        }, format="json")
+        assert response.status_code == 201, response.data
+        assert Decimal(response.data["subtotal"]) == Decimal("1500")

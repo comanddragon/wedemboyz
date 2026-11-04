@@ -194,7 +194,7 @@ export const en = {
     firstName: "First name",
     lastName: "Last name",
     email: "Email",
-    emailHint: "Optional — only if you'd like order updates by email too.",
+    emailHint: "Required for account recovery and order updates.",
     phoneHint: "We'll text you a code to confirm it's really you.",
     passwordHint: "At least 8 characters.",
     mismatch: "Passwords don't match.",
@@ -296,6 +296,14 @@ export const en = {
     credit: "Credit (pay later)",
   },
   booking: {
+    washingPressing: "Washing and pressing",
+    washingKilos: "Washing by kilogram",
+    itemType: "Item type",
+    washOption: "Laundry option",
+    kiloHelp: "Photos are optional. Continue to pickup or drop-off; our team will weigh your laundry and confirm the final price.",
+    weightPending: "Weight and price to be confirmed",
+    pendingTotal: "Final total confirmed after weighing",
+
     title: "Book a pickup",
     back: "Back",
     nextSchedule: "Next: Schedule",

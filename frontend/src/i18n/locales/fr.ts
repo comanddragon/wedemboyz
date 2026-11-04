@@ -198,7 +198,7 @@ export const fr: typeof en = {
     lastName: "Nom",
     email: "E-mail",
     emailHint:
-      "Facultatif — seulement si vous souhaitez aussi recevoir les mises à jour par e-mail.",
+      "Obligatoire pour récupérer votre compte et recevoir les mises à jour de commande.",
     phoneHint: "Nous vous enverrons un code pour confirmer votre identité.",
     passwordHint: "Au moins 8 caractères.",
     mismatch: "Les mots de passe ne correspondent pas.",
@@ -300,6 +300,14 @@ export const fr: typeof en = {
     credit: "Crédit (payer plus tard)",
   },
   booking: {
+    washingPressing: "Lavage et pressing",
+    washingKilos: "Lavage au kilo",
+    itemType: "Type d’article",
+    washOption: "Option de lavage",
+    kiloHelp: "Les photos sont facultatives. Choisissez le ramassage ou le dépôt ; notre équipe pèsera votre linge et confirmera le prix final.",
+    weightPending: "Poids et prix à confirmer",
+    pendingTotal: "Total final confirmé après pesée",
+
     title: "Programmer une collecte",
     back: "Retour",
     nextSchedule: "Suivant : horaire",

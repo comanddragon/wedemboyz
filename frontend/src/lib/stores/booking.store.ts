@@ -156,6 +156,7 @@ function estimateItemUnitPrice(item: DraftItem): number {
 
   const perKg = ESTIMATED_PRICE_PER_KG[item.service_type];
   if (perKg !== undefined) {
+    if (item.weight_kg == null) return 0;
     return Math.max(
       perKg * item.weight_kg,
       ESTIMATED_MINIMUM_CHARGE_PER_KG_ITEM,

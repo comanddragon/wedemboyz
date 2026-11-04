@@ -118,12 +118,17 @@ def kg_allowance_for_plan(plan: str) -> Decimal:
     return PLAN_KG_ALLOWANCE[plan]
 
 
-def price_for_item(service_type: str, weight_kg: Decimal, quantity: int = 1) -> Decimal:
+def price_for_item(service_type: str, weight_kg: Decimal | None, quantity: int = 1) -> Decimal:
     """Unit price for a single OrderItem line (pre-quantity)."""
+    # Unweighed laundry is quoted after intake, never as an assumed 1 kg.
+    if service_type in PRICE_PER_KG and weight_kg is None:
+        return Decimal("0")
     configured = _configured_price(service_type)
     if configured:
         if configured.unit_mode == "PIECE":
             return round_money(configured.price)
+        if weight_kg is None:
+            return Decimal("0")
         return round_money(max(configured.price * Decimal(weight_kg), configured.minimum_charge))
 
     if service_type in PRICE_PER_PIECE:
@@ -165,7 +170,7 @@ def price_order_items(items: list[dict]) -> Decimal:
     """
     total = Decimal("0")
     for item in items:
-        unit_price = price_for_item(item["service_type"], item.get("weight_kg") or Decimal("1"))
+        unit_price = price_for_item(item["service_type"], item.get("weight_kg"))
         total += unit_price * item.get("quantity", 1)
     return round_money(total)
 

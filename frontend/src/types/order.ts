@@ -28,7 +28,7 @@ export interface OrderItemInput {
   service_type: ServiceType;
   label?: string;
   description?: string;
-  weight_kg: number;
+  weight_kg: number | null;
   quantity?: number; // defaults to 1 server-side
   /** Optional intake photos. Sent as multipart data when the order is created. */
   photos?: File[];

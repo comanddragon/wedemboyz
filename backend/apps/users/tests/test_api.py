@@ -47,7 +47,7 @@ def test_registration_creates_relations_and_defers_sms(
         with django_capture_on_commit_callbacks(execute=True):
             response = api_client.post("/api/v1/auth/register/", {
                 "phone_number": "677123456", "password": "S3cure-pass!",
-                "password2": "S3cure-pass!", "first_name": "Ada",
+                "password2": "S3cure-pass!", "first_name": "Ada", "email": "ada@example.com",
             })
             enqueue.assert_not_called()
         assert response.status_code == 201, response.content
@@ -63,3 +63,50 @@ def test_guests_do_not_enqueue_welcome_sms(api_client, django_capture_on_commit_
             response = api_client.post("/api/v1/auth/guest/", {})
         assert response.status_code == 201
         enqueue.assert_not_called()
+
+
+@pytest.mark.parametrize("email", [None, "", "   ", "not-an-email"])
+def test_signup_rejects_invalid_email(api_client, email):
+    response = api_client.post(
+        "/api/v1/auth/register/",
+        {
+            "phone_number": "677123456",
+            "password": "S3cure-pass!",
+            "password2": "S3cure-pass!",
+            "email": email,
+        },
+        format="json",
+    )
+    assert response.status_code == 400
+    assert "email" in response.data["error"]["detail"]
+    assert not CustomUser.objects.filter(phone_number="237677123456").exists()
+
+
+def test_signup_requires_email_even_when_client_omits_it(api_client):
+    response = api_client.post(
+        "/api/v1/auth/register/",
+        {
+            "phone_number": "677123456",
+            "password": "S3cure-pass!",
+            "password2": "S3cure-pass!",
+        },
+        format="json",
+    )
+    assert response.status_code == 400
+    assert "email" in response.data["error"]["detail"]
+    assert not CustomUser.objects.filter(phone_number="237677123456").exists()
+
+
+def test_signup_accepts_and_trims_valid_email(api_client):
+    response = api_client.post(
+        "/api/v1/auth/register/",
+        {
+            "phone_number": "677123456",
+            "password": "S3cure-pass!",
+            "password2": "S3cure-pass!",
+            "email": " ada@example.com ",
+        },
+        format="json",
+    )
+    assert response.status_code == 201, response.data
+    assert CustomUser.objects.get(phone_number="237677123456").email == "ada@example.com"

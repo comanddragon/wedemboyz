@@ -81,6 +81,7 @@ export default function OrderDetailPage() {
     );
   }
 
+  const hasPendingWeight = order.items.some((item) => item.weight_kg == null && ["LAVAGE_ESSORAGE", "LAVAGE_SECHAGE", "REPASSAGE_PLASTIF"].includes(item.service_type));
   const canCancel =
     EDITABLE_ORDER_STATUSES.includes(order.status) ||
     order.status === "CONFIRMED";
@@ -154,7 +155,7 @@ export default function OrderDetailPage() {
       </section>
 
       <Card className="mb-6">
-        <PaymentSummary status={order.payment_status} total={order.total_amount} paid={order.amount_paid} balance={order.balance_due} />
+        {hasPendingWeight ? <p className="text-sm text-ink-muted">{t("booking.pendingTotal")}</p> : <PaymentSummary status={order.payment_status} total={order.total_amount} paid={order.amount_paid} balance={order.balance_due} />}
         <p className="mt-4 text-sm font-medium text-navy">{collectionMethods(locale).find((method) => method.value === order.payment_option)?.label}</p>
       </Card>
       <div className="grid items-start gap-6 lg:grid-cols-[1.35fr_0.65fr]">
@@ -203,8 +204,7 @@ export default function OrderDetailPage() {
 </Link>
                   </p>
                   <p className="text-xs text-ink-muted">
-                    {serviceLabel(item.service_type)} — {item.weight_kg}kg x
-                    {item.quantity} — {formatCurrency(item.subtotal)}
+                    {serviceLabel(item.service_type)} — {item.weight_kg == null && ["LAVAGE_ESSORAGE", "LAVAGE_SECHAGE", "REPASSAGE_PLASTIF"].includes(item.service_type) ? t("booking.weightPending") : `${item.weight_kg ? `${item.weight_kg} kg × ` : "× "}${item.quantity} — ${formatCurrency(item.subtotal)}`}
                   </p>
                   {item.description && (
                     <p className="mt-1 text-xs text-ink-muted">
@@ -223,7 +223,7 @@ export default function OrderDetailPage() {
           <div className="space-y-1 border-t border-crease bg-steam/25 p-5 text-sm">
             <div className="flex justify-between text-ink-muted">
               <span>{t("orders.subtotal")}</span>
-              <span>{formatCurrency(order.subtotal)}</span>
+              <span>{hasPendingWeight ? t("booking.weightPending") : formatCurrency(order.subtotal)}</span>
             </div>
             <div className="flex justify-between text-ink-muted">
               <span>{t("orders.discount")}</span>
@@ -235,7 +235,7 @@ export default function OrderDetailPage() {
             </div>
             <div className="flex justify-between pt-2 text-base font-semibold text-navy">
               <span>{t("orders.total")}</span>
-              <span>{formatCurrency(order.total_amount)}</span>
+              <span>{hasPendingWeight ? t("booking.pendingTotal") : formatCurrency(order.total_amount)}</span>
             </div>
           </div>
         </Card>

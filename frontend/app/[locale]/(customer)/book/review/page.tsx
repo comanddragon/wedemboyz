@@ -23,6 +23,7 @@ export default function BookReviewPage() {
   const { t } = useI18n();
   const {
     items,
+    hasPendingWeight,
     orderType,
     pickupAddress,
     deliveryAddress,
@@ -52,6 +53,7 @@ export default function BookReviewPage() {
         </div>
       }
     >
+      {hasPendingWeight && <p className="mb-4 text-sm text-ink-muted">{t("booking.kiloHelp")}</p>}
       <Card className="grid gap-x-12 gap-y-6 lg:grid-cols-[1.3fr_1fr] lg:p-7">
         <div>
           <h2 className="font-display mb-3 text-sm font-medium text-ink">
@@ -79,7 +81,9 @@ export default function BookReviewPage() {
                 )}
                 <span>
                   {item.label || serviceLabel(item.service_type)} —{" "}
-                  {item.weight_kg}kg x{item.quantity ?? 1}
+                  {["LAVAGE_ESSORAGE", "LAVAGE_SECHAGE", "REPASSAGE_PLASTIF"].includes(item.service_type)
+                    ? item.weight_kg == null ? t("booking.weightPending") : `${item.weight_kg} kg`
+                    : `× ${item.quantity ?? 1}`}
                 </span>
               </li>
             ))}
@@ -134,7 +138,7 @@ export default function BookReviewPage() {
           <div className="space-y-1 text-sm">
             <div className="flex justify-between text-ink-muted">
               <span>{t("booking.subtotal")}</span>
-              <span>{formatCurrency(subtotal)}</span>
+              <span>{hasPendingWeight ? t("booking.weightPending") : formatCurrency(subtotal)}</span>
             </div>
             <div className="flex justify-between text-ink-muted">
               <span>{t("booking.deliveryFee")}</span>
@@ -146,7 +150,7 @@ export default function BookReviewPage() {
             </div>
             <div className="flex justify-between pt-2 text-base font-semibold text-navy">
               <span>{t("booking.total")}</span>
-              <span>{formatCurrency(total)}</span>
+              <span>{hasPendingWeight ? t("booking.pendingTotal") : formatCurrency(total)}</span>
             </div>
           </div>
           <p className="mt-2 text-xs text-ink-muted">

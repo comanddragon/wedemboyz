@@ -19,6 +19,8 @@ import { localizeHref, localeFromPathname, stripLocale } from "@/src/i18n/config
  * session the moment they start (see lib/guest-session.ts), so nothing
  * further down needs to special-case "not signed in".
  */
+import { isCustomerWorkspacePath, staffDestination } from "@/src/lib/admin-rbac";
+
 const PUBLIC_PREFIXES = ["/book", "/ambassadors"];
 const REGISTERED_ONLY_PREFIXES = [
   "/settings",
@@ -37,7 +39,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state) => state.user);
   const isGuest = useAuthStore((state) => Boolean(state.user?.is_guest));
   const isHydrated = useAuthStore((state) => state.isHydrated);
-  const staffOnCustomerRoute = Boolean(user?.is_staff && routePathname !== "/ambassadors");
+  const staffOnCustomerRoute = Boolean(user?.is_staff && isCustomerWorkspacePath(routePathname));
 
   useEffect(() => {
     if (isHydrated && !accessToken && !isPublic) {
@@ -56,14 +58,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isHydrated && staffOnCustomerRoute) {
-      const section = routePathname.split("/")[1];
-      const sharedSections = ["orders", "payments", "chat", "notifications", "loyalty", "settings"];
-      const destination = sharedSections.includes(section)
-        ? `/admin${routePathname === "/settings/payments" ? "/payments" : routePathname === "/settings/preferences" ? "/settings" : routePathname}`
-        : routePathname === "/subscription" ? "/admin/subscriptions" : "/admin";
+      const destination = staffDestination(routePathname, user?.staff_permissions);
       router.replace(localizeHref(destination, localeFromPathname(pathname)));
     }
-  }, [isHydrated, staffOnCustomerRoute, pathname, routePathname, router]);
+  }, [isHydrated, staffOnCustomerRoute, pathname, routePathname, router, user?.staff_permissions]);
 
   // Render nothing until hydration finishes, to avoid a flash of protected
   // content for a user who turns out to be logged out.

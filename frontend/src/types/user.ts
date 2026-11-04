@@ -64,7 +64,7 @@ export interface RegisterInput {
   phone_number: string;
   first_name?: string;
   last_name?: string;
-  email?: string;
+  email: string;
   password: string;
   password2: string;
 }

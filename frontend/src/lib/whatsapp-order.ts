@@ -30,11 +30,13 @@ export function ownerWhatsAppOrderUrl(
     context.customerPhone?.trim() ||
     order.customer?.phone_number ||
     "Not provided";
+  const pendingWeight = order.items.some((item) => item.weight_kg == null && ["LAVAGE_ESSORAGE", "LAVAGE_SECHAGE", "REPASSAGE_PLASTIF"].includes(item.service_type));
   const items = order.items.flatMap((item) => {
     const title = item.label || readableService(item.service_type);
-    const weight = item.weight_kg ? ` (${item.weight_kg} kg each)` : "";
+    const unweighed = item.weight_kg == null && ["LAVAGE_ESSORAGE", "LAVAGE_SECHAGE", "REPASSAGE_PLASTIF"].includes(item.service_type);
+    const weight = item.weight_kg ? ` (${item.weight_kg} kg each)` : unweighed ? " (weight pending)" : "";
     const lines = [
-      `• ${item.quantity} × ${title}${weight} — ${formatCurrency(item.subtotal)}`,
+      `• ${item.quantity} × ${title}${weight} — ${unweighed ? "Price confirmed after weighing" : formatCurrency(item.subtotal)}`,
     ];
     if (item.description) lines.push(`  Note: ${item.description}`);
     return lines;
@@ -58,7 +60,7 @@ export function ownerWhatsAppOrderUrl(
     `Subtotal: ${formatCurrency(order.subtotal)}`,
     `Discount: ${formatCurrency(order.discount_amount)}`,
     `Delivery: ${formatCurrency(order.delivery_fee)}`,
-    `Total: ${formatCurrency(order.total_amount)}`,
+    `Total: ${pendingWeight ? "Confirmed after weighing" : formatCurrency(order.total_amount)}`,
     "",
     `Pickup address: ${order.pickup_address}`,
     `Delivery address: ${order.delivery_address}`,

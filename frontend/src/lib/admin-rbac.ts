@@ -37,6 +37,8 @@ export function canAccess(
 }
 
 export function requiredPermissionForPath(pathname: string): AdminPermission {
+  if (/^\/admin\/payments\/refunds(?:\/|$)/.test(pathname)) return "refunds.manage";
+  if (/^\/admin\/orders\/[^/]+\/items(?:\/|$)/.test(pathname)) return "orders.edit_items";
   if (pathname.startsWith("/admin/audit")) return "audit.view";
   if (pathname.startsWith("/admin/settings")) return "finance.manage";
   if (pathname.startsWith("/admin/staff")) return "staff.manage";
@@ -65,3 +67,24 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
   CASHIER: "Cashier",
   DRIVER: "Driver",
 };
+
+/** Workspace links and direct visits share the same staff policy. */
+export function isCustomerWorkspacePath(pathname: string) {
+  return ["dashboard", "book", "orders", "payments", "chat", "notifications", "loyalty", "settings", "subscription"].includes(pathname.split("/")[1]);
+}
+
+export function canAccessAdminPath(permissions: readonly string[] | undefined, pathname: string) {
+  return canAccess(permissions, requiredPermissionForPath(pathname));
+}
+
+export function staffDestination(pathname: string, permissions: readonly string[] | undefined) {
+  const counterparts: Record<string, string> = {
+    "/orders": "/admin/orders", "/payments": "/admin/payments",
+    "/chat": "/admin/chat", "/notifications": "/admin/notifications",
+    "/loyalty": "/admin/loyalty", "/settings": "/admin/settings",
+    "/settings/payments": "/admin/payments", "/settings/preferences": "/admin/settings",
+    "/subscription": "/admin/subscriptions",
+  };
+  const candidate = counterparts[pathname] ?? (/^\/orders\/[^/]+$/.test(pathname) ? `/admin${pathname}` : undefined);
+  return candidate && canAccessAdminPath(permissions, candidate) ? candidate : "/admin";
+}

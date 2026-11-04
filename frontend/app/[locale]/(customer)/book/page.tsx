@@ -23,7 +23,7 @@ import { useI18n } from "@/src/i18n/I18nProvider";
 import { ensureSession } from "@/src/lib/guest-session";
 import type { ServiceType } from "@/src/types";
 
-const SERVICE_TYPES: ServiceType[] = [
+const PIECE_SERVICES: ServiceType[] = [
   "VESTE",
   "TSHIRT",
   "CHEMISE",
@@ -35,9 +35,10 @@ const SERVICE_TYPES: ServiceType[] = [
   "COUETTE_1P",
   "COUETTE_2P",
   "COUETTE_3P",
+];
+const KILO_SERVICES: ServiceType[] = [
   "LAVAGE_ESSORAGE",
   "LAVAGE_SECHAGE",
-  "REPASSAGE_PLASTIF",
 ];
 
 export default function BookServicesPage() {
@@ -45,9 +46,10 @@ export default function BookServicesPage() {
   const { items, addItem, updateItem, removeItem, subtotal } = useBooking();
 
   const [serviceType, setServiceType] = useState<ServiceType>("TSHIRT");
+  const [serviceGroup, setServiceGroup] = useState<"piece" | "kilo">("piece");
+  const isKilo = serviceGroup === "kilo";
   const [label, setLabel] = useState("");
   const [description, setDescription] = useState("");
-  const [weightKg, setWeightKg] = useState("1");
   const [quantity, setQuantity] = useState("1");
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
@@ -104,7 +106,7 @@ export default function BookServicesPage() {
     setServiceType(item.service_type);
     setLabel(item.label ?? "");
     setDescription(item.description ?? "");
-    setWeightKg(String(item.weight_kg));
+    setServiceGroup(KILO_SERVICES.includes(item.service_type) ? "kilo" : "piece");
     setQuantity(String(item.quantity ?? 1));
     setPhotos(item.photos ?? []);
     setPhotoPreviews(item.photoPreviewUrls ?? []);
@@ -120,8 +122,8 @@ export default function BookServicesPage() {
       service_type: serviceType,
       label,
       description,
-      weight_kg: Number(weightKg),
-      quantity: Number(quantity) || 1,
+      weight_kg: null,
+      quantity: isKilo ? 1 : Number(quantity) || 1,
       photos,
       photoPreviewUrls: photoPreviews,
     };
@@ -130,7 +132,6 @@ export default function BookServicesPage() {
     setEditingId(null);
     setLabel("");
     setDescription("");
-    setWeightKg("1");
     setQuantity("1");
     setPhotos([]);
     setPhotoPreviews([]);
@@ -154,12 +155,30 @@ export default function BookServicesPage() {
       <div className="grid min-h-0 items-start gap-5 pb-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:gap-8">
         <Card className="p-4 lg:p-5">
           <form onSubmit={handleAddItem}>
-            <Field label={t("booking.service")}>
+            <Field label={t("booking.service")} htmlFor="booking-service">
               <Select
+                id="booking-service"
+                value={serviceGroup}
+                onChange={(e) => {
+                  const group = e.target.value as "piece" | "kilo";
+                  setServiceGroup(group);
+                  setServiceType(group === "piece" ? "TSHIRT" : "LAVAGE_SECHAGE");
+                  setQuantity("1");
+                  setPhotoError("");
+                }}
+              >
+                <option value="piece">{t("booking.washingPressing")}</option>
+                <option value="kilo">{t("booking.washingKilos")}</option>
+              </Select>
+            </Field>
+            {isKilo && <p className="mb-4 text-sm text-ink-muted">{t("booking.kiloHelp")}</p>}
+            <Field label={t(isKilo ? "booking.washOption" : "booking.itemType")} htmlFor="booking-item-type">
+              <Select
+                id="booking-item-type"
                 value={serviceType}
                 onChange={(e) => setServiceType(e.target.value as ServiceType)}
               >
-                {SERVICE_TYPES.map((type) => (
+                {(isKilo ? KILO_SERVICES : PIECE_SERVICES).map((type) => (
                   <option key={type} value={type}>
                     {serviceLabel(type)}
                   </option>
@@ -167,7 +186,7 @@ export default function BookServicesPage() {
               </Select>
             </Field>
 
-            <Field label={t("booking.itemLabel")}>
+            {!isKilo && <Field label={t("booking.itemLabel")}>
               <Input
                 type="text"
                 value={label}
@@ -176,6 +195,7 @@ export default function BookServicesPage() {
               />
             </Field>
 
+            }
             <Field label={t("booking.description")}>
               <Textarea
                 value={description}
@@ -244,7 +264,8 @@ export default function BookServicesPage() {
                 </label>
               )}
               {photoError ? (
-                <p className="mt-1.5 text-xs text-status-cancelled-text">
+                <p role="alert"
+                  className="mt-1.5 text-xs text-status-cancelled-text">
                   {photoError}
                 </p>
               ) : (
@@ -255,25 +276,19 @@ export default function BookServicesPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field label={t("booking.weight")}>
+            {!isKilo && (
+              <Field label={t("booking.quantity")} htmlFor="booking-quantity">
                 <Input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  value={weightKg}
-                  onChange={(e) => setWeightKg(e.target.value)}
-                />
-              </Field>
-              <Field label={t("booking.quantity")}>
-                <Input
+                  id="booking-quantity"
                   type="number"
                   min="1"
+                  step="1"
+                  required
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                 />
               </Field>
-            </div>
+            )}
 
             <Button type="submit" variant="secondary" className="w-full">
               {editingId ? t("booking.save") : t("booking.addItem")}
@@ -287,7 +302,7 @@ export default function BookServicesPage() {
               {t("booking.items")} ({items.length})
             </h2>
             <p className="text-sm font-semibold tabular-nums text-navy">
-              {formatCurrency(subtotal)}
+              {items.some((item) => item.weight_kg == null && item.service_type.startsWith("LAVAGE_")) ? t("booking.weightPending") : formatCurrency(subtotal)}
             </p>
           </div>
           {items.length === 0 && (
@@ -316,8 +331,9 @@ export default function BookServicesPage() {
                       {item.label || serviceLabel(item.service_type)}
                     </p>
                     <p className="text-xs text-ink-muted">
-                      {serviceLabel(item.service_type)} — {item.weight_kg}kg x
-                      {item.quantity ?? 1}
+                      {serviceLabel(item.service_type)} — {KILO_SERVICES.includes(item.service_type)
+                        ? t("booking.weightPending")
+                        : `× ${item.quantity ?? 1}`}
                     </p>
                     {item.description && (
                       <p className="mt-1 text-xs text-ink-muted">

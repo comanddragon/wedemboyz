@@ -4,8 +4,7 @@ import { buttonStyles } from "@/src/components/ui/Button";
 import { useMutation } from "@tanstack/react-query";
 import { CircleCheck, HandCoins, Truck } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
-import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { BookingShell } from "@/src/components/booking/BookingShell";
 import { Button, Card, Field, Input } from "@/src/components/ui";
@@ -39,10 +38,8 @@ const PAYMENT_OPTIONS: Array<{
 ];
 
 export default function BookConfirmPage() {
-  const router = useRouter();
   const booking = useBooking();
   const { isAuthenticated, isGuest, user } = useAuth();
-  const whatsappWindowRef = useRef<Window | null>(null);
   const needsContact = !isAuthenticated || isGuest;
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -117,19 +114,10 @@ export default function BookConfirmPage() {
         pickupDate: booking.scheduledPickupDate,
         pickupSlot: booking.scheduledPickupSlot,
       });
-      const whatsappWindow = whatsappWindowRef.current;
-      whatsappWindowRef.current = null;
       booking.reset();
-      if (whatsappWindow && !whatsappWindow.closed) {
-        whatsappWindow.location.href = whatsappUrl;
-        router.push(`/orders/${order.id}`);
-      } else {
-        window.location.assign(whatsappUrl);
-      }
+      window.location.assign(whatsappUrl);
     },
     onError: (error) => {
-      whatsappWindowRef.current?.close();
-      whatsappWindowRef.current = null;
       setErrorMessage(getApiErrorMessage(error));
     },
   });
@@ -147,7 +135,7 @@ export default function BookConfirmPage() {
           <p className="mb-5 text-sm text-ink-muted">
             Estimated total:{" "}
             <span className="text-base font-semibold text-navy">
-              {formatCurrency(booking.total)}
+              {booking.hasPendingWeight ? "Confirmed after weighing" : formatCurrency(booking.total)}
             </span>
           </p>
 
@@ -242,10 +230,6 @@ export default function BookConfirmPage() {
           <Button
             onClick={() => {
               setErrorMessage(null);
-              whatsappWindowRef.current = window.open("", "_blank");
-              if (whatsappWindowRef.current) {
-                whatsappWindowRef.current.opener = null;
-              }
               submitMutation.mutate();
             }}
             disabled={

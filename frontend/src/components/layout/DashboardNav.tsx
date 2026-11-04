@@ -303,7 +303,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
   const { data: chatRooms } = useQuery({
     queryKey: queryKeys.chat.rooms,
     queryFn: () => chatApi.listChatRooms(),
-    enabled: isHydrated && Boolean(accessToken && user),
+    enabled: isHydrated && Boolean(accessToken && user) && (!admin || canAccess(permissions, "chat.manage")),
     refetchInterval: 20_000,
   });
   const { data: unreadNotifications } = useQuery({

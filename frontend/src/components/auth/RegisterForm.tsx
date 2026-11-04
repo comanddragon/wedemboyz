@@ -54,7 +54,7 @@ export function RegisterForm() {
         phone_number: phoneNumber,
         first_name: firstName || undefined,
         last_name: lastName || undefined,
-        email: email || undefined,
+        email: email.trim(),
         password,
         password2,
       });
@@ -66,7 +66,7 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate>
+    <form onSubmit={handleSubmit}>
       {errorMessage && <FormErrorBanner message={errorMessage} />}
       {isGuest && (
         <p className="mb-4 rounded-xl bg-gold-50 px-3.5 py-2.5 text-sm text-navy">
@@ -109,6 +109,8 @@ export function RegisterForm() {
         <Input
           id={emailId}
           type="email"
+          required
+          maxLength={254}
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -156,7 +158,7 @@ export function RegisterForm() {
       </Button>
 
       <p className="mt-6 text-center text-sm text-ink-muted">
-        {t("auth.hasAccount")} {" "}
+        {t("auth.hasAccount")}{" "}
         <Link
           href="/login"
           className="font-medium text-navy underline-offset-2 hover:underline"

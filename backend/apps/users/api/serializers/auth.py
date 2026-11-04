@@ -22,6 +22,7 @@ def _avatar_payload(user):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=True, allow_blank=False, allow_null=False, max_length=254)
     password = serializers.CharField(write_only=True, min_length=8)
     password2 = serializers.CharField(write_only=True, min_length=8, label="Confirm password")
 
