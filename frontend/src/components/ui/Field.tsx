@@ -26,7 +26,9 @@ export function Field({
   hint,
   error,
   children,
+  className,
 }: {
+  className?: string;
   label: string;
   htmlFor?: string;
   hint?: string;
@@ -34,7 +36,7 @@ export function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-4">
+    <div className={cn("mb-4", className)}>
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {error ? (

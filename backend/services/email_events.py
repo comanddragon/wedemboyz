@@ -4,6 +4,8 @@ from services.email import language_for, queue_email
 
 
 def order_email(order, *, received=False, key=None):
+    if received:
+        invoice_email(order)
     fr = language_for(order.user) == "fr"
     event = "order_received" if received else f"order_{order.status.lower()}"
     details = [
@@ -26,6 +28,50 @@ def order_email(order, *, received=False, key=None):
     )
 
 
+def billing_details(order, *, fr=False):
+    """Read the current ledger rather than a potentially stale signal instance."""
+    order.refresh_from_db()
+    return [
+        ("Sous-total" if fr else "Subtotal", f"{order.subtotal} XAF"),
+        ("Livraison" if fr else "Delivery fee", f"{order.delivery_fee} XAF"),
+        ("Réduction" if fr else "Discount", f"{order.discount_amount} XAF"),
+        ("Total", f"{order.total_amount} XAF"),
+        ("Payé" if fr else "Paid", f"{order.amount_paid} XAF"),
+        ("Solde restant" if fr else "Balance due", f"{order.balance_due} XAF"),
+    ]
+
+
+def billing_items(order):
+    return "\n".join(
+        f"{item.quantity} × {item.label or item.get_service_type_display()}"
+        f" — {item.unit_price} XAF — {item.subtotal} XAF"
+        for item in order.items.all()
+    )
+
+
+def invoice_email(order):
+    from services.order_payments import recompute_payment_status
+
+    # Submission happens after the items and final pricing have been saved.
+    order = recompute_payment_status(order, reason="Invoice issued")
+    invoice = order.invoice
+    fr = language_for(order.user) == "fr"
+    return queue_email(
+        order.user,
+        "invoice_issued",
+        key=f"invoice/{invoice.pk}/issued",
+        details=[
+            ("Facture" if fr else "Invoice", invoice.invoice_number),
+            ("Date", invoice.issued_at.isoformat()),
+            ("Commande" if fr else "Order", order.ticket_number),
+            *billing_details(order, fr=fr),
+        ],
+        body=billing_items(order),
+        path=f"orders/{order.pk}",
+        essential=True,
+    )
+
+
 def payment_email(payment, *, failed=False):
     user = payment.order.user if payment.order_id else payment.subscription.user
     fr = language_for(user) == "fr"
@@ -42,12 +88,20 @@ def payment_email(payment, *, failed=False):
     ]
     if payment.paid_at and not failed:
         details.append(("Date", payment.paid_at.isoformat()))
+    body = ""
+    if not failed:
+        details.append(("Reçu" if fr else "Receipt", f"REC-{payment.pk:06d}"))
+        if payment.order_id:
+            details.append(("Facture" if fr else "Invoice", payment.order.invoice.invoice_number))
+            details.extend(billing_details(payment.order, fr=fr))
+            body = billing_items(payment.order)
     event = "payment_failed" if failed else "payment_receipt"
     return queue_email(
         user,
         event,
         key=f"payment/{payment.pk}/{event}",
         details=details,
+        body=body,
         path=f"orders/{payment.order_id}" if payment.order_id else "subscription",
         essential=True,
     )

@@ -29,7 +29,7 @@ import {
   orderStatusTone,
   paymentStatusTone,
 } from "@/src/components/ui";
-import { ordersApi, staffApi } from "@/src/lib/api";
+import { ordersApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
@@ -82,21 +82,6 @@ export default function AdminOrdersPage() {
       { value: "UNPAID", label: t("common.statuses.unpaid") },
       { value: "PAID", label: t("common.statuses.paid") },
     ];
-
-  const staffQuery = useQuery({
-    queryKey: ["staff", "operations"],
-    queryFn: () => staffApi.listOperationalStaff(),
-  });
-  const staffNames = useMemo(
-    () =>
-      new Map(
-        staffQuery.data?.map((profile) => [
-          profile.user.id,
-          `${profile.user.first_name} ${profile.user.last_name}`.trim(),
-        ]) ?? [],
-      ),
-    [staffQuery.data],
-  );
 
   const { data, isLoading, error } = useQuery({
     refetchInterval: 15000,
@@ -283,7 +268,6 @@ export default function AdminOrdersPage() {
             direction={directionFor("customer")}
             onSort={() => toggle("customer")}
           />
-          <Th>{t("adminOrders.colAssigned")}</Th>
           <Th>{t("adminOrders.colLoad")}</Th>
           <SortableTh
             label={t("adminOrders.colPlaced")}
@@ -308,10 +292,10 @@ export default function AdminOrdersPage() {
           <Th className="w-8" />
         </THead>
         <TBody>
-          {isLoading && <TableSkeleton columns={10} />}
+          {isLoading && <TableSkeleton columns={9} />}
 
           {!isLoading && sorted && sorted.length === 0 && (
-            <TableEmptyRow colSpan={10}>
+            <TableEmptyRow colSpan={9}>
               {data && data.results.length === 0
                 ? t("adminOrders.noOrders")
                 : t("adminOrders.noMatch")}
@@ -352,21 +336,6 @@ export default function AdminOrdersPage() {
                       )}
                     </span>
                   </span>
-                </Td>
-                <Td className="text-xs text-ink-muted">
-                  <p>
-                    {order.assigned_to
-                      ? staffNames.get(order.assigned_to) ??
-                        t("adminOrders.assigned")
-                      : t("adminOrders.unassigned")}
-                  </p>
-                  {order.driver && (
-                    <p>
-                      {t("adminOrders.driver")}:{" "}
-                      {staffNames.get(order.driver) ??
-                        t("adminOrders.assigned")}
-                    </p>
-                  )}
                 </Td>
                 <Td className="whitespace-nowrap text-xs text-ink-muted">
                   <OrderItemPreviews items={order.items} />

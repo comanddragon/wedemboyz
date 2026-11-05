@@ -12,6 +12,8 @@ class CustomerListSerializer(serializers.ModelSerializer):
     orders_count = serializers.IntegerField(read_only=True)
     lifetime_spend = serializers.DecimalField(max_digits=12, decimal_places=0, read_only=True)
     loyalty_tier = serializers.CharField(source="loyalty_account.tier", read_only=True, default=None)
+    loyalty_points_earned = serializers.IntegerField(source="loyalty_account.lifetime_points_earned", read_only=True, default=0)
+    outstanding_balance = serializers.DecimalField(max_digits=12, decimal_places=0, read_only=True)
     credit_balance = serializers.SerializerMethodField()
     last_order_at = serializers.DateTimeField(read_only=True, allow_null=True)
     source = serializers.CharField(source="profile.source", read_only=True, default="ONLINE")
@@ -34,6 +36,8 @@ class CustomerListSerializer(serializers.ModelSerializer):
             "orders_count",
             "lifetime_spend",
             "loyalty_tier",
+            "loyalty_points_earned",
+            "outstanding_balance",
             "credit_balance",
             "last_order_at",
             "source",
@@ -56,6 +60,7 @@ class CustomerDetailSerializer(CustomerListSerializer):
     """GET /api/v1/users/customers/{id}/ — full fiche client: profile,
     loyalty, recent order history, and credit ledger."""
 
+    city = serializers.CharField(source="profile.city", required=False, allow_blank=False, max_length=100)
     gender = serializers.ChoiceField(source="profile.gender", choices=UserProfile._meta.get_field("gender").choices, required=False, allow_blank=True)
     address_line = serializers.CharField(source="profile.address_line", required=False, allow_blank=True, default="")
     loyalty = LoyaltyAccountSummarySerializer(source="loyalty_account", read_only=True)
@@ -85,8 +90,8 @@ class CustomerDetailSerializer(CustomerListSerializer):
             "default_pickup_address",
         ]
         read_only_fields = [
-            "id", "city", "orders_count", "lifetime_spend", "loyalty_tier",
-            "credit_balance", "last_order_at", "created_at", "loyalty",
+            "id", "orders_count", "lifetime_spend", "loyalty_tier",
+            "credit_balance", "outstanding_balance", "loyalty_points_earned", "last_order_at", "created_at", "loyalty",
             "recent_orders", "recent_credit_transactions",
         ]
 

@@ -82,7 +82,7 @@ export default function AdminCustomerDetailPage() {
   const fullName =
     `${customer.first_name} ${customer.last_name}`.trim() ||
     `Customer #${customer.id}`;
-  const creditOwed = Number(customer.credit_balance) > 0;
+  const creditOwed = Number(customer.outstanding_balance) > 0;
 
   return (
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
@@ -172,7 +172,7 @@ export default function AdminCustomerDetailPage() {
             <dd
               className={`text-right font-medium tabular-nums ${creditOwed ? "text-status-cancelled-text" : "text-ink"}`}
             >
-              {formatCurrency(customer.credit_balance)}
+              {formatCurrency(customer.outstanding_balance)}
             </dd>
           </dl>
         </Card>
@@ -184,6 +184,7 @@ export default function AdminCustomerDetailPage() {
           <form key={`${customer.id}-${customer.notes}-${customer.tags.join("-")}`} className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => {
             event.preventDefault(); const data = new FormData(event.currentTarget);
             updateCustomer.mutate({
+              city: String(data.get("city") ?? "").trim(),
               first_name: String(data.get("first_name") ?? ""), last_name: String(data.get("last_name") ?? ""),
               email: String(data.get("email") ?? "") || null, secondary_phone: String(data.get("secondary_phone") ?? ""),
               whatsapp_number: String(data.get("whatsapp_number") ?? ""), source: String(data.get("source")) as typeof customer.source,
@@ -196,6 +197,7 @@ export default function AdminCustomerDetailPage() {
             <Field label={t("settings.lastName")} htmlFor="customer-last"><Input id="customer-last" name="last_name" defaultValue={customer.last_name} /></Field>
             <Field label={t("settings.email")} htmlFor="customer-email"><Input id="customer-email" name="email" type="email" defaultValue={customer.email ?? ""} /></Field>
             <Field label="Secondary phone" htmlFor="customer-secondary"><Input id="customer-secondary" name="secondary_phone" defaultValue={customer.secondary_phone} /></Field>
+            <Field label={t("adminCustomers.city")} htmlFor="customer-city"><Input id="customer-city" name="city" defaultValue={customer.city} maxLength={100} required /></Field>
             <Field label="WhatsApp" htmlFor="customer-whatsapp"><Input id="customer-whatsapp" name="whatsapp_number" defaultValue={customer.whatsapp_number} /></Field>
             <Field label={t("adminOrders.colSource")} htmlFor="customer-source"><Select id="customer-source" name="source" defaultValue={customer.source}>{["ONLINE", "WALK_IN", "REFERRAL", "OTHER"].map((source) => <option key={source}>{source.replace(/_/g, " ")}</option>)}</Select></Field>
             <Field label={t("adminOrders.pickupAddress")} htmlFor="customer-pickup"><Input id="customer-pickup" name="default_pickup_address" defaultValue={customer.default_pickup_address} /></Field>
@@ -312,7 +314,7 @@ export default function AdminCustomerDetailPage() {
             ))}
           </TBody>
         </TableContainer>
-        {creditOwed && (
+        {Number(customer.credit_balance) > 0 && (
           <p className="mt-3 text-xs text-ink-muted">
             Full history and charge/pay actions live on{" "}
             <Link

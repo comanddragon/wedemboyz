@@ -8,7 +8,6 @@ import {
   CalendarDays,
   MapPin,
   PackageCheck,
-  Save,
   Shirt,
   Truck,
   UserRound,
@@ -133,13 +132,6 @@ export default function AdminOrderDetailPage() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.orders.detail(orderId),
       }),
-  });
-
-  const detailsMutation = useMutation({
-    mutationFn: (input: Parameters<typeof ordersApi.updateOrder>[1]) =>
-      ordersApi.updateOrder(orderId, input),
-    onSuccess: (updated) =>
-      queryClient.setQueryData(queryKeys.orders.detail(orderId), updated),
   });
 
   const scheduleMutation = useMutation({
@@ -531,71 +523,7 @@ export default function AdminOrderDetailPage() {
         </Card>
 
         <div className="space-y-6">
-          <Card>
-            <h2 className="mb-3 text-sm font-semibold text-navy">
-              {t("adminOrders.operations")}
-            </h2>
-            <form
-              key={order.updated_at}
-              className="mt-3 grid gap-3 sm:grid-cols-[1fr_130px_auto] sm:items-end"
-              onSubmit={(event) => {
-                event.preventDefault();
-                const data = new FormData(event.currentTarget);
-                detailsMutation.mutate({
-                  internal_notes: String(data.get("internal_notes") ?? ""),
-                  tag_number: String(data.get("tag_number") ?? ""),
-                  priority: String(data.get("priority")) as
-                    "NORMAL" | "EXPRESS" | "URGENT",
-                  is_express: data.get("priority") !== "NORMAL",
-                });
-              }}
-            >
-              <Field label={t("adminOrders.internalNotes")} htmlFor="internal-notes">
-                <Input
-                  id="internal-notes"
-                  name="internal_notes"
-                  defaultValue={order.internal_notes}
-                  placeholder={t("adminOrders.tagPlaceholder")}
-                />
-              </Field>
-              <Field label={t("adminOrders.tag")} htmlFor="tag-number">
-                <Input
-                  id="tag-number"
-                  name="tag_number"
-                  defaultValue={order.tag_number}
-                />
-              </Field>
-              <div className="flex gap-2">
-                <Select
-                  name="priority"
-                  defaultValue={order.priority}
-                  aria-label="Order priority"
-                  className="w-28"
-                >
-                  <option value="NORMAL">{t("adminOrders.priorityNormal")}</option>
-                  <option value="EXPRESS">{t("adminOrders.priorityExpress")}</option>
-                  <option value="URGENT">{t("adminOrders.priorityUrgent")}</option>
-                </Select>
-                <Button
-                  type="submit"
-                  size="sm"
-                  aria-label={t("adminOrders.saveOperations")}
-                  disabled={detailsMutation.isPending}
-                >
-                  <Save className="h-3.5 w-3.5" aria-hidden="true" />
-                </Button>
-              </div>
-            </form>
-            {(detailsMutation.error ||
-              itemMutation.error) && (
-              <p className="mt-2 text-xs text-status-cancelled-text">
-                {getApiErrorMessage(
-                        detailsMutation.error ||
-                    itemMutation.error,
-                )}
-              </p>
-            )}
-          </Card>
+          {itemMutation.error && <p role="alert" className="text-sm text-status-cancelled-text">{getApiErrorMessage(itemMutation.error)}</p>}
 
           <Card>
             <h2 className="mb-3 text-sm font-semibold text-navy">

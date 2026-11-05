@@ -33,7 +33,7 @@ def _tier_for_lifetime_points(lifetime_points: int) -> str:
 
 
 def reward_eligible(order):
-    return order.status == "DELIVERED" and order.payment_status == "PAID"
+    return order.status != "CANCELLED"
 
 
 def reward_subtotal(order):
@@ -43,11 +43,11 @@ def reward_subtotal(order):
 
 @transaction.atomic
 def award_points_for_order(order):
-    """Call this once an order is marked DELIVERED and paid."""
+    """Award spending credits once when an order is placed."""
     from apps.discounts.models import LoyaltyProgramSettings, LoyaltyTransaction
     from apps.users.models import LoyaltyAccount
 
-    if not reward_eligible(order):
+    if order.status == "CANCELLED":
         return None
     if not LoyaltyProgramSettings.get_current().credit_points_enabled:
         return None
@@ -121,7 +121,7 @@ def award_badge_for_order(order):
 def award_ambassador_credit(promo_usage):
     from apps.discounts.models import AmbassadorCredit, AmbassadorProfile
 
-    if not reward_eligible(promo_usage.order):
+    if promo_usage.order.status == "CANCELLED":
         return None
     try:
         ambassador = AmbassadorProfile.objects.select_for_update().get(

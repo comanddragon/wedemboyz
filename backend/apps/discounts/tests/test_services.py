@@ -28,10 +28,8 @@ def test_tenth_badge_advances_tier_and_grants_reward():
         for _ in range(10)
     ]
 
-    for order in orders:
-        order.status = "DELIVERED"
-        order.payment_status = "PAID"
-        award_badge_for_order(order)
+    assert all(order.status == "PENDING" for order in orders)
+    assert all(order.payment_status == "UNPAID" for order in orders)
 
     account = BadgeAccount.objects.get(user=user)
     assert account.tier == BadgeAccount.Tier.BRONZE
@@ -47,8 +45,10 @@ def test_spending_awards_five_percent_credit_once_excluding_delivery():
         user=user, pickup_address="A", delivery_address="B", total_amount=4250, delivery_fee=1000
     )
 
-    order.status = "DELIVERED"
-    order.payment_status = "PAID"
+    assert order.status == "PENDING"
+    assert order.payment_status == "UNPAID"
+    user.loyalty_account.refresh_from_db()
+    assert user.loyalty_account.points_balance == 162
     award_points_for_order(order)
     order.status = "DELIVERED"
     order.payment_status = "PAID"
@@ -81,8 +81,8 @@ def test_ambassador_receives_five_percent_excluding_delivery_when_promo_is_used(
         delivery_fee=2000,
     )
 
-    order.status = "DELIVERED"
-    order.payment_status = "PAID"
+    assert order.status == "PENDING"
+    assert order.payment_status == "UNPAID"
     PromoUsage.objects.create(promo_code=promo, user=customer, order=order, discount_applied=0)
 
     ambassador.refresh_from_db()
@@ -103,6 +103,9 @@ def test_badge_threshold_excludes_delivery(total, delivery, qualifies):
         total_amount=total,
         delivery_fee=delivery,
     )
+    assert order.status == "PENDING"
+    assert order.payment_status == "UNPAID"
+    assert BadgeAccount.objects.filter(user=user, lifetime_badges=1).exists() == qualifies
     order.status = "DELIVERED"
     order.payment_status = "PAID"
     award_badge_for_order(order)

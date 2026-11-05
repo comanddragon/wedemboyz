@@ -150,7 +150,7 @@ def test_order_submission_and_status_snapshots(api_client, create_user):
         format="json",
     )
     assert response.status_code == 201, response.data
-    job = email_jobs().get()
+    job = email_jobs().get(idempotency_key=f"email/order/{response.data['id']}/received")
     assert job.args[1] == "order_received"
     assert "2 ×" in job.args[2]["text"]
     order = Order.objects.get(pk=response.data["id"])
@@ -158,7 +158,10 @@ def test_order_submission_and_status_snapshots(api_client, create_user):
         order.status = state
         order.save(update_fields=["status"])
     events = list(email_jobs().values_list("args", flat=True))
-    assert {args[1] for args in events} == {
+    assert {
+        args[1] for args in events if args[1].startswith("order_") or args[1] == "invoice_issued"
+    } == {
+        "invoice_issued",
         "order_received",
         "order_confirmed",
         "order_in_progress",

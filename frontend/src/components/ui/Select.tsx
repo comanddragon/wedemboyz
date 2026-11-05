@@ -161,9 +161,17 @@ export function Select({
 
   useEffect(() => {
     if (open && active >= 0) {
-      listRef.current
-        ?.querySelector<HTMLElement>(`[data-index="${active}"]`)
-        ?.scrollIntoView({ block: "nearest" });
+      // Scroll only the popup, never the dashboard or document behind it.
+      const list = listRef.current;
+      const option = list?.querySelector<HTMLElement>(`[data-index="${active}"]`);
+      if (!list || !option) return;
+      const listBounds = list.getBoundingClientRect();
+      const optionBounds = option.getBoundingClientRect();
+      if (optionBounds.top < listBounds.top) {
+        list.scrollTop -= listBounds.top - optionBounds.top;
+      } else if (optionBounds.bottom > listBounds.bottom) {
+        list.scrollTop += optionBounds.bottom - listBounds.bottom;
+      }
     }
   }, [open, active]);
 
@@ -187,7 +195,7 @@ export function Select({
       currentTarget: target,
     } as unknown as ChangeEvent<HTMLSelectElement>);
     setOpen(false);
-    triggerRef.current?.focus();
+    triggerRef.current?.focus({ preventScroll: true });
   }
 
   function move(delta: number) {

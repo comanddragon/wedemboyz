@@ -4,6 +4,7 @@ from apps.discounts.models import DiscountCampaign, PromoCode
 
 
 class PromoCodeSerializer(serializers.ModelSerializer):
+    is_ambassador_code = serializers.SerializerMethodField()
     times_used = serializers.SerializerMethodField()
     is_valid_now = serializers.SerializerMethodField()
 
@@ -21,11 +22,15 @@ class PromoCodeSerializer(serializers.ModelSerializer):
             "valid_from",
             "valid_until",
             "is_active",
+            "is_ambassador_code",
             "times_used",
             "is_valid_now",
             "created_at",
         ]
         read_only_fields = ["id", "times_used", "is_valid_now", "created_at"]
+
+    def get_is_ambassador_code(self, obj):
+        return hasattr(obj, "ambassador_profile")
 
     def get_times_used(self, obj):
         return obj.times_used()

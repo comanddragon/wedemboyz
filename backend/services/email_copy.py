@@ -18,6 +18,18 @@ LABELS = {
 }
 
 COPY = {
+    "invoice_issued": {
+        "en": (
+            "Your Wedemboyz invoice",
+            "Here is your itemized invoice. Review your charges, payments "
+            "and remaining balance below.",
+        ),
+        "fr": (
+            "Votre facture Wedemboyz",
+            "Voici votre facture détaillée. Consultez vos frais, paiements "
+            "et solde restant ci-dessous.",
+        ),
+    },
     "welcome": {
         "en": (
             "Welcome to Wedemboyz",

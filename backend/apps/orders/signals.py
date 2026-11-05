@@ -35,6 +35,10 @@ def on_order_status_changed(sender, instance, created, **kwargs):
         from services.order_payments import recompute_payment_status
 
         recompute_payment_status(instance, reason="Order created")
+        from services.loyalty import award_badge_for_order, award_points_for_order
+
+        award_points_for_order(instance)
+        award_badge_for_order(instance)
         return
 
     if previous_status is not None and previous_status != instance.status:

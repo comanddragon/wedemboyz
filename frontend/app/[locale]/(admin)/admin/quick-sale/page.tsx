@@ -190,6 +190,7 @@ export default function AdminQuickSalePage() {
             </Select>
           </Field>
           <QuickSaleItems
+            isExpress={isExpress}
             items={items}
             onAdd={(item) => setItems((prev) => [...prev, item])}
             onRemove={(clientId) =>

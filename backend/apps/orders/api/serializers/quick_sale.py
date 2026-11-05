@@ -137,6 +137,10 @@ class StaffQuickSaleSerializer(serializers.Serializer):
             )
 
         order.recalculate_total()
+        from services.loyalty import award_badge_for_order, award_points_for_order
+
+        award_points_for_order(order)
+        award_badge_for_order(order)
 
         payment_method = validated_data["payment_method"]
         paid_now = validated_data["paid_now"]

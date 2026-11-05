@@ -314,13 +314,13 @@ export default function LoyaltySettingsPage() {
             event.currentTarget.reset();
           }}
         >
-          <Field label={t("adminPrograms.rewardName")}>
+          <Field label={t("adminPrograms.rewardName")} className="mb-0">
             <Input name="name" required />
           </Field>
-          <Field label={t("adminPrograms.description")}>
+          <Field label={t("adminPrograms.description")} className="mb-0">
             <Input name="description" />
           </Field>
-          <Field label={t("adminPrograms.programme")}>
+          <Field label={t("adminPrograms.programme")} className="mb-0">
             <Select
               name="track"
               value={rewardTrack}
@@ -332,7 +332,7 @@ export default function LoyaltySettingsPage() {
               <option value="BADGE">{t("adminPrograms.badgeCard")}</option>
             </Select>
           </Field>
-          <Field label={t("adminPrograms.creditCost")}>
+          <Field label={t("adminPrograms.creditCost")} className="mb-0">
             <Input
               name="points_cost"
               type="number"

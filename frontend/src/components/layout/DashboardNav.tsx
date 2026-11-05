@@ -53,6 +53,7 @@ type NavItem = {
   permission?: AdminPermission;
   superuserOnly?: boolean;
   badgeCount?: number;
+  badgeLabel?: string;
 };
 
 const ADMIN_LINKS: NavItem[] = [
@@ -215,7 +216,7 @@ function NavMore({ items, pathname }: { items: NavItem[]; pathname: string }) {
           id={menuId}
           className="ui-menu-in absolute right-0 top-[calc(100%+10px)] z-50 max-h-[calc(100dvh-7rem)] w-56 overflow-y-auto rounded-2xl border border-crease/70 bg-white p-1.5 shadow-pop"
         >
-          {items.map(({ href, label, icon: Icon, badgeCount }) => {
+          {items.map(({ href, label, icon: Icon, badgeCount, badgeLabel }) => {
             const active = isActive(pathname, href);
             return (
               <Link
@@ -231,7 +232,7 @@ function NavMore({ items, pathname }: { items: NavItem[]; pathname: string }) {
                 </span>
                 {label}
                 {badgeCount ? (
-                  <span className={`ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums ${active ? "bg-white text-navy" : "bg-status-cancelled-text text-white"}`}>
+                  <span title={badgeLabel} aria-label={badgeLabel} className={`ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums ${active ? "bg-white text-navy" : "bg-status-cancelled-text text-white"}`}>
                     {badgeCount > 99 ? "99+" : badgeCount}
                   </span>
                 ) : null}
@@ -372,6 +373,9 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
     return {
       ...item,
       href: item.href,
+      badgeLabel: item.href === "/orders" || item.href === "/admin/orders"
+        ? `${pendingOrders?.count ?? 0} ${t("nav.pendingOrders")}`
+        : undefined,
       badgeCount:
         item.href === "/chat" || item.href === "/admin/chat"
           ? unreadChatCount
@@ -435,7 +439,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
           className="mx-auto hidden max-w-[920px] items-center gap-1 rounded-full bg-white/90 p-1 shadow-float backdrop-blur lg:flex"
           aria-label={admin ? "Admin navigation" : "Customer navigation"}
         >
-          {links.slice(0, MAX_INLINE).map(({ href, label, badgeCount }) => (
+          {links.slice(0, MAX_INLINE).map(({ href, label, badgeCount, badgeLabel }) => (
             <Link
               key={href}
               href={href}
@@ -444,7 +448,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
             >
               {label}
               {badgeCount ? (
-                <span className="absolute -right-1.5 -top-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-status-cancelled-text px-1 text-[10px] font-bold tabular-nums text-white ring-2 ring-white">
+                <span title={badgeLabel} aria-label={badgeLabel} className="absolute -right-1.5 -top-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-status-cancelled-text px-1 text-[10px] font-bold tabular-nums text-white ring-2 ring-white">
                   {badgeCount > 99 ? "99+" : badgeCount}
                 </span>
               ) : null}
@@ -516,7 +520,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                   admin ? "Admin quick navigation" : "Customer quick navigation"
                 }
               >
-                {mobileLinks.map(({ href, label, icon: Icon, badgeCount }) => {
+                {mobileLinks.map(({ href, label, icon: Icon, badgeCount, badgeLabel }) => {
                   const active = isActive(pathname, href);
                   return (
                     <Link
@@ -530,7 +534,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                         aria-hidden="true"
                       />
                       {badgeCount ? (
-                        <span className="absolute right-[22%] top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-status-cancelled-text px-1 text-[9px] font-bold text-white ring-2 ring-white">
+                        <span title={badgeLabel} aria-label={badgeLabel} className="absolute right-[22%] top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-status-cancelled-text px-1 text-[9px] font-bold text-white ring-2 ring-white">
                           {badgeCount > 9 ? "9+" : badgeCount}
                         </span>
                       ) : null}
@@ -576,7 +580,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                       className="mt-6 grid min-h-0 grid-cols-2 gap-2 overflow-y-auto overscroll-contain pb-4"
                       aria-label="All navigation"
                     >
-                      {links.map(({ href, label, icon: Icon, badgeCount }) => (
+                      {links.map(({ href, label, icon: Icon, badgeCount, badgeLabel }) => (
                         <Link
                           key={href}
                           href={href}
@@ -587,7 +591,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                           <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
                           {label}
                           {badgeCount ? (
-                            <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-status-cancelled-text px-1 text-[10px] font-bold text-white">
+                            <span title={badgeLabel} aria-label={badgeLabel} className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-status-cancelled-text px-1 text-[10px] font-bold text-white">
                               {badgeCount > 99 ? "99+" : badgeCount}
                             </span>
                           ) : null}

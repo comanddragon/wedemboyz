@@ -16,6 +16,8 @@ export interface CustomerListItem {
   /** Excludes cancelled orders. */
   lifetime_spend: string;
   loyalty_tier: LoyaltyTier | null;
+  loyalty_points_earned: number;
+  outstanding_balance: string;
   credit_balance: string;
   last_order_at: string | null;
   source: "ONLINE" | "WALK_IN" | "REFERRAL" | "OTHER";
@@ -47,7 +49,7 @@ export interface CustomerDetail extends CustomerListItem {
 
 export type CustomerInput = Partial<Pick<CustomerDetail,
   "gender" | "first_name" | "last_name" | "phone_number" | "email" | "is_active" |
-  "address_line" | "notes" | "source" | "tags" | "is_blocked" |
+  "city" | "address_line" | "notes" | "source" | "tags" | "is_blocked" |
   "blocked_reason" | "marketing_opt_in" | "whatsapp_number" |
   "secondary_phone" | "default_pickup_address" | "is_walk_in"
 >>;

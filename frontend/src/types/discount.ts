@@ -15,6 +15,7 @@ export interface PromoCode {
   valid_from: string;
   valid_until: string;
   is_active: boolean;
+  is_ambassador_code: boolean;
   times_used: number;
   is_valid_now: boolean;
   created_at: string;

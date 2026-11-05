@@ -82,8 +82,9 @@ export default function AdminAmbassadorsPage() {
         }}
       >
         <div className="min-w-0 flex-1">
-          <Field label={t("adminPrograms.customerAccount")}>
+          <Field label={t("adminPrograms.customerAccount")} htmlFor="ambassador-customer" className="mb-0">
             <Select
+              id="ambassador-customer"
               value={customerId}
               onChange={(event) => setCustomerId(event.target.value)}
               required
@@ -163,8 +164,8 @@ export default function AdminAmbassadorsPage() {
                     const balance = new FormData(event.currentTarget).get("credit_balance");
                     if (typeof balance === "string") creditMutation.mutate({ id: ambassador.id, credit_balance: balance });
                   }}>
-                    <Field label={t("adminPrograms.availableCredits")}>
-                      <Input name="credit_balance" type="number" min={0} max={999999999999} step={1} required defaultValue={ambassador.credit_balance} aria-label={`${ambassador.name}: ${t("adminPrograms.availableCredits")}`} className="w-36" />
+                    <Field label={t("adminPrograms.availableCredits")} htmlFor={`ambassador-credit-${ambassador.id}`} className="mb-0">
+                      <Input id={`ambassador-credit-${ambassador.id}`} name="credit_balance" type="number" min={0} max={999999999999} step={1} required defaultValue={ambassador.credit_balance} aria-label={`${ambassador.name}: ${t("adminPrograms.availableCredits")}`} className="w-36" />
                     </Field>
                     <Button type="submit" disabled={creditMutation.isPending}>{t("adminPrograms.saveCredits")}</Button>
                   </form>

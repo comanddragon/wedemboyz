@@ -31,7 +31,7 @@ def test_pay_order_consumes_credits_once_and_updates_payment_status():
     user.loyalty_account.refresh_from_db()
     assert order.payment_status == "PAID"
     assert order.amount_paid == 6000
-    assert user.loyalty_account.points_balance == 1000
+    assert user.loyalty_account.points_balance == 1300
     assert client.post("/api/v1/loyalty/pay-order/", {"order_id": order.pk}).status_code == 400
     assert LoyaltyTransaction.objects.filter(order=order, transaction_type="REDEEM").count() == 1
 
@@ -87,7 +87,7 @@ def test_owner_can_edit_promo_and_unphotographed_ambassador_ranks():
     assert any(row["ambassador"]["id"] == ambassador.pk for row in response.data["results"])
 
 
-def test_delivered_order_earns_only_after_late_payment_and_only_once():
+def test_credits_earned_at_placement_are_not_duplicated_by_late_payment():
     from apps.orders.tasks import award_loyalty_points_for_delivered_order
     from apps.payments.models import Payment
     from services.order_payments import recompute_payment_status
@@ -102,7 +102,9 @@ def test_delivered_order_earns_only_after_late_payment_and_only_once():
         status="DELIVERED",
     )
     award_loyalty_points_for_delivered_order(order.pk)
-    assert not LoyaltyTransaction.objects.filter(order=order, transaction_type="EARN").exists()
+    assert LoyaltyTransaction.objects.filter(order=order, transaction_type="EARN").count() == 1
+    user.loyalty_account.refresh_from_db()
+    assert user.loyalty_account.points_balance == 250
     Payment.objects.create(order=order, amount=6000, gateway="CASH", status="SUCCEEDED")
     recompute_payment_status(order)
     award_loyalty_points_for_delivered_order(order.pk)

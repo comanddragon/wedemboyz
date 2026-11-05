@@ -82,3 +82,6 @@ def test_counter_express_doubles_service_rates_and_manual_prices_only(create_use
     assert order.subtotal == 9200
     assert order.delivery_fee == 1500
     assert order.total_amount == 10700
+    order.user.loyalty_account.refresh_from_db()
+    assert order.user.loyalty_account.points_balance == 460
+    assert order.user.badge_account.lifetime_badges == 1

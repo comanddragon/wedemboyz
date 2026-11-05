@@ -219,6 +219,7 @@ export default function AdminPromoCodeDetailPage() {
             ? t("adminDiscounts.close")
             : t("adminDiscounts.editDetails")}
         </Button>
+        {!promo.is_ambassador_code && (
         <Button
           variant="ghost"
           onClick={handleDelete}
@@ -229,7 +230,10 @@ export default function AdminPromoCodeDetailPage() {
             ? t("adminDiscounts.deleting")
             : t("adminDiscounts.deleteCode")}
         </Button>
+        )}
       </div>
+
+      {promo.is_ambassador_code && <p className="mb-4 text-sm text-ink-muted">{t("adminDiscounts.ambassadorCodeProtected")}</p>}
 
       {deleteError && (
         <p className="mb-4 text-sm text-status-cancelled-text">{deleteError}</p>

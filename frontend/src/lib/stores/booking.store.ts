@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+import { PIECE_RATES } from "@/src/lib/booking-services";
+
 import type { OrderItemInput, ServiceType } from "@/src/types";
 
 export interface DraftItem extends OrderItemInput {
@@ -129,20 +131,6 @@ export const useBookingStore = create<BookingState>()((set) => ({
  * DELIVERY_FEE_FLAT. The server recomputes and is always authoritative;
  * this exists purely so the booking wizard isn't blank while typing.
  */
-const ESTIMATED_PRICE_PER_PIECE: Partial<Record<ServiceType, number>> = {
-  VESTE: 2000,
-  TSHIRT: 500,
-  CHEMISE: 600,
-  PANTALON: 500,
-  PULL: 1000,
-  PETITE_ROBE: 1000,
-  ROBE: 2500,
-  ENSEMBLE: 2000,
-  DRAPS_COMPLET: 1500,
-  COUETTE_1P: 2000,
-  COUETTE_2P: 3000,
-  COUETTE_3P: 4000,
-};
 const ESTIMATED_PRICE_PER_KG: Partial<Record<ServiceType, number>> = {
   LAVAGE_ESSORAGE: 600,
   LAVAGE_SECHAGE: 1000,
@@ -155,7 +143,7 @@ const ESTIMATED_MINIMUM_CHARGE_PER_KG_ITEM = 0;
 const ESTIMATED_DELIVERY_FEE = 1500;
 
 function estimateItemUnitPrice(item: DraftItem): number {
-  const flat = ESTIMATED_PRICE_PER_PIECE[item.service_type];
+  const flat = PIECE_RATES[item.service_type];
   if (flat !== undefined) return flat;
 
   const perKg = ESTIMATED_PRICE_PER_KG[item.service_type];

@@ -1,6 +1,7 @@
 from django.db.models import Count, F, Q
+from django.db.models.deletion import ProtectedError
 from django.utils import timezone
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -44,7 +45,7 @@ class PromoCodeListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsStaffOrReadOnly]
 
     def get_queryset(self):
-        qs = PromoCode.objects.all()
+        qs = PromoCode.objects.select_related("ambassador_profile")
         if not self.request.user.is_staff:
             qs = qs.filter(is_active=True)
         if self.request.query_params.get("available") == "true":
@@ -62,9 +63,20 @@ class PromoCodeListCreateView(generics.ListCreateAPIView):
 class PromoCodeDetailView(generics.RetrieveUpdateDestroyAPIView):
     """GET/PATCH/DELETE /api/v1/discounts/promo-codes/{id}/"""
 
-    queryset = PromoCode.objects.all()
+    queryset = PromoCode.objects.select_related("ambassador_profile")
     serializer_class = PromoCodeSerializer
     permission_classes = [IsStaffOrReadOnly]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+        except ProtectedError:
+            return Response(
+                {"detail": "This promo code is linked to an ambassador account and cannot be deleted. Pause the code to stop new uses while preserving ambassador balances and history."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class DiscountCampaignListCreateView(generics.ListCreateAPIView):

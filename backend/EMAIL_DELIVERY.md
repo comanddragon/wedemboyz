@@ -68,11 +68,18 @@ jobs. This is not an unlimited exactly-once delivery guarantee.
   protection requires existing sessions to sign in again after deployment.
 - Customer order submission (including quick sales): order received, with item
   summary and totals. Existing owner order mail now also includes branded HTML.
+- Order submission also issues a separate itemized invoice email, once per invoice.
+  It includes the invoice number, issue date, quantities, unit prices, subtotal,
+  delivery fee, discount, total, paid amount and balance. Final submission pricing
+  is reconciled before the invoice snapshot is queued.
 - Collection/delivery schedules: initial booking, rescheduling, and progress changes.
 - Order status transitions: confirmed, in progress, ready, out for delivery,
   delivered, cancelled. Each history entry creates a separate event snapshot.
 - Payment success: receipt, amount, method, reference and date. Failure: payment
   unsuccessful. Email delivery is independent of the receipt SMS task.
+  Successful receipts include a stable `REC-<payment id>` number and, for order
+  payments, the invoice reference, item summary and current remaining balance.
+  Partial payments receive individual receipts; a receipt does not imply settlement.
 - Refund request/status transitions: pending, approved, rejected, processed.
 - Subscriptions: activated, renewed, automatic renewal disabled, cancelled, expired.
   The daily expiry sweep saves each subscription so the expiry email is produced.
@@ -82,7 +89,7 @@ jobs. This is not an unlimited exactly-once delivery guarantee.
 Every purpose has an HTML template in `templates/emails/` and English/French copy
 in `services/email_copy.py`; all include a plain-text alternative. The recipient's
 profile language selects the locale. HTML escapes customer-provided text.
-Transactional receipts, refunds, and security mail bypass the optional email
+Transactional invoices, receipts, refunds, and security mail bypass the optional email
 preference. Other customer mail respects `email_enabled`; promotional mail also
 requires both `promo_opt_in` and profile `marketing_opt_in`. Inactive/deleted users,
 changed recipient addresses, seed mode, absent addresses, and `.invalid` seed

@@ -1,4 +1,5 @@
-from django.db.models import Count, Max, Q, Sum
+from django.db.models import Count, DecimalField, F, Max, Q, Sum, Value
+from django.db.models.functions import Coalesce, Greatest
 from rest_framework import generics, permissions
 from rest_framework import status
 from rest_framework.response import Response
@@ -60,6 +61,13 @@ class CustomerListView(generics.ListCreateAPIView):
                 lifetime_spend=Sum(
                     "orders__total_amount", filter=Q(orders__status__in=BILLABLE_STATUSES)
                 ),
+                outstanding_balance=Coalesce(
+                    Sum(
+                        Greatest(F("orders__total_amount") - F("orders__amount_paid"), Value(0), output_field=DecimalField()),
+                        filter=Q(orders__status__in=BILLABLE_STATUSES),
+                    ),
+                    Value(0), output_field=DecimalField(),
+                ),
                 last_order_at=Max("orders__created_at"),
             )
         )
@@ -90,9 +98,9 @@ class CustomerListView(generics.ListCreateAPIView):
             qs = qs.filter(is_active=active == "true")
         has_credit = self.request.query_params.get("has_credit")
         if has_credit == "true":
-            qs = qs.filter(credit_account__balance__gt=0)
+            qs = qs.filter(outstanding_balance__gt=0)
         elif has_credit == "false":
-            qs = qs.filter(Q(credit_account__isnull=True) | Q(credit_account__balance=0))
+            qs = qs.filter(outstanding_balance=0)
         source = self.request.query_params.get("source")
         if source:
             qs = qs.filter(profile__source=source)
@@ -126,6 +134,13 @@ class CustomerDetailView(generics.RetrieveUpdateAPIView):
                 orders_count=Count("orders", distinct=True),
                 lifetime_spend=Sum(
                     "orders__total_amount", filter=Q(orders__status__in=BILLABLE_STATUSES)
+                ),
+                outstanding_balance=Coalesce(
+                    Sum(
+                        Greatest(F("orders__total_amount") - F("orders__amount_paid"), Value(0), output_field=DecimalField()),
+                        filter=Q(orders__status__in=BILLABLE_STATUSES),
+                    ),
+                    Value(0), output_field=DecimalField(),
                 ),
                 last_order_at=Max("orders__created_at"),
             )

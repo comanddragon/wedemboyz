@@ -32,14 +32,14 @@ const PAYMENT_OPTIONS: Array<{
 }> = [
   {
     value: "PAY_AT_PICKUP",
-    title: "Pay on pickup",
-    description: "Pay when we collect your items or when you drop them off.",
+    title: "booking.confirm.payOnPickup",
+    description: "booking.confirm.payOnPickupBody",
     icon: HandCoins,
   },
   {
     value: "PAY_AFTER_DELIVERY",
-    title: "Pay on delivery",
-    description: "Pay when your cleaned items are delivered to you.",
+    title: "booking.confirm.payOnDelivery",
+    description: "booking.confirm.payOnDeliveryBody",
     icon: Truck,
   },
 ];
@@ -80,7 +80,7 @@ export default function BookConfirmPage() {
         pickup_address:
           booking.orderType === "pickup"
             ? booking.pickupAddress.trim()
-            : "In-store drop-off",
+            : t("booking.dropoff"),
         delivery_address: booking.deliveryAddress.trim(),
         notes: booking.notes,
         items: booking.items.map(
@@ -147,23 +147,23 @@ export default function BookConfirmPage() {
   return (
     <BookingShell
       step={4}
-      subtitle="Step 4 — payment option"
+      subtitle="booking.confirm.step4"
       actions={
         <Link
           href="/book/review"
           className={buttonStyles({ variant: "ghost" })}
         >
-          Back
+          {t("booking.back")}
         </Link>
       }
     >
       <Card className="grid items-start gap-x-12 gap-y-6 lg:grid-cols-[1.2fr_1fr] lg:p-7">
         <div>
           <p className="mb-5 text-sm text-ink-muted">
-            Estimated total:{" "}
+            {t("booking.total")}:{" "}
             <span className="text-base font-semibold text-navy">
               {booking.hasPendingWeight
-                ? "Confirmed after weighing"
+                ? t("booking.confirm.afterWeighing")
                 : formatCurrency(booking.total)}
             </span>
           </p>
@@ -171,32 +171,34 @@ export default function BookConfirmPage() {
           {needsContact ? (
             <div className="mb-6">
               <p className="mb-1 text-sm font-medium text-ink">
-                Your contact details
+                {t("booking.confirm.contactDetails")}
               </p>
               <p className="mb-3 text-xs text-ink-muted">
-                We&apos;ll use these details for order updates.
+                {t("booking.confirm.contactBody")}
               </p>
-              <Field label="Your name">
+              <Field label={t("booking.confirm.yourName")} htmlFor="booking-contact-name">
                 <Input
                   type="text"
                   required
                   maxLength={100}
+                  id="booking-contact-name"
                   autoComplete="name"
                   value={contactName}
                   onChange={(event) => setContactName(event.target.value)}
-                  placeholder="e.g. Ada Ngo"
+                  placeholder={t("booking.confirm.namePlaceholder")}
                 />
               </Field>
-              <Field label="Phone number">
+              <Field label={t("booking.confirm.phoneNumber")} htmlFor="booking-contact-phone">
                 <Input
                   type="tel"
                   required
                   pattern="[+]?[0-9 ]{9,18}"
                   maxLength={19}
+                  id="booking-contact-phone"
                   autoComplete="tel"
                   value={contactPhone}
                   onChange={(event) => setContactPhone(event.target.value)}
-                  placeholder="e.g. 677300001"
+                  placeholder={t("booking.confirm.phonePlaceholder")}
                 />
               </Field>
             </div>
@@ -204,7 +206,7 @@ export default function BookConfirmPage() {
 
           <fieldset className="space-y-3">
             <legend className="mb-2 text-sm font-medium text-ink">
-              Payment option
+              {t("booking.paymentStep")}
             </legend>
             {PAYMENT_OPTIONS.map(
               ({ value, title, description, icon: Icon }) => {
@@ -229,10 +231,10 @@ export default function BookConfirmPage() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold text-ink">
-                        {title}
+                        {t(title)}
                       </span>
                       <span className="mt-0.5 block text-xs leading-5 text-ink-muted">
-                        {description}
+                        {t(description)}
                       </span>
                     </span>
                     {selected ? (
@@ -250,11 +252,10 @@ export default function BookConfirmPage() {
 
         <div className="lg:border-l lg:border-crease lg:pl-12">
           <h2 className="font-display text-base font-semibold text-navy">
-            Ready to place your order?
+            {t("booking.confirm.ready")}
           </h2>
           <p className="mt-2 text-sm leading-6 text-ink-muted">
-            No payment will be taken now. The team will confirm your order and
-            your selected payment timing.
+            {t("booking.confirm.noPaymentNow")}
           </p>
           {errorMessage ? (
             <p role="alert" className="mt-4 text-sm text-status-cancelled-text">
@@ -273,7 +274,7 @@ export default function BookConfirmPage() {
             }
             className="mt-6 w-full"
           >
-            {submitMutation.isPending ? "Placing order..." : "Place order"}
+            {t(submitMutation.isPending ? "booking.confirm.placingOrder" : "booking.confirm.placeOrder")}
           </Button>
         </div>
       </Card>

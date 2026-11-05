@@ -6,6 +6,7 @@ import Image from "next/image";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useRef, useState } from "react";
 
+import { ServiceRate } from "@/src/components/booking/ServiceRate";
 import { BookingShell } from "@/src/components/booking/BookingShell";
 import {
   Button,
@@ -23,17 +24,16 @@ import { useI18n } from "@/src/i18n/I18nProvider";
 import { ensureSession } from "@/src/lib/guest-session";
 import type { ServiceType } from "@/src/types";
 
-import { PIECE_SERVICES, KILO_SERVICES, KILO_RATES, isKiloService } from "@/src/lib/booking-services";
+import { PIECE_SERVICES, KILO_SERVICES } from "@/src/lib/booking-services";
 
 export default function BookServicesPage() {
   const { t } = useI18n();
   const { items, addItem, updateItem, removeItem, subtotal, isExpress, setIsExpress } = useBooking();
 
-  const [serviceType, setServiceType] = useState<ServiceType>("TSHIRT");
-  const [serviceGroup, setServiceGroup] = useState<"piece" | "kilo">("piece");
+  const [serviceType, setServiceType] = useState<ServiceType>("LAVAGE_SECHAGE");
+  const [serviceGroup, setServiceGroup] = useState<"piece" | "kilo">("kilo");
   const isKilo = serviceGroup === "kilo";
   const [description, setDescription] = useState("");
-  const [quantity, setQuantity] = useState("1");
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [photoError, setPhotoError] = useState("");
@@ -89,7 +89,6 @@ export default function BookServicesPage() {
     setServiceType(item.service_type);
     setDescription(item.description ?? "");
     setServiceGroup(KILO_SERVICES.includes(item.service_type) ? "kilo" : "piece");
-    setQuantity(String(item.quantity ?? 1));
     setPhotos(item.photos ?? []);
     setPhotoPreviews(item.photoPreviewUrls ?? []);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -105,7 +104,7 @@ export default function BookServicesPage() {
       label: items.find((item) => item.clientId === editingId)?.label ?? "",
       description,
       weight_kg: null,
-      quantity: isKilo ? 1 : Number(quantity) || 1,
+      quantity: 1,
       photos,
       photoPreviewUrls: photoPreviews,
     };
@@ -113,7 +112,6 @@ export default function BookServicesPage() {
     else addItem(item);
     setEditingId(null);
     setDescription("");
-    setQuantity("1");
     setPhotos([]);
     setPhotoPreviews([]);
     setPhotoError("");
@@ -150,7 +148,6 @@ export default function BookServicesPage() {
                   const group = e.target.value as "piece" | "kilo";
                   setServiceGroup(group);
                   setServiceType(group === "piece" ? "TSHIRT" : "LAVAGE_SECHAGE");
-                  setQuantity("1");
                   setPhotoError("");
                 }}
               >
@@ -167,11 +164,13 @@ export default function BookServicesPage() {
               >
                 {(isKilo ? KILO_SERVICES : PIECE_SERVICES).map((type) => (
                   <option key={type} value={type}>
-                    {serviceLabel(type)}{isKiloService(type) ? ` — ${KILO_RATES[type]} F/kg` : ""}
+                    {serviceLabel(type)}
                   </option>
                 ))}
               </Select>
             </Field>
+
+            <ServiceRate service={serviceType} isExpress={isExpress} />
 
             <Field label={t("booking.description")}>
               <Textarea
@@ -252,20 +251,6 @@ export default function BookServicesPage() {
                 </p>
               )}
             </div>
-
-            {!isKilo && (
-              <Field label={t("booking.quantity")} htmlFor="booking-quantity">
-                <Input
-                  id="booking-quantity"
-                  type="number"
-                  min="1"
-                  step="1"
-                  required
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                />
-              </Field>
-            )}
 
             <Button type="submit" variant="secondary" className="w-full">
               {editingId ? t("booking.save") : t("booking.addItem")}

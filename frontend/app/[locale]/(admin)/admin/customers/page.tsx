@@ -179,6 +179,7 @@ export default function AdminCustomersPage() {
             onSort={() => toggleSort("lifetime_spend")}
           />
           <Th>{t("adminCustomers.tier")}</Th>
+          <Th align="right">{t("adminCustomers.pointsEarned")}</Th>
           <Th align="right">{t("adminCustomers.credit")}</Th>
           <SortableTh
             label={t("adminCustomers.joined")}
@@ -189,10 +190,10 @@ export default function AdminCustomersPage() {
           <Th className="w-8" />
         </THead>
         <TBody>
-          {isLoading && <TableSkeleton columns={9} />}
+          {isLoading && <TableSkeleton columns={10} />}
 
           {!isLoading && data && data.results.length === 0 && (
-            <TableEmptyRow colSpan={9}>
+            <TableEmptyRow colSpan={10}>
               {search ? t("adminCustomers.noMatch") : t("adminCustomers.empty")}
             </TableEmptyRow>
           )}
@@ -226,13 +227,14 @@ export default function AdminCustomersPage() {
                     <span className="text-ink-muted">—</span>
                   )}
                 </Td>
+                <Td align="right" className="tabular-nums">{customer.loyalty_points_earned}</Td>
                 <Td align="right" className="tabular-nums">
-                  {Number(customer.credit_balance) > 0 ? (
+                  {Number(customer.outstanding_balance) > 0 ? (
                     <span className="font-medium text-status-cancelled-text">
-                      {formatCurrency(customer.credit_balance)}
+                      {formatCurrency(customer.outstanding_balance)}
                     </span>
                   ) : (
-                    <span className="text-ink-muted">—</span>
+                    <span className="text-ink-muted">{formatCurrency(0)}</span>
                   )}
                 </Td>
                 <Td className="whitespace-nowrap text-ink-muted">

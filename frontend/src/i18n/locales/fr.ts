@@ -70,6 +70,7 @@ export const fr: typeof en = {
     rights: "Tous droits réservés.",
   },
   nav: {
+    pendingOrders: "commandes en attente",
     dashboard: "Tableau de bord",
     quickSale: "Vente rapide",
     orders: "Commandes",
@@ -263,7 +264,7 @@ export const fr: typeof en = {
     title: "Classement des ambassadeurs",
     headline: "Partagez, progressez, prenez la tête.",
     description:
-      "Chaque commande payée avec votre code rapporte 5 % de son montant hors livraison. Un crédit vaut 1 FCFA.",
+      "Chaque commande passée avec votre code rapporte immédiatement 5 % de son montant hors livraison. Un crédit vaut 1 FCFA.",
     rank: "Votre rang",
     period: "Cette période",
     credits: "Crédits disponibles",
@@ -314,6 +315,27 @@ export const fr: typeof en = {
     credit: "Crédit (payer plus tard)",
   },
   booking: {
+    confirm: {
+      step4: "Étape 4 — mode de paiement",
+      payOnPickup: "Payer à la collecte",
+      payOnPickupBody: "Payez lorsque nous récupérons votre linge ou lorsque vous le déposez en boutique.",
+      payOnDelivery: "Payer à la livraison",
+      payOnDeliveryBody: "Payez lorsque votre linge propre vous est livré.",
+      afterWeighing: "Confirmé après pesée",
+      contactDetails: "Vos coordonnées",
+      contactBody: "Nous utiliserons ces coordonnées pour vous informer du suivi de votre commande.",
+      yourName: "Votre nom",
+      phoneNumber: "Numéro de téléphone",
+      namePlaceholder: "p. ex. Ada Ngo",
+      phonePlaceholder: "p. ex. 677300001",
+      ready: "Prêt à passer votre commande ?",
+      noPaymentNow: "Aucun paiement ne sera effectué maintenant. Notre équipe confirmera votre commande et le moment du paiement choisi.",
+      placingOrder: "Envoi de la commande…",
+      placeOrder: "Passer la commande",
+    },
+    serviceRate: "Tarif du service",
+    perKg: "/ kg",
+    perPiece: "/ pièce",
     speed: "Délai de service",
     normal: "Normal — tarifs habituels",
     express: "Express — tarifs des services ×2",
@@ -449,7 +471,7 @@ export const fr: typeof en = {
     assign: "Nommer ambassadeur",
     roster: "Ambassadeurs inscrits",
     rosterBody:
-      "Les codes promo rapportent 5 % des commandes payées, hors livraison.",
+      "Les codes promo rapportent immédiatement 5 % des commandes dès leur création, hors livraison.",
     saveCredits: "Enregistrer les crédits",
     availableCredits: "crédits disponibles",
     active: "Actif",
@@ -462,10 +484,10 @@ export const fr: typeof en = {
       "Gérez séparément les programmes de crédits et de badges, puis définissez les récompenses accessibles aux clients.",
     creditRewards: "Récompenses par crédits",
     creditRewardsBody:
-      "Les commandes terminées et payées rapportent 5 % du montant hors livraison. Un crédit vaut 1 FCFA et peut servir à payer une commande.",
+      "Les commandes rapportent immédiatement 5 % du montant dès leur création, hors livraison. Un crédit vaut 1 FCFA et peut servir à payer une commande.",
     badgeTiers: "Niveaux de badges",
     badgeTiersBody:
-      "Une commande terminée et payée d’au moins 5 000 FCFA hors livraison rapporte un badge. Dix badges débloquent une récompense et le niveau suivant.",
+      "Une commande d’au moins 5 000 FCFA hors livraison rapporte un badge dès sa création. Dix badges débloquent une récompense et le niveau suivant.",
     controls: "Contrôles du programme",
     controlsBody:
       "La mise en pause d’un programme ne supprime jamais les soldes, niveaux, récompenses ni l’historique.",
@@ -515,11 +537,11 @@ export const fr: typeof en = {
     member: "membre",
     lifetime: "Crédits gagnés depuis le début",
     creditRewards: "Récompenses par crédits",
-    redeem: "Gagnez 5 % du montant des commandes terminées et payées, hors livraison. Un crédit vaut 1 FCFA. Payez depuis le détail de la commande.",
+    redeem: "Gagnez immédiatement 5 % du montant dès la création de la commande, hors livraison. Un crédit vaut 1 FCFA. Payez depuis le détail de la commande.",
     pausedCredits: "Les récompenses par crédits sont actuellement en pause.",
     washCard: "Carte de récompenses lavage",
     washCardBody:
-      "Une commande terminée et payée d’au moins 5 000 FCFA hors livraison rapporte un badge. Dix badges débloquent une récompense et le niveau suivant.",
+      "Une commande d’au moins 5 000 FCFA hors livraison rapporte un badge dès sa création. Dix badges débloquent une récompense et le niveau suivant.",
     pausedCard: "La carte de récompenses lavage est actuellement en pause.",
     of: "sur",
     badges: "badges",
@@ -816,7 +838,8 @@ export const fr: typeof en = {
     orders: "Commandes",
     spend: "Dépenses cumulées",
     tier: "Niveau de fidélité",
-    credit: "Crédit dû",
+    credit: "Commandes impayées",
+    pointsEarned: "Points de lavage cumulés",
     joined: "Inscription",
     noMatch: "Aucun client ne correspond à votre recherche.",
     empty: "Aucun client.",
@@ -1445,6 +1468,7 @@ export const fr: typeof en = {
     action: "Action",
   },
   adminDiscounts: {
+    ambassadorCodeProtected: "Ce code est lié à un ambassadeur. Mettez-le en pause pour empêcher de nouvelles utilisations ; il est conservé pour préserver les soldes et l’historique.",
     title: "Réductions & Promotions",
     description:
       "Gérez les campagnes promotionnelles et les codes de réduction individuels.",

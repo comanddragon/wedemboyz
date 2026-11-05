@@ -358,6 +358,34 @@
     }
 }
 
+/* Standard mobile pages use the document as their vertical scroll owner.
+   A fixed-height inner scroller around horizontally scrolling tables can trap
+   upward gestures and clip content as the browser chrome changes height.
+   Booking and chat retain their dedicated full-height scrolling layouts. */
+@media (max-width: 1023.98px) {
+    .dashboard-canvas:has(.dashboard-scroll > main) {
+        height: auto;
+        min-height: 100dvh;
+        overflow: visible;
+    }
+
+    .dashboard-canvas:has(.dashboard-scroll > main) .dashboard-shell {
+        height: auto;
+        min-height: calc(100dvh - 2rem);
+        overflow: clip;
+    }
+
+    .dashboard-canvas:has(.dashboard-scroll > main) .dashboard-scroll {
+        overflow: visible;
+    }
+}
+
+@media (max-width: 639px) {
+    .dashboard-canvas:has(.dashboard-scroll > main) .dashboard-shell {
+        min-height: 100dvh;
+    }
+}
+
 /* Admin messaging fills the viewport above the bottom tab bar exactly:
    drop the shell's generic bottom padding for this page and reserve the real
    tab-bar height (pt-2 + 3rem button + 1px border + safe-area-aware bottom). */
