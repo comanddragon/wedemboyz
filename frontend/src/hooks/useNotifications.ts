@@ -7,20 +7,21 @@ import { notificationsApi } from "@/src/lib/api";
 import { queryKeys } from "@/src/lib/query-keys";
 import { useNotificationStore } from "@/src/lib/stores/notification.store";
 
-export function useNotifications(page = 1) {
+export function useNotifications(page = 1, unreadOnly = false) {
   const queryClient = useQueryClient();
   const setUnreadCount = useNotificationStore((state) => state.setUnreadCount);
-  const decrementUnreadCount = useNotificationStore((state) => state.decrement);
   const unreadCount = useNotificationStore((state) => state.unreadCount);
 
   const listQuery = useQuery({
-    queryKey: queryKeys.notifications.list(page),
-    queryFn: () => notificationsApi.listNotifications(page),
+    queryKey: [...queryKeys.notifications.list(page), { unreadOnly }],
+    queryFn: () => notificationsApi.listNotifications(page, unreadOnly ? false : undefined),
+    refetchInterval: 30_000,
   });
 
   const unreadQuery = useQuery({
     queryKey: queryKeys.notifications.unread,
     queryFn: () => notificationsApi.listNotifications(1, false),
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {
@@ -32,7 +33,6 @@ export function useNotifications(page = 1) {
   const markReadMutation = useMutation({
     mutationFn: (id: number) => notificationsApi.markNotificationRead(id),
     onSuccess: () => {
-      decrementUnreadCount();
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });

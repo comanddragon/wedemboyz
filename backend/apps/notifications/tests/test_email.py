@@ -90,6 +90,8 @@ def test_queue_rolls_back_with_business_transaction(create_user):
     user = create_user()
     user.email = "ada@example.com"
     user.save()
+    # The account edit has its own notification email; isolate the rollback event.
+    email_jobs().delete()
     with pytest.raises(ValueError):
         with transaction.atomic():
             queue_email(user, "welcome", key="rollback")
@@ -330,6 +332,8 @@ def test_rolled_back_transaction_does_not_send(create_user, django_capture_on_co
     user = create_user()
     user.email = "ada@example.com"
     user.save()
+    # The account edit has its own notification email; isolate the rollback event.
+    email_jobs().delete()
     with django_capture_on_commit_callbacks(execute=True):
         with pytest.raises(ValueError):
             with transaction.atomic():

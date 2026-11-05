@@ -251,6 +251,10 @@ export const en = {
     accountHelp: "Account help",
   },
   ambassador: {
+    name: "Name",
+    promoCode: "Promo code",
+    commissionAmount: "Commission amount",
+
     restricted: "The leaderboard is open to everyone.",
     title: "Ambassador leaderboard",
     headline: "Compete, refer, rise.",
@@ -437,6 +441,7 @@ export const en = {
     assign: "Assign ambassador",
     roster: "Active roster",
     rosterBody: "Promo codes earn 5% of completed paid laundry charges, excluding delivery.",
+    saveCredits: "Save credits",
     availableCredits: "available credits",
     active: "Active",
     paused: "Paused",

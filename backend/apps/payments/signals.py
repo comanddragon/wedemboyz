@@ -35,10 +35,7 @@ def on_payment_saved(sender, instance, created, raw=False, **kwargs):
     if changed and not getattr(settings, "SEED_DATA_ACTIVE", False):
         from services.email_events import payment_email
 
-        from .tasks import send_receipt_sms
-
         payment_email(instance)
-        safe_delay(send_receipt_sms, instance.pk)
 
 
 def _reconcile_order_invoice(payment):

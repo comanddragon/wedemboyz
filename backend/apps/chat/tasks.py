@@ -4,7 +4,7 @@ from core.jobs import app
 @app.task(bind=True, max_retries=3, default_retry_delay=30)
 def notify_agent_new_message(self, message_id: int):
     from apps.chat.models import Message
-    from apps.notifications.models import Notification
+    from services.notifications import notify
 
     try:
         message = Message.objects.select_related("room", "room__agent", "sender").get(pk=message_id)
@@ -16,11 +16,14 @@ def notify_agent_new_message(self, message_id: int):
         if recipient is None or recipient.pk == message.sender_id:
             return
 
-        Notification.objects.create(
-            user=recipient,
-            notification_type=Notification.NotificationType.CHAT,
-            title="New chat message",
-            body=message.content[:200] if message.content.strip() else "📎 Sent an attachment",
+        preview = message.content[:200] if message.content.strip() else "Attachment"
+        notify(
+            recipient,
+            key=f"chat/message/{message.pk}/user/{recipient.pk}",
+            kind="CHAT",
+            title=("New chat message", "Nouveau message"),
+            body=(preview, preview),
+            path=f"{'admin/' if recipient.is_staff else ''}chat/{room.pk}",
         )
     except Exception as exc:
         raise self.retry(exc=exc)

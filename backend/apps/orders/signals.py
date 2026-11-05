@@ -24,7 +24,7 @@ def on_order_status_changed(sender, instance, created, **kwargs):
     from core.constants import OrderStatus
 
     from .models import OrderStatusHistory
-    from .tasks import award_loyalty_points_for_delivered_order, send_status_update
+    from .tasks import award_loyalty_points_for_delivered_order
 
     previous_status = getattr(instance, "_previous_status", None)
 
@@ -41,7 +41,6 @@ def on_order_status_changed(sender, instance, created, **kwargs):
         history = OrderStatusHistory.objects.create(order=instance, status=instance.status)
         if getattr(settings, "SEED_DATA_ACTIVE", False):
             return
-        safe_delay(send_status_update, instance.pk)
         from services.email_events import order_email
 
         order_email(instance, key=f"order/{instance.pk}/status/{history.pk}")

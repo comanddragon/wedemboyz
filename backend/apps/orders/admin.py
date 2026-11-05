@@ -33,6 +33,10 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderItemInline, PickupDeliveryScheduleInline, OrderStatusHistoryInline]
     list_select_related = ["user"]
 
+    def delete_model(self, request, obj):
+        # Match admin bulk deletion: permanently remove the order and cascades.
+        obj.hard_delete()
+
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):

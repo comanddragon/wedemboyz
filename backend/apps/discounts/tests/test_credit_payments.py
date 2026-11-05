@@ -110,3 +110,43 @@ def test_delivered_order_earns_only_after_late_payment_and_only_once():
     assert user.loyalty_account.points_balance == 250
     assert user.badge_account.lifetime_badges == 1
     assert LoyaltyTransaction.objects.filter(order=order, transaction_type="EARN").count() == 1
+
+
+@pytest.mark.parametrize("balance", ["1500", "250", "0"])
+def test_owner_can_set_available_ambassador_credits(balance):
+    user, client = setup_customer()
+    serializer = AmbassadorCreateSerializer(data={"user_id": user.pk})
+    serializer.is_valid(raise_exception=True)
+    ambassador = serializer.save()
+    ambassador.credit_balance = 1000
+    ambassador.lifetime_credits = 2000
+    ambassador.save()
+    url = f"/api/v1/loyalty/admin/ambassadors/{ambassador.pk}/"
+    assert client.patch(url, {"credit_balance": balance}).status_code == 403
+    owner = CustomUser.objects.create_superuser(phone_number="237677900003", password="test-pass")
+    client.force_authenticate(user=owner)
+    response = client.patch(url, {"credit_balance": balance})
+    assert response.status_code == 200, response.data
+    ambassador.refresh_from_db()
+    assert ambassador.credit_balance == Decimal(balance)
+    assert ambassador.lifetime_credits == 2000
+
+
+@pytest.mark.parametrize("balance", ["-1", "1.5", "invalid", "NaN", "1000000000000", None])
+def test_invalid_ambassador_credit_edits_leave_balance_unchanged(balance):
+    user, client = setup_customer()
+    serializer = AmbassadorCreateSerializer(data={"user_id": user.pk})
+    serializer.is_valid(raise_exception=True)
+    ambassador = serializer.save()
+    ambassador.credit_balance = 1000
+    ambassador.save()
+    owner = CustomUser.objects.create_superuser(phone_number="237677900003", password="test-pass")
+    client.force_authenticate(user=owner)
+    response = client.patch(
+        f"/api/v1/loyalty/admin/ambassadors/{ambassador.pk}/",
+        {"credit_balance": balance}, format="json",
+    )
+    assert response.status_code == 400, response.data
+    assert "credit_balance" in response.data["error"]["detail"]
+    ambassador.refresh_from_db()
+    assert ambassador.credit_balance == 1000

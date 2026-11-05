@@ -9,6 +9,7 @@ export interface Notification {
   is_read: boolean;
   read_at: string | null;
   related_order: number | null;
+  action_path?: string;
   created_at: string;
 }
 

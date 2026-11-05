@@ -255,6 +255,10 @@ export const fr: typeof en = {
     accountHelp: "Aide au compte",
   },
   ambassador: {
+    name: "Nom",
+    promoCode: "Code promo",
+    commissionAmount: "Montant de la commission",
+
     restricted: "Ce classement est réservé aux ambassadeurs actifs.",
     title: "Classement des ambassadeurs",
     headline: "Partagez, progressez, prenez la tête.",
@@ -446,6 +450,7 @@ export const fr: typeof en = {
     roster: "Ambassadeurs inscrits",
     rosterBody:
       "Les codes promo rapportent 5 % des commandes payées, hors livraison.",
+    saveCredits: "Enregistrer les crédits",
     availableCredits: "crédits disponibles",
     active: "Actif",
     paused: "En pause",

@@ -277,7 +277,7 @@ export async function createAmbassador(
 
 export async function updateAmbassador(
   id: number,
-  input: boolean | { is_active?: boolean; promo_code?: string },
+  input: boolean | { is_active?: boolean; promo_code?: string; credit_balance?: string },
 ): Promise<AmbassadorProfile> {
   const res = await apiClient.patch(`/loyalty/admin/ambassadors/${id}/`, {
     ...(typeof input === "boolean" ? { is_active: input } : input),

@@ -259,7 +259,7 @@ class AmbassadorCredit(TimeStampedModel):
         AmbassadorProfile, on_delete=models.CASCADE, related_name="credits"
     )
     order = models.OneToOneField(
-        "orders.Order", on_delete=models.PROTECT, related_name="ambassador_credit"
+        "orders.Order", on_delete=models.CASCADE, related_name="ambassador_credit"
     )
     order_amount = models.DecimalField(max_digits=10, decimal_places=0)
     credit_amount = models.DecimalField(max_digits=10, decimal_places=0)

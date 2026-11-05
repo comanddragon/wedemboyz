@@ -3,7 +3,7 @@ from datetime import date
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, serializers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -260,13 +260,20 @@ class AmbassadorAdminListCreateView(generics.ListCreateAPIView):
 class AmbassadorAdminDetailView(generics.UpdateAPIView):
     permission_classes = [IsStaffManager]
     serializer_class = AmbassadorProfileSerializer
-    queryset = AmbassadorProfile.objects.all()
+    queryset = AmbassadorProfile.objects.select_for_update().all()
 
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         from apps.discounts.models import PromoCode
 
         profile = self.get_object()
+        if "credit_balance" in request.data:
+            try:
+                profile.credit_balance = serializers.DecimalField(
+                    max_digits=12, decimal_places=0, min_value=0
+                ).run_validation(request.data["credit_balance"])
+            except ValidationError as exc:
+                raise ValidationError({"credit_balance": exc.detail}) from exc
         if "is_active" in request.data:
             value = request.data["is_active"]
             if not isinstance(value, bool):
@@ -289,7 +296,7 @@ class AmbassadorAdminDetailView(generics.UpdateAPIView):
                 raise ValidationError({"promo_code": "This code is already in use."})
             profile.promo_code.code = code
         profile.promo_code.save(update_fields=["code", "is_active", "updated_at"])
-        profile.save(update_fields=["is_active", "updated_at"])
+        profile.save(update_fields=["is_active", "credit_balance", "updated_at"])
         return Response(AmbassadorProfileSerializer(profile).data)
 
 

@@ -16,6 +16,8 @@ class Notification(TimeStampedModel):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"
     )
     notification_type = models.CharField(max_length=20, choices=NotificationType.choices)
+    event_key = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    action_path = models.CharField(max_length=255, blank=True)
     title = models.CharField(max_length=150)
     body = models.TextField(blank=True)
     is_read = models.BooleanField(default=False)
@@ -31,7 +33,7 @@ class Notification(TimeStampedModel):
     )
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["-created_at", "-id"]
         indexes = [models.Index(fields=["user", "is_read"])]
 
     def __str__(self):

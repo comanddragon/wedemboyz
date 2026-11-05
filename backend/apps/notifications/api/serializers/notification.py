@@ -6,7 +6,7 @@ from apps.notifications.models import Notification, NotificationPreference
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
-        fields = ["id", "notification_type", "title", "body", "is_read", "read_at", "related_order", "created_at"]
+        fields = ["id", "notification_type", "title", "body", "is_read", "read_at", "related_order", "action_path", "created_at"]
         read_only_fields = fields
 
 

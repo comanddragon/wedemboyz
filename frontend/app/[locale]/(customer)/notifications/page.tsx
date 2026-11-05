@@ -194,7 +194,7 @@ export default function NotificationsPage() {
     hasPreviousPage,
     markRead,
     markAllRead,
-  } = useNotifications(page);
+  } = useNotifications(page, filter === "unread");
 
   const visibleNotifications =
     filter === "unread"
@@ -293,9 +293,11 @@ export default function NotificationsPage() {
 
             return (
               <li key={notification.id}>
-                {notification.related_order ? (
+                {notification.related_order || notification.action_path ? (
                   <Link
-                    href={`${isStaff ? "/admin" : ""}/orders/${notification.related_order}`}
+                    href={notification.related_order
+                      ? `${isStaff ? "/admin" : ""}/orders/${notification.related_order}`
+                      : `/${notification.action_path}`}
                     onClick={() =>
                       !notification.is_read && markRead(notification.id)
                     }

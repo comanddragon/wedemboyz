@@ -1,106 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Check, Copy, Crown, Medal, RefreshCw, Trophy } from "lucide-react";
-import Image from "next/image";
+import { Check, Copy, RefreshCw, Trophy } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useI18n } from "@/src/i18n/I18nProvider";
 import { discountsApi } from "@/src/lib/api";
 import { formatCurrency } from "@/src/lib/constants";
-import type { AmbassadorLeaderboardRow } from "@/src/types";
 import styles from "./leaderboard.module.css";
 
 type Period = "month" | "year" | "all";
-type Ambassador = AmbassadorLeaderboardRow["ambassador"];
-
-/** Glossy bubbles and gold sparkles from the loyalty-card flyer. Purely decorative. */
-function Decor() {
-  return (
-    <div className={styles.decor} aria-hidden="true">
-      {[1, 2, 3, 4, 5, 6].map((n) => (
-        <span key={`b${n}`} className={`${styles.bubble} ${styles[`b${n}`]}`} />
-      ))}
-      {[1, 2, 3, 4].map((n) => (
-        <span key={`s${n}`} className={`${styles.sparkle} ${styles[`s${n}`]}`} />
-      ))}
-    </div>
-  );
-}
-
-/** Curved gold swoosh that closes the navy stage into the white section. */
-function Wave() {
-  return (
-    <svg
-      className={styles.wave}
-      viewBox="0 0 1440 140"
-      preserveAspectRatio="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <defs>
-        <linearGradient id="lb-gold" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0" stopColor="#b67a0c" />
-          <stop offset="0.35" stopColor="#f8d77a" />
-          <stop offset="0.7" stopColor="#dfa013" />
-          <stop offset="1" stopColor="#f8d77a" />
-        </linearGradient>
-      </defs>
-      <path d="M0,70 C360,160 800,14 1440,88 L1440,140 L0,140 Z" fill="#f8f8f6" />
-      <path
-        d="M0,58 C360,148 800,2 1440,76"
-        fill="none"
-        stroke="url(#lb-gold)"
-        strokeWidth="5"
-        vectorEffect="non-scaling-stroke"
-      />
-      <path
-        d="M0,74 C360,164 800,18 1440,92"
-        fill="none"
-        stroke="url(#lb-gold)"
-        strokeOpacity="0.55"
-        strokeWidth="2"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
-
-function Portrait({
-  ambassador,
-  champion = false,
-}: {
-  ambassador: Ambassador;
-  champion?: boolean;
-}) {
-  const [failed, setFailed] = useState(false);
-  return (
-    <div
-      className={`${styles.portrait} ${champion ? styles.championPortrait : ""}`}
-    >
-      {ambassador.profile_photo && !failed ? (
-        <Image
-          src={ambassador.profile_photo}
-          alt={ambassador.name}
-          fill
-          unoptimized
-          sizes={champion ? "240px" : "180px"}
-          className="object-cover object-center"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <span className={styles.initials} aria-label={ambassador.name}>
-          {ambassador.name
-            .split(/\s+/)
-            .map((part) => part[0])
-            .slice(0, 2)
-            .join("")}
-        </span>
-      )}
-    </div>
-  );
-}
-
 function PromoCode({ code }: { code: string }) {
   const { t, locale } = useI18n();
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
@@ -139,63 +48,6 @@ function PromoCode({ code }: { code: string }) {
   );
 }
 
-function PodiumPlace({
-  row,
-  mine,
-}: {
-  row: AmbassadorLeaderboardRow;
-  mine: boolean;
-}) {
-  const { t, locale } = useI18n();
-  const champion = row.rank === 1;
-  const rankLabel =
-    locale === "fr"
-      ? ["Première place", "Deuxième place", "Troisième place"]
-      : ["First place", "Second place", "Third place"];
-  return (
-    <article
-      className={`${styles.podiumPlace} ${champion ? styles.champion : row.rank === 2 ? styles.second : styles.third}`}
-      aria-label={`${rankLabel[row.rank - 1]} — ${row.ambassador.name}`}
-    >
-      <div className={styles.placeHeading}>
-        {champion ? (
-          <Crown size={22} aria-hidden="true" />
-        ) : (
-          <Medal size={20} aria-hidden="true" />
-        )}
-        <span>{rankLabel[row.rank - 1]}</span>
-        {mine ? (
-          <span className={styles.you}>{t("ambassador.you")}</span>
-        ) : null}
-      </div>
-      <div className={styles.portraitStage}>
-        <span className={styles.rankBackdrop} aria-hidden="true">
-          {String(row.rank).padStart(2, "0")}
-        </span>
-        <Portrait ambassador={row.ambassador} champion={champion} />
-        <span className={styles.rankSeal} aria-hidden="true">
-          {champion ? <Crown size={21} /> : row.rank}
-        </span>
-      </div>
-      <div className={styles.identity}>
-        <h3>{row.ambassador.name}</h3>
-        <PromoCode code={row.ambassador.promo_code} />
-      </div>
-      <div className={styles.podiumScore}>
-        <p>{formatCurrency(row.period_credits)}</p>
-        <span>
-          {row.orders}{" "}
-          {t(
-            row.orders === 1
-              ? "ambassador.referredOrder"
-              : "ambassador.referredOrders",
-          )}
-        </span>
-      </div>
-    </article>
-  );
-}
-
 export default function AmbassadorLeaderboardPage() {
   const { t, locale } = useI18n();
   const { isHydrated } = useAuth();
@@ -209,8 +61,6 @@ export default function AmbassadorLeaderboardPage() {
   const current = results.find(
     (row) => row.ambassador.id === leaderboard.data?.current_ambassador_id,
   );
-  const topThree = results.slice(0, 3);
-  const field = results.slice(3);
   const periodLabel =
     period === "month"
       ? new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {
@@ -222,8 +72,6 @@ export default function AmbassadorLeaderboardPage() {
         : t("ambassador.all");
   return (
     <main className={styles.page}>
-      <div className={styles.stage}>
-      <Decor />
       <div className={styles.content}>
         <header className={styles.header}>
           <div>
@@ -237,18 +85,6 @@ export default function AmbassadorLeaderboardPage() {
             aria-hidden="true"
           />
         </header>
-        {current ? (
-          <aside className={styles.personal}>
-            <span>
-              {t("ambassador.you")} <strong>#{current.rank}</strong>
-            </span>
-            <span>{current.ambassador.name}</span>
-            <PromoCode code={current.ambassador.promo_code} />
-            <span className={styles.personalScore}>
-              {formatCurrency(current.period_credits)}
-            </span>
-          </aside>
-        ) : null}
         <section aria-labelledby="rankings-period">
           <div className={styles.toolbar}>
             <div>
@@ -274,7 +110,7 @@ export default function AmbassadorLeaderboardPage() {
           </div>
           {!isHydrated || leaderboard.isLoading ? (
             <div
-              className={styles.podium}
+              className={styles.loading}
               role="status"
               aria-label={
                 locale === "fr"
@@ -282,13 +118,7 @@ export default function AmbassadorLeaderboardPage() {
                   : "Loading rankings"
               }
             >
-              {[1, 2, 3].map((rank) => (
-                <div key={rank} className={styles.skeleton}>
-                  <span />
-                  <span />
-                  <span />
-                </div>
-              ))}
+              {locale === "fr" ? "Chargement du classement…" : "Loading rankings…"}
             </div>
           ) : null}
           {leaderboard.isError ? (
@@ -315,70 +145,36 @@ export default function AmbassadorLeaderboardPage() {
               <p>{t("ambassador.emptyBody")}</p>
             </div>
           ) : null}
-          {topThree.length ? (
-            <div
-              className={`${styles.podium} ${topThree.length === 1 ? styles.singlePodium : topThree.length === 2 ? styles.pairPodium : ""}`}
-            >
-              {topThree.map((row) => (
-                <PodiumPlace
-                  key={row.ambassador.id}
-                  row={row}
-                  mine={row.ambassador.id === current?.ambassador.id}
-                />
-              ))}
+          {results.length ? (
+            <div className={styles.tableScroll}>
+              <table className={styles.table}>
+                <caption className="sr-only">{t("ambassador.title")} · {periodLabel}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{t("ambassador.name")}</th>
+                    <th scope="col">{t("ambassador.promoCode")}</th>
+                    <th scope="col" className={styles.amount}>{t("ambassador.commissionAmount")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map((row) => (
+                    <tr key={row.ambassador.id} className={row.rank === 1 ? styles.first : row.rank === 2 ? styles.second : row.rank === 3 ? styles.third : undefined}>
+                      <th scope="row">
+                        <div className={styles.name}>
+                          <span className={styles.rank} aria-label={`${locale === "fr" ? "Rang" : "Rank"} ${row.rank}`}>#{row.rank}</span>
+                          <span>{row.ambassador.name}</span>
+                          {row.ambassador.id === current?.ambassador.id ? <span className={styles.you}>{t("ambassador.you")}</span> : null}
+                        </div>
+                      </th>
+                      <td><PromoCode code={row.ambassador.promo_code} /></td>
+                      <td className={styles.amount}>{formatCurrency(row.period_credits)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : null}
         </section>
-      </div>
-      <Wave />
-      </div>
-      <div className={styles.field}>
-      <div className={styles.content}>
-        {field.length ? (
-          <section
-            className={styles.contenders}
-            aria-labelledby="contenders-title"
-          >
-            <div className={styles.contendersHeading}>
-              <h2 id="contenders-title">{t("ambassador.chasingPodium")}</h2>
-              <span>{t("ambassador.preserved")}</span>
-            </div>
-            <div className={styles.gallery}>
-              {field.map((row) => (
-                <article
-                  className={`${styles.contender} ${row.ambassador.id === current?.ambassador.id ? styles.myPosition : ""}`}
-                  key={row.ambassador.id}
-                >
-                  <div className={styles.contenderPhoto}>
-                    <Portrait ambassador={row.ambassador} />
-                    <span className={styles.contenderRank}>#{row.rank}</span>
-                  </div>
-                  <div className={styles.contenderBody}>
-                    <div className={styles.contenderIdentity}>
-                      <h3>{row.ambassador.name}</h3>
-                      <PromoCode code={row.ambassador.promo_code} />
-                    </div>
-                    {row.ambassador.id === current?.ambassador.id ? (
-                      <span className={styles.you}>{t("ambassador.you")}</span>
-                    ) : null}
-                    <p className={styles.contenderScore}>
-                      {formatCurrency(row.period_credits)}
-                    </p>
-                    <p className={styles.contenderMeta}>
-                      {row.orders}{" "}
-                      {t(
-                        row.orders === 1
-                          ? "ambassador.referredOrder"
-                          : "ambassador.referredOrders",
-                      )}
-                    </p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
-      </div>
       </div>
     </main>
   );

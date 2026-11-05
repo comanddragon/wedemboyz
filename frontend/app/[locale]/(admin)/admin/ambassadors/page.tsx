@@ -10,7 +10,6 @@ import { Button, Field, Input, Select } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/useAuth";
 import { customersApi, discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
-import { formatCurrency } from "@/src/lib/constants";
 import { useI18n } from "@/src/i18n/I18nProvider";
 import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 
@@ -46,11 +45,16 @@ export default function AdminAmbassadorsPage() {
     mutationFn: ({ id, promo_code }: { id: number; promo_code: string }) => discountsApi.updateAmbassador(id, { promo_code }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ambassadors"] }),
   });
+  const creditMutation = useMutation({
+    mutationFn: ({ id, credit_balance }: { id: number; credit_balance: string }) =>
+      discountsApi.updateAmbassador(id, { credit_balance }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ambassadors"] }),
+  });
   const error =
     ambassadors.error ||
     customers.error ||
     createMutation.error ||
-    toggleMutation.error || codeMutation.error;
+    toggleMutation.error || codeMutation.error || creditMutation.error;
 
   if (!user?.is_superuser)
     return (
@@ -154,14 +158,16 @@ export default function AdminAmbassadorsPage() {
                   <button type="button" aria-label={t("cashouts.copyCode")} onClick={() => navigator.clipboard.writeText(ambassador.promo_code)} className="rounded-lg p-2 text-navy"><Copy className="h-4 w-4" /></button>
                 </form>
                 <div className="flex items-center justify-between gap-4 sm:justify-end">
-                  <div className="text-right">
-                    <p className="text-sm font-semibold tabular-nums text-navy">
-                      {formatCurrency(Number(ambassador.credit_balance))}
-                    </p>
-                    <p className="text-[11px] text-ink-muted">
-                      {t("adminPrograms.availableCredits")}
-                    </p>
-                  </div>
+                  <form key={ambassador.credit_balance} className="flex flex-wrap items-end gap-2" onSubmit={(event) => {
+                    event.preventDefault();
+                    const balance = new FormData(event.currentTarget).get("credit_balance");
+                    if (typeof balance === "string") creditMutation.mutate({ id: ambassador.id, credit_balance: balance });
+                  }}>
+                    <Field label={t("adminPrograms.availableCredits")}>
+                      <Input name="credit_balance" type="number" min={0} max={999999999999} step={1} required defaultValue={ambassador.credit_balance} aria-label={`${ambassador.name}: ${t("adminPrograms.availableCredits")}`} className="w-36" />
+                    </Field>
+                    <Button type="submit" disabled={creditMutation.isPending}>{t("adminPrograms.saveCredits")}</Button>
+                  </form>
                   <button
                     type="button"
                     onClick={() =>

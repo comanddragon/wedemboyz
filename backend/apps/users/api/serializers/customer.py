@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from apps.users.api.serializers.profile import LoyaltyAccountSummarySerializer
@@ -89,6 +90,7 @@ class CustomerDetailSerializer(CustomerListSerializer):
             "recent_orders", "recent_credit_transactions",
         ]
 
+    @transaction.atomic
     def create(self, validated_data):
         profile_data = validated_data.pop("profile", {})
         user = CustomUser(**validated_data)
@@ -100,6 +102,7 @@ class CustomerDetailSerializer(CustomerListSerializer):
         profile.save()
         return user
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         profile_data = validated_data.pop("profile", {})
         instance = super().update(instance, validated_data)
