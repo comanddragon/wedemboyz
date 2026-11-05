@@ -1,7 +1,8 @@
 "use client";
 import { buttonStyles } from "@/src/components/ui/Button";
 
-import { LocalizedLink as Link } from "@/src/i18n/navigation";
+import { bookingValidationError } from "@/src/lib/booking-validation";
+import { LocalizedLink as Link, useLocalizedRouter } from "@/src/i18n/navigation";
 import { useState } from "react";
 
 import { BookingShell } from "@/src/components/booking/BookingShell";
@@ -32,7 +33,10 @@ const TIME_SLOTS: { value: TimeSlot; label: string }[] = [
 
 export default function BookSchedulePage() {
   const { t } = useI18n();
+  const router = useLocalizedRouter();
+  const [error, setError] = useState<string | null>(null);
   const {
+    items,
     orderType,
     setOrderType,
     pickupAddress,
@@ -50,11 +54,16 @@ export default function BookSchedulePage() {
     (scheduledPickupSlot as TimeSlot) ?? "MORNING",
   );
 
-  function handleContinue() {
+  function handleContinue(event: React.FormEvent) {
+    event.preventDefault();
+    const errorKey = bookingValidationError({ items, orderType, pickupAddress, deliveryAddress });
+    setError(errorKey);
+    if (errorKey) return;
     if (orderType === "drop-off") {
       setAddresses({ pickupAddress: "In-store drop-off" });
     }
     setSchedule({ date, slot });
+    router.push("/book/review");
   }
 
   return (
@@ -64,12 +73,12 @@ export default function BookSchedulePage() {
       actions={
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/book" className={buttonStyles({ variant: "ghost" })}>{t("booking.back")}</Link>
-          <Link href="/book/review" onClick={handleContinue}>
-            <Button>{t("booking.nextReview")}</Button>
-          </Link>
+          <Button type="submit" form="booking-schedule">{t("booking.nextReview")}</Button>
         </div>
       }
     >
+      {error && <p role="alert" className="mb-4 text-sm text-status-cancelled-text">{t(error)}</p>}
+      <form id="booking-schedule" onSubmit={handleContinue}>
       <Card className="grid grid-cols-1 gap-x-5 md:grid-cols-6 lg:p-6">
         <div className="md:col-span-2">
           <Field label={t("booking.orderType")}>
@@ -88,9 +97,12 @@ export default function BookSchedulePage() {
 
         {orderType === "pickup" ? (
           <div className="md:col-span-3">
-            <Field label={t("booking.pickupAddress")}>
+            <Field label={t("booking.pickupAddress")} htmlFor="pickup-address">
               <Input
                 type="text"
+                id="pickup-address"
+                required
+                maxLength={255}
                 value={pickupAddress}
                 onChange={(e) =>
                   setAddresses({ pickupAddress: e.target.value })
@@ -105,9 +117,12 @@ export default function BookSchedulePage() {
         )}
 
         <div className="md:col-span-3">
-          <Field label={t("booking.deliveryAddress")}>
+          <Field label={t("booking.deliveryAddress")} htmlFor="delivery-address">
             <Input
               type="text"
+              id="delivery-address"
+              required
+              maxLength={255}
               value={deliveryAddress}
               onChange={(e) =>
                 setAddresses({ deliveryAddress: e.target.value })
@@ -145,6 +160,7 @@ export default function BookSchedulePage() {
           </Field>
         </div>
       </Card>
+      </form>
     </BookingShell>
   );
 }

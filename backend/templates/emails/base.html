@@ -1,14 +1,28 @@
 <!doctype html>
-<html lang="{{ language }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ heading }}</title></head>
-<body style="margin:0;padding:0;background:#f3f4f6;color:#17203a;font-family:Arial,Helvetica,sans-serif;">
+<html lang="{{ language }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<meta name="supported-color-schemes" content="light">
+<style>
+:root { color-scheme: only light; supported-color-schemes: light; }
+/* Keep the same palette when clients expose dark-mode styling hooks. */
+.email-canvas { background-color:#f3f4f6 !important; }
+.email-surface { background-color:#ffffff !important; }
+.email-footer { background-color:#f8f9fb !important; }
+.email-action { background-color:#dfa013 !important; }
+[data-ogsb] .email-canvas { background-color:#f3f4f6 !important; }
+[data-ogsb] .email-surface { background-color:#ffffff !important; }
+[data-ogsb] .email-footer { background-color:#f8f9fb !important; }
+[data-ogsb] .email-action { background-color:#dfa013 !important; }
+</style><title>{{ heading }}</title></head>
+<body class="email-canvas" bgcolor="#f3f4f6" style="margin:0;padding:0;background:#f3f4f6;color:#17203a;font-family:Arial,Helvetica,sans-serif;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">{{ intro }}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;"><tr><td align="center" style="padding:32px 12px;">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#fff;border-collapse:collapse;">
-<tr><td align="center" style="padding:24px 32px;background:#ffffff;border-bottom:3px solid #dfa013;"><a href="{{ site_url }}" style="display:block;text-decoration:none;"><img src="{{ logo_url }}" width="340" height="125" alt="Wedemboyz Lavomatique" style="display:block;width:100%;max-width:340px;height:auto;margin:0 auto;border:0;outline:none;color:#071130;font-size:22px;font-weight:bold;"></a></td></tr>
-<tr><td style="padding:36px 32px;"><p style="font-size:15px;line-height:1.7;margin:0 0 16px;">{{ greeting }}{% if name %} {{ name }}{% endif %},</p>
-<h1 style="font-size:28px;line-height:1.25;color:#071130;margin:0 0 20px;">{{ heading }}</h1>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-canvas" bgcolor="#f3f4f6" style="background:#f3f4f6;background-image:linear-gradient(#f3f4f6,#f3f4f6);"><tr><td align="center" style="padding:32px 12px;">
+<table role="presentation" class="email-surface" bgcolor="#ffffff" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);border-collapse:collapse;">
+<tr><td class="email-surface" bgcolor="#ffffff" align="center" style="padding:24px 32px;background:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);border-bottom:3px solid #dfa013;"><a href="{{ site_url }}" style="display:block;text-decoration:none;"><img src="{{ logo_url }}" width="340" height="125" alt="Wedemboyz Lavomatique" style="display:block;width:100%;max-width:340px;height:auto;margin:0 auto;border:0;outline:none;color:#071130;-webkit-text-fill-color:#071130;font-size:22px;font-weight:bold;"></a></td></tr>
+<tr><td class="email-surface" bgcolor="#ffffff" style="padding:36px 32px;background:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);color:#17203a;-webkit-text-fill-color:#17203a;"><p style="font-size:15px;line-height:1.7;margin:0 0 16px;">{{ greeting }}{% if name %} {{ name }}{% endif %},</p>
+<h1 style="font-size:28px;line-height:1.25;color:#071130;-webkit-text-fill-color:#071130;margin:0 0 20px;">{{ heading }}</h1>
 {% block content %}{% endblock %}
-<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:28px;"><tr><td bgcolor="#dfa013" style="border-radius:6px;"><a href="{{ action_url }}" style="display:inline-block;padding:15px 24px;font-weight:bold;font-size:15px;color:#071130;text-decoration:none;">{{ action_label }}</a></td></tr></table>
-<p style="font-size:13px;line-height:1.7;color:#667085;margin:28px 0 0;">{{ help_text }} <a href="mailto:{{ support_email }}" style="color:#071130;">{{ support_email }}</a></p></td></tr>
-<tr><td style="padding:24px 32px;background:#f8f9fb;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.8;color:#667085;">Wedemboyz Lavomatique · Simbock, Yaoundé, Cameroun<br>{{ footer_text }}<br><a href="{{ settings_url }}" style="color:#071130;">{{ preferences_label }}</a></td></tr>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:28px;"><tr><td class="email-action" bgcolor="#dfa013" style="border-radius:6px;background:#dfa013;background-image:linear-gradient(#dfa013,#dfa013);"><a href="{{ action_url }}" style="display:inline-block;padding:15px 24px;font-weight:bold;font-size:15px;color:#071130;-webkit-text-fill-color:#071130;text-decoration:none;">{{ action_label }}</a></td></tr></table>
+<p style="font-size:13px;line-height:1.7;color:#667085;-webkit-text-fill-color:#667085;margin:28px 0 0;">{{ help_text }} <a href="mailto:{{ support_email }}" style="color:#071130;-webkit-text-fill-color:#071130;">{{ support_email }}</a></p></td></tr>
+<tr><td class="email-footer" bgcolor="#f8f9fb" style="padding:24px 32px;background:#f8f9fb;background-image:linear-gradient(#f8f9fb,#f8f9fb);border-top:1px solid #e5e7eb;font-size:12px;line-height:1.8;color:#667085;-webkit-text-fill-color:#667085;">Wedemboyz Lavomatique · Simbock, Yaoundé, Cameroun<br>{{ footer_text }}<br><a href="{{ settings_url }}" style="color:#071130;-webkit-text-fill-color:#071130;">{{ preferences_label }}</a></td></tr>
 </table></td></tr></table></body></html>

@@ -23,8 +23,8 @@ export function useBooking() {
   const hasSession = useAuthStore((state) => Boolean(state.accessToken));
 
   const subtotal = useMemo(
-    () => estimateBookingSubtotal(store.items),
-    [store.items],
+    () => estimateBookingSubtotal(store.items) * (store.isExpress ? 2 : 1),
+    [store.items, store.isExpress],
   );
   const deliveryFee = useMemo(() => estimateDeliveryFee(subtotal), [subtotal]);
 

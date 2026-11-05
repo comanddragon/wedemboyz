@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { AccountError } from "@/src/components/dashboard/AccountError";
+import { LoyaltyCashouts } from "@/src/components/loyalty-cashouts";
 import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
 import { discountsApi } from "@/src/lib/api";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -33,7 +35,7 @@ const TIER_LADDER_STYLES: Record<
     ring: "border-crease-strong",
     label: "Basic",
   },
-  BRONZE: { icon: "text-bronze", ring: "border-bronze", label: "Bronze" },
+  BRONZE: { icon: "text-bronze-600", ring: "border-bronze", label: "Bronze" },
   SILVER: { icon: "text-silver-600", ring: "border-silver", label: "Silver" },
   GOLD: { icon: "text-gold", ring: "border-gold", label: "Gold" },
 };
@@ -51,7 +53,7 @@ const TRANSACTION_META: Record<
   REDEEM: {
     label: "Redeemed",
     icon: Gift,
-    tone: "bg-gold-50 text-gold",
+    tone: "bg-gold-50 text-gold-600",
     sign: "−",
   },
   EXPIRE: {
@@ -74,13 +76,13 @@ export default function LoyaltyPage() {
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { data: account, isLoading } = useQuery({
+  const { data: account, isLoading, error: accountError, refetch: refetchAccount, isFetching: fetchingAccount } = useQuery({
     queryKey: queryKeys.discounts.loyalty,
     queryFn: () => discountsApi.getLoyaltyAccount(),
     enabled: isHydrated,
   });
 
-  const { data: transactions, isLoading: isLoadingTransactions } = useQuery({
+  const { data: transactions, isLoading: isLoadingTransactions, error: transactionsError, refetch: refetchTransactions, isFetching: fetchingTransactions } = useQuery({
     queryKey: queryKeys.discounts.loyaltyTransactions(1),
     queryFn: () => discountsApi.listLoyaltyTransactions(1),
     enabled: isHydrated,
@@ -118,7 +120,7 @@ export default function LoyaltyPage() {
   return (
     <main className="mx-auto w-full max-w-[1480px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <header className="mb-6 flex items-center gap-3">
-        <CustomerAvatar name={customerName} size="lg" imageUrl={user?.avatar} useProfilePhoto={user?.use_profile_photo} />
+        <CustomerAvatar name={customerName} loyaltyTier={account?.badge_program.tier ?? "BASIC"} size="lg" imageUrl={user?.avatar} useProfilePhoto={user?.use_profile_photo} />
         <div className="min-w-0">
           <h1 className="font-display text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-navy sm:text-[2rem]">
             {t("loyalty.title")}
@@ -129,8 +131,9 @@ export default function LoyaltyPage() {
         </div>
       </header>
 
+      {accountError && <div className="mb-5"><AccountError error={accountError} onRetry={() => { void refetchAccount(); }} pending={fetchingAccount} /></div>}
       {isLoading ? (
-        <div className="grid animate-pulse gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.7fr)]">
+        <div className="grid animate-pulse motion-reduce:animate-none gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.7fr)]">
           <div className="h-72 rounded-2xl bg-steam" />
           <div className="h-72 rounded-2xl bg-steam" />
         </div>
@@ -235,7 +238,7 @@ export default function LoyaltyPage() {
                   )}
                 </div>
                 {errorMessage ? (
-                  <p className="mt-3 text-xs text-red-200">{errorMessage}</p>
+                  <p role="alert" className="mt-3 text-xs text-red-200">{errorMessage}</p>
                 ) : null}
               </section>
             </div>
@@ -392,6 +395,8 @@ export default function LoyaltyPage() {
         </>
       ) : null}
 
+      {user?.is_ambassador ? <LoyaltyCashouts balance={Number(account?.ambassador?.credit_balance ?? 0)} /> : null}
+
       <section
         className="overflow-hidden rounded-2xl border border-crease bg-white"
         aria-labelledby="activity-title"
@@ -414,7 +419,9 @@ export default function LoyaltyPage() {
         </div>
 
         {isLoadingTransactions ? (
-          <div className="h-40 animate-pulse bg-steam/60" />
+          <div className="h-40 animate-pulse bg-steam/60 motion-reduce:animate-none" />
+        ) : transactionsError ? (
+          <div className="p-5"><AccountError error={transactionsError} onRetry={() => { void refetchTransactions(); }} pending={fetchingTransactions} /></div>
         ) : transactions && transactions.results.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <Sparkles
@@ -459,7 +466,7 @@ export default function LoyaltyPage() {
                   <p
                     className={`text-sm font-semibold tabular-nums ${meta.sign === "+" ? "text-status-ready-text" : "text-status-cancelled-text"}`}
                   >
-                    {meta.sign}
+                    {tx.points < 0 ? "−" : "+"}
                     {formatPoints(Math.abs(tx.points))} {t("loyalty.credits")}
                   </p>
                 </li>

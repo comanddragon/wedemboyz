@@ -94,7 +94,7 @@ export default function AdminCreditAccountsPage() {
         description={t("adminCredit.description")}
       />
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <SearchInput
           placeholder={t("adminCredit.searchPlaceholder")}
           value={searchInput}

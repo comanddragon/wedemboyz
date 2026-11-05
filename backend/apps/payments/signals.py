@@ -1,12 +1,11 @@
 from django.conf import settings
-from django.db.models import Sum
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 from core.constants import PaymentStatus
 from core.tasks_utils import safe_delay
 
-from .models import Invoice, Payment, Refund, Subscription
+from .models import Payment, Refund, Subscription
 
 
 @receiver(post_save, sender=Payment)
@@ -19,12 +18,12 @@ def on_payment_saved(sender, instance, created, raw=False, **kwargs):
         from services.email_events import payment_email
 
         payment_email(instance, failed=True)
+    if instance.order_id:
+        _reconcile_order_invoice(instance)
     if instance.status != PaymentStatus.SUCCEEDED:
         return
 
-    if instance.order_id:
-        _reconcile_order_invoice(instance)
-    elif instance.subscription_id and instance.subscription.status == Subscription.Status.PENDING:
+    if instance.subscription_id and instance.subscription.status == Subscription.Status.PENDING:
         # First successful payment for a still-unpaid subscription — renewal
         # payments are created already-SUCCEEDED by
         # apps.payments.tasks.renew_subscription and handle their own period
@@ -43,24 +42,9 @@ def on_payment_saved(sender, instance, created, raw=False, **kwargs):
 
 
 def _reconcile_order_invoice(payment):
-    order = payment.order
+    from services.order_payments import recompute_payment_status
 
-    invoice, _ = Invoice.objects.get_or_create(
-        order=order,
-        defaults={
-            "invoice_number": f"INV-{order.pk:06d}",
-            "amount_due": order.total_amount,
-        },
-    )
-    total_paid = (
-        order.payments.filter(status=PaymentStatus.SUCCEEDED).aggregate(total=Sum("amount"))[
-            "total"
-        ]
-        or 0
-    )
-    if invoice.amount_paid != total_paid:
-        invoice.amount_paid = total_paid
-        invoice.save(update_fields=["amount_paid"])
+    recompute_payment_status(payment.order, reason=f"Payment #{payment.pk} updated")
 
 
 @receiver(pre_save, sender=Payment)
@@ -104,7 +88,13 @@ def on_subscription_email(sender, instance, created, raw=False, **kwargs):
 
 @receiver(post_save, sender=Refund)
 def on_refund_email(sender, instance, created, raw=False, **kwargs):
-    if raw or getattr(settings, "SEED_DATA_ACTIVE", False):
+    if raw:
+        return
+    if instance.payment.order_id:
+        from services.order_payments import recompute_payment_status
+
+        recompute_payment_status(instance.payment.order, reason=f"Refund #{instance.pk} updated")
+    if getattr(settings, "SEED_DATA_ACTIVE", False):
         return
     if created or getattr(instance, "_email_previous", {}).get("status") != instance.status:
         from services.email_events import refund_email

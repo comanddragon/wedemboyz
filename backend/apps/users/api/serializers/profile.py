@@ -7,9 +7,15 @@ from apps.users.models import CustomUser, LoyaltyAccount, UserProfile
 
 
 class LoyaltyAccountSummarySerializer(serializers.ModelSerializer):
+    badge_tier = serializers.SerializerMethodField()
+
+    def get_badge_tier(self, obj):
+        account = getattr(obj.user, "badge_account", None)
+        return account.tier if account else "BASIC"
+
     class Meta:
         model = LoyaltyAccount
-        fields = ["points_balance", "lifetime_points_earned", "tier"]
+        fields = ["points_balance", "lifetime_points_earned", "tier", "badge_tier"]
         read_only_fields = fields
 
 
@@ -17,6 +23,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     """Combines CustomUser + its nested UserProfile/LoyaltyAccount into one
     read/write shape for GET/PATCH /api/v1/users/me/."""
 
+    gender = serializers.ChoiceField(source="profile.gender", choices=UserProfile._meta.get_field("gender").choices, required=False, allow_blank=True)
     avatar = serializers.ImageField(source="profile.avatar", required=False, allow_null=True)
     use_profile_photo = serializers.BooleanField(source="profile.use_profile_photo", required=False)
     address_line = serializers.CharField(source="profile.address_line", required=False, allow_blank=True)
@@ -50,6 +57,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "staff_access_active",
             "is_ambassador",
             "is_phone_verified",
+            "gender",
             "avatar",
             "use_profile_photo",
             "address_line",
@@ -108,7 +116,9 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.save()
 
         if profile_data:
-            profile, _ = UserProfile.objects.get_or_create(user=instance)
+            profile = getattr(instance, "profile", None)
+            if profile is None:
+                profile = UserProfile.objects.create(user=instance)
             for attr, value in profile_data.items():
                 setattr(profile, attr, value)
             profile.save()

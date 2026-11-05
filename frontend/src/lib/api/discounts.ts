@@ -277,10 +277,10 @@ export async function createAmbassador(
 
 export async function updateAmbassador(
   id: number,
-  isActive: boolean,
+  input: boolean | { is_active?: boolean; promo_code?: string },
 ): Promise<AmbassadorProfile> {
   const res = await apiClient.patch(`/loyalty/admin/ambassadors/${id}/`, {
-    is_active: isActive,
+    ...(typeof input === "boolean" ? { is_active: input } : input),
   });
   return unwrap<AmbassadorProfile>(res);
 }
@@ -292,4 +292,35 @@ export async function getAmbassadorLeaderboard(
     params: { period },
   });
   return unwrap<AmbassadorLeaderboard>(res);
+}
+
+
+export interface AmbassadorCashout {
+  id: number;
+  ambassador: number;
+  ambassador_name: string;
+  amount: string;
+  status: "PENDING" | "PAID";
+  reference: string;
+  created_at: string;
+}
+
+export async function payOrderWithCredits(orderId: number): Promise<unknown> {
+  const res = await apiClient.post("/loyalty/pay-order/", { order_id: orderId });
+  return unwrap(res);
+}
+
+export async function listAmbassadorCashouts(admin = false): Promise<AmbassadorCashout[]> {
+  const res = await apiClient.get(admin ? "/loyalty/admin/ambassadors/cashouts/" : "/loyalty/ambassadors/cashouts/");
+  return unwrap<AmbassadorCashout[]>(res);
+}
+
+export async function requestAmbassadorCashout(amount: number): Promise<AmbassadorCashout> {
+  const res = await apiClient.post("/loyalty/ambassadors/cashouts/", { amount });
+  return unwrap<AmbassadorCashout>(res);
+}
+
+export async function payAmbassadorCashout(id: number, reference: string): Promise<AmbassadorCashout> {
+  const res = await apiClient.post(`/loyalty/admin/ambassadors/cashouts/${id}/pay/`, { reference });
+  return unwrap<AmbassadorCashout>(res);
 }

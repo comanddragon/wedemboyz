@@ -23,32 +23,15 @@ import { useI18n } from "@/src/i18n/I18nProvider";
 import { ensureSession } from "@/src/lib/guest-session";
 import type { ServiceType } from "@/src/types";
 
-const PIECE_SERVICES: ServiceType[] = [
-  "VESTE",
-  "TSHIRT",
-  "CHEMISE",
-  "PANTALON",
-  "PULL",
-  "ROBE",
-  "ENSEMBLE",
-  "DRAPS_COMPLET",
-  "COUETTE_1P",
-  "COUETTE_2P",
-  "COUETTE_3P",
-];
-const KILO_SERVICES: ServiceType[] = [
-  "LAVAGE_ESSORAGE",
-  "LAVAGE_SECHAGE",
-];
+import { PIECE_SERVICES, KILO_SERVICES, KILO_RATES, isKiloService } from "@/src/lib/booking-services";
 
 export default function BookServicesPage() {
   const { t } = useI18n();
-  const { items, addItem, updateItem, removeItem, subtotal } = useBooking();
+  const { items, addItem, updateItem, removeItem, subtotal, isExpress, setIsExpress } = useBooking();
 
   const [serviceType, setServiceType] = useState<ServiceType>("TSHIRT");
   const [serviceGroup, setServiceGroup] = useState<"piece" | "kilo">("piece");
   const isKilo = serviceGroup === "kilo";
-  const [label, setLabel] = useState("");
   const [description, setDescription] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [photos, setPhotos] = useState<File[]>([]);
@@ -104,7 +87,6 @@ export default function BookServicesPage() {
     if (!item) return;
     setEditingId(clientId);
     setServiceType(item.service_type);
-    setLabel(item.label ?? "");
     setDescription(item.description ?? "");
     setServiceGroup(KILO_SERVICES.includes(item.service_type) ? "kilo" : "piece");
     setQuantity(String(item.quantity ?? 1));
@@ -120,7 +102,7 @@ export default function BookServicesPage() {
     void ensureSession().catch(() => undefined);
     const item = {
       service_type: serviceType,
-      label,
+      label: items.find((item) => item.clientId === editingId)?.label ?? "",
       description,
       weight_kg: null,
       quantity: isKilo ? 1 : Number(quantity) || 1,
@@ -130,7 +112,6 @@ export default function BookServicesPage() {
     if (editingId) updateItem(editingId, item);
     else addItem(item);
     setEditingId(null);
-    setLabel("");
     setDescription("");
     setQuantity("1");
     setPhotos([]);
@@ -154,6 +135,12 @@ export default function BookServicesPage() {
     >
       <div className="grid min-h-0 items-start gap-5 pb-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:gap-8">
         <Card className="p-4 lg:p-5">
+          <Field label={t("booking.speed")} htmlFor="booking-speed">
+            <Select id="booking-speed" value={isExpress ? "express" : "normal"} onChange={(event) => setIsExpress(event.target.value === "express")}>
+              <option value="normal">{t("booking.normal")}</option>
+              <option value="express">{t("booking.express")}</option>
+            </Select>
+          </Field>
           <form onSubmit={handleAddItem}>
             <Field label={t("booking.service")} htmlFor="booking-service">
               <Select
@@ -180,22 +167,12 @@ export default function BookServicesPage() {
               >
                 {(isKilo ? KILO_SERVICES : PIECE_SERVICES).map((type) => (
                   <option key={type} value={type}>
-                    {serviceLabel(type)}
+                    {serviceLabel(type)}{isKiloService(type) ? ` — ${KILO_RATES[type]} F/kg` : ""}
                   </option>
                 ))}
               </Select>
             </Field>
 
-            {!isKilo && <Field label={t("booking.itemLabel")}>
-              <Input
-                type="text"
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                placeholder={t("booking.itemPlaceholder")}
-              />
-            </Field>
-
-            }
             <Field label={t("booking.description")}>
               <Textarea
                 value={description}

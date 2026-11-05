@@ -24,7 +24,7 @@ def consume_for_order(order, *, changed_by=None):
             if service_type != line.service_type:
                 continue
             quantity = (
-                standard.quantity_per_kg * line.weight_kg * line.quantity
+                standard.quantity_per_kg * (line.weight_kg or Decimal("0")) * line.quantity
                 + standard.quantity_per_load
             )
             totals[item_id] = totals.get(item_id, Decimal("0")) + quantity

@@ -38,12 +38,18 @@ def assign_driver(self, order_id: int, driver_id: int):
 @app.task
 def award_loyalty_points_for_delivered_order(order_id: int):
     from apps.orders.models import Order
-    from services.loyalty import award_badge_for_order, award_points_for_order
+    from services.loyalty import (
+        award_ambassador_credit,
+        award_badge_for_order,
+        award_points_for_order,
+    )
 
     order = Order.objects.get(pk=order_id)
-    if order.status == "DELIVERED":
+    if order.status == "DELIVERED" and order.payment_status == "PAID":
         award_points_for_order(order)
         award_badge_for_order(order)
+        for usage in order.promo_usages.all():
+            award_ambassador_credit(usage)
 
 
 @app.task(bind=True, max_retries=3, default_retry_delay=60)

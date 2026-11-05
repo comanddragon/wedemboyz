@@ -8,7 +8,7 @@ import { useId, useState } from "react";
 import { FormErrorBanner } from "@/src/components/auth/FormErrorBanner";
 import { PasswordField } from "@/src/components/auth/PasswordField";
 import { PhoneField } from "@/src/components/auth/PhoneField";
-import { Button, Field, Input } from "@/src/components/ui";
+import { Button, Field, Input, Select } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/useAuth";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { useI18n } from "@/src/i18n/I18nProvider";
@@ -26,6 +26,7 @@ export function RegisterForm() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [gender, setGender] = useState<import("@/src/types/user").ProfileGender>("PREFER_NOT");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
@@ -54,6 +55,7 @@ export function RegisterForm() {
         phone_number: phoneNumber,
         first_name: firstName || undefined,
         last_name: lastName || undefined,
+        gender,
         email: email.trim(),
         password,
         password2,
@@ -115,6 +117,15 @@ export function RegisterForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
+      </Field>
+
+      <Field label={t("settings.sex")}>
+        <Select value={gender} onChange={(e) => setGender(e.target.value as typeof gender)}>
+          <option value="PREFER_NOT">{t("settings.preferNot")}</option>
+          <option value="MALE">{t("settings.male")}</option>
+          <option value="FEMALE">{t("settings.female")}</option>
+          <option value="OTHER">{t("settings.other")}</option>
+        </Select>
       </Field>
 
       <PasswordField

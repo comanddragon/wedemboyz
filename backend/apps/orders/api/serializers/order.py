@@ -63,7 +63,7 @@ class OrderItemWriteSerializer(serializers.ModelSerializer):
         if "unit_price" not in validated_data:
             validated_data["unit_price"] = pricing.price_for_item(
                 validated_data["service_type"], validated_data.get("weight_kg")
-            )
+            ) * (2 if order.is_express else 1)
         item = OrderItem.objects.create(order=order, **validated_data)
         order.recalculate_total()
         return item
@@ -73,7 +73,7 @@ class OrderItemWriteSerializer(serializers.ModelSerializer):
             validated_data["unit_price"] = pricing.price_for_item(
                 validated_data.get("service_type", instance.service_type),
                 validated_data.get("weight_kg", instance.weight_kg),
-            )
+            ) * (2 if instance.order.is_express else 1)
         item = super().update(instance, validated_data)
         item.order.recalculate_total()
         return item
@@ -276,6 +276,18 @@ class OrderDetailSerializer(serializers.ModelSerializer):
                 )
         return attrs
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        was_express = instance.is_express
+        instance = super().update(instance, validated_data)
+        if instance.is_express != was_express:
+            multiplier = Decimal("2") if instance.is_express else Decimal("0.5")
+            for item in instance.items.all():
+                item.unit_price = (item.unit_price * multiplier).quantize(Decimal("1"))
+                item.save(update_fields=["unit_price", "subtotal"])
+            instance.recalculate_total()
+        return instance
+
 
 class OrderCreateSerializer(serializers.ModelSerializer):
     """POST /api/v1/orders/ — accepts raw items + an optional promo code and
@@ -296,6 +308,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             "delivery_address",
             "fulfillment_type",
             "payment_option",
+            "is_express",
             "notes",
             "items",
             "promo_code",
@@ -342,7 +355,8 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
         promo = getattr(self, "_promo", None)
 
-        subtotal = pricing.price_order_items(items_data)
+        multiplier = Decimal("2") if validated_data.get("is_express", False) else Decimal("1")
+        subtotal = pricing.price_order_items(items_data) * multiplier
         delivery_fee = pricing.calculate_delivery_fee(subtotal)
 
         discount_amount = Decimal("0")
@@ -384,6 +398,8 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             payment_option=validated_data.get("payment_option", Order.PaymentOption.PAY_AT_PICKUP),
             notes=validated_data.get("notes", ""),
             source=Order.Source.ONLINE,
+            is_express=validated_data.get("is_express", False),
+            priority=Order.Priority.EXPRESS if validated_data.get("is_express", False) else Order.Priority.NORMAL,
             subscription=subscription,
             discount_campaign=campaign,
             subtotal=subtotal,
@@ -403,7 +419,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                 description=item.get("description", ""),
                 weight_kg=item.get("weight_kg"),
                 quantity=item.get("quantity", 1),
-                unit_price=unit_price,
+                unit_price=unit_price * multiplier,
                 # OrderItem.save() derives subtotal = unit_price * quantity.
             )
 

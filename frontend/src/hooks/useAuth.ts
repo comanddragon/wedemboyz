@@ -18,7 +18,11 @@ export function useAuth() {
 
   const loginMutation = useMutation({
     mutationFn: (input: LoginInput) => authApi.login(input),
-    onSuccess: (tokens) => setTokens(tokens),
+    onSuccess: async (tokens) => {
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      setTokens(tokens);
+    },
   });
 
   // A guest "registering" upgrades the existing account instead of making a
@@ -28,13 +32,21 @@ export function useAuth() {
       user?.is_guest && accessToken
         ? authApi.claimGuestAccount(input)
         : authApi.register(input),
-    onSuccess: (tokens) => setTokens(tokens),
+    onSuccess: async (tokens) => {
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      setTokens(tokens);
+    },
   });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
       if (refreshToken) {
-        await authApi.logout(refreshToken);
+        try {
+          await authApi.logout(refreshToken);
+        } catch {
+          // Remote revocation is best effort; local sign-out must still finish.
+        }
       }
     },
     onSettled: () => {

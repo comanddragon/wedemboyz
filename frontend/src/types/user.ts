@@ -1,8 +1,10 @@
 export type LoyaltyTier = "BRONZE" | "SILVER" | "GOLD";
+export type ProfileGender = "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT";
 export type PreferredLanguage = "en" | "fr";
 
 /** Mirrors apps.users.api.serializers.profile.LoyaltyAccountSummarySerializer */
 export interface LoyaltyAccountSummary {
+  badge_tier?: "BASIC" | LoyaltyTier;
   points_balance: number;
   lifetime_points_earned: number;
   tier: LoyaltyTier;
@@ -15,6 +17,7 @@ export interface UserProfile {
   first_name: string;
   last_name: string;
   email: string | null;
+  gender?: ProfileGender;
   is_phone_verified: boolean;
   avatar: string | null;
   use_profile_photo: boolean;
@@ -38,6 +41,7 @@ export interface UserProfile {
 export type ProfileUpdateInput = Partial<
   Pick<
     UserProfile,
+    | "gender"
     | "first_name"
     | "last_name"
     | "email"
@@ -61,6 +65,7 @@ export interface UserPreferences {
 }
 
 export interface RegisterInput {
+  gender?: ProfileGender;
   phone_number: string;
   first_name?: string;
   last_name?: string;
@@ -90,6 +95,7 @@ export interface AuthTokens {
     staff_permissions: string[];
     staff_access_active: boolean;
     is_ambassador: boolean;
+    gender?: ProfileGender;
     avatar: string | null;
     use_profile_photo: boolean;
   };

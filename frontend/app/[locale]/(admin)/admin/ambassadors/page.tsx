@@ -4,8 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Plus, Users } from "lucide-react";
 import { useState } from "react";
 
+import { LoyaltyCashouts } from "@/src/components/loyalty-cashouts";
 import { AdminPageHeader } from "@/src/components/admin/AdminPageHeader";
-import { Button, Field, Select } from "@/src/components/ui";
+import { Button, Field, Input, Select } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/useAuth";
 import { customersApi, discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
@@ -41,11 +42,15 @@ export default function AdminAmbassadorsPage() {
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["ambassadors"] }),
   });
+  const codeMutation = useMutation({
+    mutationFn: ({ id, promo_code }: { id: number; promo_code: string }) => discountsApi.updateAmbassador(id, { promo_code }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ambassadors"] }),
+  });
   const error =
     ambassadors.error ||
     customers.error ||
     createMutation.error ||
-    toggleMutation.error;
+    toggleMutation.error || codeMutation.error;
 
   if (!user?.is_superuser)
     return (
@@ -139,16 +144,15 @@ export default function AdminAmbassadorsPage() {
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigator.clipboard.writeText(ambassador.promo_code)
-                  }
-                  className="flex items-center gap-2 rounded-xl bg-gold-50 px-3 py-2 text-sm font-semibold text-navy"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                  {ambassador.promo_code}
-                </button>
+                <form key={ambassador.promo_code} className="flex flex-wrap items-center gap-2" onSubmit={(event) => {
+                  event.preventDefault();
+                  const code = new FormData(event.currentTarget).get("promo_code");
+                  if (typeof code === "string" && code.trim()) codeMutation.mutate({ id: ambassador.id, promo_code: code.trim() });
+                }}>
+                  <Input name="promo_code" defaultValue={ambassador.promo_code} required minLength={2} maxLength={30} pattern="[A-Za-z0-9_-]+" aria-label={t("cashouts.promoCode")} className="max-w-44" />
+                  <Button type="submit" disabled={codeMutation.isPending}>{t("cashouts.saveCode")}</Button>
+                  <button type="button" aria-label={t("cashouts.copyCode")} onClick={() => navigator.clipboard.writeText(ambassador.promo_code)} className="rounded-lg p-2 text-navy"><Copy className="h-4 w-4" /></button>
+                </form>
                 <div className="flex items-center justify-between gap-4 sm:justify-end">
                   <div className="text-right">
                     <p className="text-sm font-semibold tabular-nums text-navy">
@@ -180,6 +184,7 @@ export default function AdminAmbassadorsPage() {
           </div>
         )}
       </section>
+      <LoyaltyCashouts admin />
     </main>
   );
 }

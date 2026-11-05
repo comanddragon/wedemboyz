@@ -40,6 +40,10 @@ class StaffListView(generics.ListAPIView):
     )
 
     def get_queryset(self):
+        # Repair staff accounts created before automatic profile provisioning.
+        from apps.users.models import CustomUser
+        for user in CustomUser.objects.filter(is_staff=True, staff_profile__isnull=True):
+            StaffProfile.objects.get_or_create(user=user)
         queryset = super().get_queryset()
         role = self.request.query_params.get("role")
         active = self.request.query_params.get("active")

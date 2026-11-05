@@ -50,6 +50,7 @@ export interface PromoCodeInput {
 /** Query params for GET /discounts/promo-codes/ — pagination only; the view
  * doesn't filter server-side (see PromoCodeListCreateView.get_queryset). */
 export interface ListPromoCodesParams {
+  available?: boolean;
   page?: number;
 }
 
@@ -151,6 +152,7 @@ export interface LoyaltyRewardGrant {
 
 /** GET /loyalty/ — mirrors apps.discounts.api.views.loyalty.LoyaltyAccountView */
 export interface LoyaltyAccount {
+  ambassador?: AmbassadorProfile | null;
   points_balance: number;
   lifetime_points_earned: number;
   tier: LoyaltyTier;

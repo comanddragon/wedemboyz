@@ -6,8 +6,9 @@ import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
 import { useState } from "react";
 
+import { AccountError } from "@/src/components/dashboard/AccountError";
 import { NotificationIcon } from "@/src/components/notifications/NotificationIcon";
-import { Button, Card, EyebrowLabel } from "@/src/components/ui";
+import { Button, Card } from "@/src/components/ui";
 import { useNotifications } from "@/src/hooks/useNotifications";
 import { notificationsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
@@ -73,10 +74,10 @@ function NotificationsSkeleton() {
     <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
       {[0, 1, 2, 3].map((i) => (
         <Card key={i} className="flex items-center gap-4">
-          <span className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-steam" />
-          <div className="flex-1 space-y-2">
-            <span className="block h-3 w-1/3 animate-pulse rounded bg-steam" />
-            <span className="block h-3 w-2/3 animate-pulse rounded bg-steam" />
+          <span className="h-10 w-10 shrink-0 animate-pulse motion-reduce:animate-none rounded-full bg-steam" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <span className="block h-3 w-1/3 animate-pulse motion-reduce:animate-none rounded bg-steam" />
+            <span className="block h-3 w-2/3 animate-pulse motion-reduce:animate-none rounded bg-steam" />
           </div>
         </Card>
       ))}
@@ -89,7 +90,7 @@ function PreferencesPanel() {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState<string | null>(null);
 
-  const { data: preferences, isLoading } = useQuery({
+  const { data: preferences, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: queryKeys.notifications.preferences,
     queryFn: () => notificationsApi.getNotificationPreferences(),
   });
@@ -107,10 +108,12 @@ function PreferencesPanel() {
   if (isLoading) {
     return (
       <Card>
-        <span className="block h-4 w-1/3 animate-pulse rounded bg-steam" />
+        <span className="block h-4 w-1/3 animate-pulse motion-reduce:animate-none rounded bg-steam" />
       </Card>
     );
   }
+
+  if (error) return <AccountError error={error} onRetry={() => { void refetch(); }} pending={isFetching} />;
 
   return (
     <Card>
@@ -126,18 +129,19 @@ function PreferencesPanel() {
           return (
             <label
               key={field.key}
-              className="flex cursor-pointer items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
+              className="flex min-h-11 cursor-pointer items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
             >
               <div>
-                <p className="text-sm font-medium text-ink">{t(({ push_enabled: "notifications.push", sms_enabled: "notifications.sms", whatsapp_enabled: "notifications.whatsapp", email_enabled: "notifications.email", promo_opt_in: "notifications.promos" } as Record<string, string>)[field.key])}</p>
+                <p id={`notification-preference-${field.key}`} className="text-sm font-medium text-ink">{t(({ push_enabled: "notifications.push", sms_enabled: "notifications.sms", whatsapp_enabled: "notifications.whatsapp", email_enabled: "notifications.email", promo_opt_in: "notifications.promos" } as Record<string, string>)[field.key])}</p>
                 <p className="text-xs text-ink-muted">{t(({ push_enabled: "notifications.pushBody", sms_enabled: "notifications.smsBody", whatsapp_enabled: "notifications.whatsappBody", email_enabled: "notifications.emailBody", promo_opt_in: "notifications.promosBody" } as Record<string, string>)[field.key])}</p>
               </div>
               <span className="relative mt-0.5 inline-flex h-5 w-9 shrink-0 items-center">
                 <input
                   type="checkbox"
+                  aria-labelledby={`notification-preference-${field.key}`}
                   className="peer sr-only"
+                  disabled={updateMutation.isPending || !preferences}
                   checked={checked}
-                  disabled={updateMutation.isPending}
                   onChange={async (e) => {
                     const next = e.target.checked;
                     // Permission must be requested from this click, not on login.
@@ -157,15 +161,15 @@ function PreferencesPanel() {
                     updateMutation.mutate({ [field.key]: next });
                   }}
                 />
-                <span className="absolute inset-0 rounded-full bg-crease transition-colors peer-checked:bg-navy peer-disabled:opacity-50" />
-                <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
+                <span className="absolute inset-0 rounded-full bg-crease transition-colors peer-checked:bg-navy peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-navy peer-disabled:opacity-50" />
+                <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4 motion-reduce:transition-none" />
               </span>
             </label>
           );
         })}
       </div>
       {message && (
-        <p className="mt-3 text-xs text-status-cancelled-text">{message}</p>
+        <p role="alert" className="mt-3 text-xs text-status-cancelled-text">{message}</p>
       )}
     </Card>
   );
@@ -180,6 +184,11 @@ export default function NotificationsPage() {
   const {
     notifications,
     isLoading,
+    error,
+    refetch,
+    isFetching,
+    mutationError,
+    isMarkingRead,
     unreadCount,
     hasNextPage,
     hasPreviousPage,
@@ -196,13 +205,12 @@ export default function NotificationsPage() {
     <main className="mx-auto w-full max-w-[1540px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <EyebrowLabel words={[t("notifications.eyebrow")]} />
           <h1 className="font-display mt-1 text-[1.75rem] font-light leading-tight tracking-[-0.03em] sm:text-[2rem] text-navy">
             {t("notifications.title")}
           </h1>
         </div>
         {unreadCount > 0 && (
-          <Button variant="secondary" onClick={() => markAllRead()}>
+          <Button variant="secondary" disabled={isMarkingRead} onClick={() => markAllRead()}>
             {t("notifications.markAll")}
           </Button>
         )}
@@ -212,8 +220,9 @@ export default function NotificationsPage() {
         {(["all", "unread"] as Filter[]).map((tab) => (
           <button
             key={tab}
-            onClick={() => setFilter(tab)}
-            className={`flex-1 rounded-md px-3 py-1.5 font-medium capitalize transition-colors ${
+            aria-pressed={filter === tab}
+            onClick={() => { setFilter(tab); setPage(1); }}
+            className={`min-h-11 flex-1 rounded-md px-3 py-1.5 font-medium capitalize transition-colors ${
               filter === tab
                 ? "bg-white text-navy shadow-sm"
                 : "text-ink-muted hover:text-ink"
@@ -227,8 +236,10 @@ export default function NotificationsPage() {
       </div>
 
       {isLoading && <NotificationsSkeleton />}
+      {error && <AccountError error={error} onRetry={() => { void refetch(); }} pending={isFetching} />}
+      {mutationError && <p role="alert" className="mb-4 text-sm text-status-cancelled-text">{getApiErrorMessage(mutationError)}</p>}
 
-      {!isLoading && visibleNotifications.length === 0 && (
+      {!isLoading && !error && visibleNotifications.length === 0 && (
         <Card className="flex flex-col items-center gap-2 py-12 text-center">
           <BellOff className="h-6 w-6 text-ink-muted" aria-hidden="true" />
           <p className="text-sm font-medium text-ink">

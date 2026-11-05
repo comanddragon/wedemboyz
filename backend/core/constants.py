@@ -19,6 +19,7 @@ class ServiceType(models.TextChoices):
     CHEMISE = "CHEMISE", "Chemise (Shirt)"
     PANTALON = "PANTALON", "Pantalon (Trousers)"
     PULL = "PULL", "Pull (Sweater)"
+    PETITE_ROBE = "PETITE_ROBE", "Petite robe"
     ROBE = "ROBE", "Robe / Grande Robe / Robe de Soirée"
     ENSEMBLE = "ENSEMBLE", "Ensemble"
     DRAPS_COMPLET = "DRAPS_COMPLET", "Draps Complet (Bed Sheet Set)"
@@ -29,11 +30,13 @@ class ServiceType(models.TextChoices):
     # Per-kg self-service lavomatique lines ("GRILLE DE PRIX" flyer).
     LAVAGE_ESSORAGE = "LAVAGE_ESSORAGE", "Lavage et Essorage (Wash & Spin)"
     LAVAGE_SECHAGE = "LAVAGE_SECHAGE", "Lavage, Essorage et Séchage (Wash & Dry)"
-    REPASSAGE_PLASTIF = "REPASSAGE_PLASTIF", "Repassage et Plastification (Press & Wrap)"
+    REPASSAGE_PLASTIF = "REPASSAGE_PLASTIF", "Lavage, Essorage, Séchage, Repassage et Plastification"
 
 
 class OrderStatus(models.TextChoices):
     PENDING = "PENDING", "Pending"
+    COLLECTED = "COLLECTED", "Collected"
+    # Historical states remain readable for audit records and older clients.
     CONFIRMED = "CONFIRMED", "Confirmed"
     IN_PROGRESS = "IN_PROGRESS", "In Progress"
     READY = "READY", "Ready"

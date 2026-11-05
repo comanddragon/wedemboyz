@@ -1,4 +1,4 @@
-import { UserRound } from "lucide-react";
+import type { BadgeTier } from "@/src/types/discount";
 
 export function CustomerAvatar({
   name,
@@ -7,6 +7,7 @@ export function CustomerAvatar({
   imageUrl,
   useProfilePhoto = false,
   forceProfilePhoto = false,
+  loyaltyTier,
 }: {
   name: string;
   size?: "xs" | "sm" | "md" | "lg" | "xl";
@@ -14,6 +15,7 @@ export function CustomerAvatar({
   imageUrl?: string | null;
   useProfilePhoto?: boolean;
   forceProfilePhoto?: boolean;
+  loyaltyTier?: BadgeTier | null;
 }) {
   const dimensions =
     size === "xl"
@@ -26,15 +28,24 @@ export function CustomerAvatar({
           ? "h-12 w-12"
           : "h-10 w-10";
   const seed = name.trim() || "Wedemboyz customer";
-  const avatarUrl = `https://api.dicebear.com/10.x/notionists/svg?seed=${encodeURIComponent(seed)}&backgroundColor=e7f0ff,dff5f2,fff7df,fdece7&radius=50`;
-  const displayUrl = imageUrl && (useProfilePhoto || forceProfilePhoto) ? imageUrl : avatarUrl;
+  // Initials avoid assigning a random gendered portrait to a customer's name.
+  const initials = seed.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+  const displayUrl = imageUrl && (useProfilePhoto || forceProfilePhoto) ? imageUrl : null;
+  const ring = loyaltyTier === "GOLD" ? "outline-gold"
+    : loyaltyTier === "SILVER" ? "outline-silver"
+    : loyaltyTier === "BRONZE" ? "outline-bronze" : "outline-crease";
 
   return (
-    <span className={`${dimensions} relative inline-flex shrink-0 overflow-hidden rounded-full bg-steam ring-1 ring-crease ${className}`}>
-      {/* DiceBear provides deterministic illustrated fallbacks for customers without profile photos. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={displayUrl} alt={`${seed} avatar`} className="h-full w-full object-cover" loading="lazy" />
-      <UserRound className="absolute inset-0 -z-10 m-auto h-1/2 w-1/2 text-ink-muted" aria-hidden="true" />
+    <span
+      className={`${dimensions} relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-steam font-semibold text-navy ${className} ${loyaltyTier ? `outline outline-3 outline-offset-2 ${ring}` : "ring-1 ring-crease"}`}
+      title={loyaltyTier ? `${loyaltyTier} membership` : undefined}
+      role="img"
+      aria-label={`${seed}${loyaltyTier ? ` · ${loyaltyTier} membership` : ""}`}
+    >
+      {displayUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={displayUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+      ) : <span aria-hidden="true" className="text-[0.8em]">{initials}</span>}
     </span>
   );
 }

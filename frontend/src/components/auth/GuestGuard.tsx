@@ -1,14 +1,17 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import React from "react";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
+import { localizeHref, localeFromPathname } from "@/src/i18n/config";
 import { AuthState } from "@/src/lib/stores/auth.store";
 
 /** Wrap (auth)/layout.tsx's children in this — sends registered, logged-in users to /dashboard. */
 export function GuestGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isStaff = useAuthStore((state) => state.user?.is_staff);
   const accessToken = useAuthStore((state: AuthState) => state.accessToken);
   const isHydrated = useAuthStore((state: AuthState) => state.isHydrated);
   // A guest session is "signed in" but must still be able to reach
@@ -18,9 +21,9 @@ export function GuestGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isHydrated && redirect) {
-      router.replace("/dashboard");
+      router.replace(localizeHref(isStaff ? "/admin" : "/dashboard", localeFromPathname(pathname)));
     }
-  }, [isHydrated, redirect, router]);
+  }, [isHydrated, redirect, isStaff, pathname, router]);
 
   if (redirect) return null;
 

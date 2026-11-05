@@ -53,8 +53,7 @@ export const INCLUDED_SERVICES = [
   "Plastic wrap",
 ] as const;
 
-// Mirrors services.pricing.PRICE_PER_KG. Billed by weight with a 1,000 XAF
-// minimum per line (services.pricing.MINIMUM_CHARGE_PER_KG_ITEM).
+// Mirrors services.pricing.PRICE_PER_KG. Billed by actual weight.
 export const KG_SERVICES: {
   type: ServiceType;
   perKg: number;
@@ -72,8 +71,8 @@ export const KG_SERVICES: {
   },
   {
     type: "REPASSAGE_PLASTIF",
-    perKg: 1000,
-    description: "Storefront pressing with protective wrap.",
+    perKg: 2000,
+    description: "Wash, spin, dry, iron and protective wrap.",
   },
 ];
 
@@ -86,6 +85,7 @@ export const PIECE_SERVICES: { type: ServiceType; price: number }[] = [
   { type: "PULL", price: 1000 },
   { type: "VESTE", price: 2000 },
   { type: "ENSEMBLE", price: 2000 },
+  { type: "PETITE_ROBE", price: 1000 },
   { type: "ROBE", price: 2500 },
   { type: "DRAPS_COMPLET", price: 1500 },
   { type: "COUETTE_1P", price: 2000 },

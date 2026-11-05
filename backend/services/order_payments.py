@@ -55,4 +55,8 @@ def recompute_payment_status(order, *, changed_by=None, reason=""):
             reason=reason,
             changed_by=changed_by,
         )
+    if order.status == "DELIVERED" and new_status == OrderPaymentStatus.PAID:
+        from apps.orders.tasks import award_loyalty_points_for_delivered_order
+
+        award_loyalty_points_for_delivered_order(order.pk)
     return order

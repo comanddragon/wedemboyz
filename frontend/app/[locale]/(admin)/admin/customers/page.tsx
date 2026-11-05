@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -20,7 +20,7 @@ import {
   THead,
   Tr,
 } from "@/src/components/admin/Table";
-import { Select, StatusBadge } from "@/src/components/ui";
+import { Button, Card, Field, Input, Select, LoyaltyBadge } from "@/src/components/ui";
 import { customersApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
@@ -43,15 +43,20 @@ const SORT_TO_ORDERING: Record<
   created_at: { asc: "created_at", desc: "-created_at" },
 };
 
-const TIER_LABEL: Record<string, string> = {
-  BRONZE: "Bronze",
-  SILVER: "Silver",
-  GOLD: "Gold",
-};
+
 
 export default function AdminCustomersPage() {
   const { locale, t } = useI18n();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [showCreate, setShowCreate] = useState(false);
+  const createCustomer = useMutation({
+    mutationFn: customersApi.createCustomer,
+    onSuccess: (customer) => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      router.push(`/${locale}/admin/customers/${customer.id}`);
+    },
+  });
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -108,7 +113,24 @@ export default function AdminCustomersPage() {
         description={t("adminCustomers.body")}
       />
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="mb-4"><Button onClick={() => setShowCreate(!showCreate)}>{locale === "fr" ? "Inscrire un client externe" : "Register external client"}</Button></div>
+      {showCreate && <Card className="mb-5">
+        <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => {
+          event.preventDefault();
+          const form = new FormData(event.currentTarget);
+          createCustomer.mutate({ first_name: String(form.get("first_name")), last_name: String(form.get("last_name")), phone_number: String(form.get("phone_number")), email: String(form.get("email")) || null, address_line: String(form.get("address_line")), source: "WALK_IN", is_walk_in: true, gender: String(form.get("gender")) as "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT" | "" });
+        }}>
+          <Field label={locale === "fr" ? "Prénom" : "First name"} htmlFor="external-first"><Input id="external-first" name="first_name" required /></Field>
+          <Field label={locale === "fr" ? "Nom" : "Last name"} htmlFor="external-last"><Input id="external-last" name="last_name" /></Field>
+          <Field label={locale === "fr" ? "Téléphone (indicatif inclus)" : "Phone (include country code)"} htmlFor="external-phone"><Input id="external-phone" name="phone_number" type="tel" required /></Field>
+          <Field label="Email" htmlFor="external-email"><Input id="external-email" name="email" type="email" /></Field>
+          <Field label={locale === "fr" ? "Adresse" : "Address"} htmlFor="external-address"><Input id="external-address" name="address_line" /></Field>
+          <Field label={locale === "fr" ? "Sexe" : "Sex"} htmlFor="external-gender"><Select id="external-gender" name="gender"><option value="">{locale === "fr" ? "Choisir" : "Select"}</option><option value="MALE">{locale === "fr" ? "Homme" : "Male"}</option><option value="FEMALE">{locale === "fr" ? "Femme" : "Female"}</option><option value="PREFER_NOT">{locale === "fr" ? "Préfère ne pas répondre" : "Prefer not to say"}</option></Select></Field>
+          <div className="self-end"><Button type="submit" disabled={createCustomer.isPending}>{locale === "fr" ? "Créer le client" : "Create client"}</Button></div>
+          {createCustomer.error && <p role="alert" className="text-sm text-status-cancelled-text">{getApiErrorMessage(createCustomer.error)}</p>}
+        </form>
+      </Card>}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <SearchInput
           placeholder={t("adminCustomers.search")}
           value={searchInput}
@@ -199,13 +221,7 @@ export default function AdminCustomersPage() {
                 </Td>
                 <Td>
                   {customer.loyalty_tier ? (
-                    <StatusBadge
-                      label={
-                        TIER_LABEL[customer.loyalty_tier] ??
-                        customer.loyalty_tier
-                      }
-                      tone="ready"
-                    />
+                    <LoyaltyBadge tier={customer.loyalty_tier} />
                   ) : (
                     <span className="text-ink-muted">—</span>
                   )}

@@ -1,45 +1,85 @@
 from django.urls import path
 
 from apps.discounts.api.views import (
-    LoyaltyAccountView,
-    LoyaltyRedeemView,
-    LoyaltyTransactionListView,
-    StampCardConfigDetailView,
-    StampCardConfigListCreateView,
-    StampCardRedeemView,
+    AmbassadorAdminDetailView,
+    AmbassadorAdminListCreateView,
+    AmbassadorLeaderboardView,
     CustomerLoyaltyAdjustmentView,
     CustomerLoyaltyTransactionsView,
+    LoyaltyAccountView,
+    LoyaltyProgramSettingsView,
+    LoyaltyRedeemView,
+    LoyaltyRewardDetailView,
+    LoyaltyRewardListCreateView,
+    LoyaltyRewardRedeemView,
     LoyaltyRuleDetailView,
     LoyaltyRuleListCreateView,
     LoyaltyTierConfigDetailView,
     LoyaltyTierConfigListView,
-    LoyaltyProgramSettingsView,
-    LoyaltyRewardListCreateView,
-    LoyaltyRewardDetailView,
-    LoyaltyRewardRedeemView,
-    AmbassadorAdminListCreateView,
-    AmbassadorAdminDetailView,
-    AmbassadorLeaderboardView,
+    LoyaltyTransactionListView,
+    StampCardConfigDetailView,
+    StampCardConfigListCreateView,
+    StampCardRedeemView,
+)
+from apps.discounts.api.views.loyalty import (
+    AmbassadorCashoutAdminView,
+    AmbassadorCashoutPayView,
+    AmbassadorCashoutView,
+    CreditOrderPaymentView,
 )
 
 urlpatterns = [
+    path("pay-order/", CreditOrderPaymentView.as_view(), name="loyalty-pay-order"),
+    path("ambassadors/cashouts/", AmbassadorCashoutView.as_view(), name="ambassador-cashouts"),
+    path(
+        "admin/ambassadors/cashouts/",
+        AmbassadorCashoutAdminView.as_view(),
+        name="ambassador-cashout-admin",
+    ),
+    path(
+        "admin/ambassadors/cashouts/<int:pk>/pay/",
+        AmbassadorCashoutPayView.as_view(),
+        name="ambassador-cashout-pay",
+    ),
     path("", LoyaltyAccountView.as_view(), name="loyalty-account"),
     path("transactions/", LoyaltyTransactionListView.as_view(), name="loyalty-transactions"),
     path("redeem/", LoyaltyRedeemView.as_view(), name="loyalty-redeem"),
     path("rewards/redeem/", LoyaltyRewardRedeemView.as_view(), name="loyalty-reward-redeem"),
-    path("ambassadors/leaderboard/", AmbassadorLeaderboardView.as_view(), name="ambassador-leaderboard"),
+    path(
+        "ambassadors/leaderboard/",
+        AmbassadorLeaderboardView.as_view(),
+        name="ambassador-leaderboard",
+    ),
     path("stamp-card/redeem/", StampCardRedeemView.as_view(), name="loyalty-stamp-card-redeem"),
     path("admin/rules/", LoyaltyRuleListCreateView.as_view(), name="loyalty-rule-list"),
     path("admin/rules/<int:pk>/", LoyaltyRuleDetailView.as_view(), name="loyalty-rule-detail"),
     path("admin/tiers/", LoyaltyTierConfigListView.as_view(), name="loyalty-tier-list"),
-    path("admin/tiers/<int:pk>/", LoyaltyTierConfigDetailView.as_view(), name="loyalty-tier-detail"),
+    path(
+        "admin/tiers/<int:pk>/", LoyaltyTierConfigDetailView.as_view(), name="loyalty-tier-detail"
+    ),
     path("admin/settings/", LoyaltyProgramSettingsView.as_view(), name="loyalty-program-settings"),
     path("admin/rewards/", LoyaltyRewardListCreateView.as_view(), name="loyalty-reward-list"),
-    path("admin/rewards/<int:pk>/", LoyaltyRewardDetailView.as_view(), name="loyalty-reward-detail"),
-    path("admin/ambassadors/", AmbassadorAdminListCreateView.as_view(), name="ambassador-admin-list"),
-    path("admin/ambassadors/<int:pk>/", AmbassadorAdminDetailView.as_view(), name="ambassador-admin-detail"),
-    path("admin/customers/<int:user_id>/adjust/", CustomerLoyaltyAdjustmentView.as_view(), name="loyalty-customer-adjust"),
-    path("admin/customers/<int:user_id>/transactions/", CustomerLoyaltyTransactionsView.as_view(), name="loyalty-customer-transactions"),
+    path(
+        "admin/rewards/<int:pk>/", LoyaltyRewardDetailView.as_view(), name="loyalty-reward-detail"
+    ),
+    path(
+        "admin/ambassadors/", AmbassadorAdminListCreateView.as_view(), name="ambassador-admin-list"
+    ),
+    path(
+        "admin/ambassadors/<int:pk>/",
+        AmbassadorAdminDetailView.as_view(),
+        name="ambassador-admin-detail",
+    ),
+    path(
+        "admin/customers/<int:user_id>/adjust/",
+        CustomerLoyaltyAdjustmentView.as_view(),
+        name="loyalty-customer-adjust",
+    ),
+    path(
+        "admin/customers/<int:user_id>/transactions/",
+        CustomerLoyaltyTransactionsView.as_view(),
+        name="loyalty-customer-transactions",
+    ),
     path(
         "admin/stamp-card-config/",
         StampCardConfigListCreateView.as_view(),

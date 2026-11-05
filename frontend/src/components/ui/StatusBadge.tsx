@@ -52,10 +52,11 @@ export function StatusBadge({
   const { t } = useI18n();
   const statusKeys: Record<string, string> = {
     PENDING: "pending",
-    CONFIRMED: "confirmed",
-    IN_PROGRESS: "inProgress",
+    COLLECTED: "collected",
+    CONFIRMED: "collected",
+    IN_PROGRESS: "collected",
     READY: "ready",
-    OUT_FOR_DELIVERY: "outForDelivery",
+    OUT_FOR_DELIVERY: "ready",
     DELIVERED: "delivered",
     CANCELLED: "cancelled",
     SUCCEEDED: "paid",
@@ -105,6 +106,7 @@ export function orderStatusTone(status: OrderStatus): StatusTone {
   switch (status) {
     case "PENDING":
       return "pending";
+    case "COLLECTED":
     case "CONFIRMED":
       return "confirmed";
     case "IN_PROGRESS":

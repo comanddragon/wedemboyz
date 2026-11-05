@@ -17,14 +17,14 @@ export function Pagination({
   if (numPages <= 1) return null;
 
   return (
-    <div className="mt-4 flex items-center justify-between">
-      <p className="text-xs text-ink-muted">
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+      <p className="text-xs tabular-nums text-ink-muted" aria-live="polite" aria-atomic="true">
         {t("adminCommon.page")} {currentPage} {t("adminCommon.of")} {numPages}
       </p>
       <div className="flex items-center gap-2">
         <Button
           variant="secondary"
-          className="px-2.5 py-1.5"
+          className="min-w-11 px-2.5 py-1.5"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
           aria-label={t("adminCommon.previousPage")}
@@ -33,7 +33,7 @@ export function Pagination({
         </Button>
         <Button
           variant="secondary"
-          className="px-2.5 py-1.5"
+          className="min-w-11 px-2.5 py-1.5"
           disabled={currentPage >= numPages}
           onClick={() => onPageChange(currentPage + 1)}
           aria-label={t("adminCommon.nextPage")}

@@ -1,3 +1,5 @@
+from django.db.models import Count, F, Q
+from django.utils import timezone
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -45,6 +47,15 @@ class PromoCodeListCreateView(generics.ListCreateAPIView):
         qs = PromoCode.objects.all()
         if not self.request.user.is_staff:
             qs = qs.filter(is_active=True)
+        if self.request.query_params.get("available") == "true":
+            now = timezone.now()
+            return qs.filter(is_active=True, valid_from__lte=now, valid_until__gte=now).annotate(
+                usage_count=Count("usages"),
+                customer_usage_count=Count("usages", filter=Q(usages__user=self.request.user)),
+            ).filter(
+                Q(max_uses__isnull=True) | Q(usage_count__lt=F("max_uses")),
+                customer_usage_count__lt=F("max_uses_per_user"),
+            ).order_by("code")
         return qs
 
 

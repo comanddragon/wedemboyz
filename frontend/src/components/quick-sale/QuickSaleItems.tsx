@@ -16,22 +16,7 @@ import {
 import { formatCurrency } from "@/src/lib/constants";
 import type { QuickSaleItemInput, ServiceType } from "@/src/types";
 
-const SERVICE_TYPES: ServiceType[] = [
-  "VESTE",
-  "TSHIRT",
-  "CHEMISE",
-  "PANTALON",
-  "PULL",
-  "ROBE",
-  "ENSEMBLE",
-  "DRAPS_COMPLET",
-  "COUETTE_1P",
-  "COUETTE_2P",
-  "COUETTE_3P",
-  "LAVAGE_ESSORAGE",
-  "LAVAGE_SECHAGE",
-  "REPASSAGE_PLASTIF",
-];
+import { PIECE_SERVICES, KILO_SERVICES, KILO_RATES, isKiloService } from "@/src/lib/booking-services";
 
 export interface QuickSaleLineItem extends QuickSaleItemInput {
   /** Client-only key for list rendering/removal — never sent to the API. */
@@ -48,6 +33,7 @@ export function QuickSaleItems({
   onRemove: (clientId: string) => void;
 }) {
   const { t } = useI18n();
+  const [serviceGroup, setServiceGroup] = useState("piece");
   const [serviceType, setServiceType] = useState<ServiceType>("TSHIRT");
   const [label, setLabel] = useState("");
   const [weightKg, setWeightKg] = useState("1");
@@ -60,7 +46,7 @@ export function QuickSaleItems({
       clientId: crypto.randomUUID(),
       service_type: serviceType,
       label: label.trim() || undefined,
-      weight_kg: Number(weightKg) || 1,
+      weight_kg: isKiloService(serviceType) ? Number(weightKg) : undefined,
       quantity: Number(quantity) || 1,
       unit_price: priceOverride.trim() === "" ? null : Number(priceOverride),
     });
@@ -76,16 +62,29 @@ export function QuickSaleItems({
         onSubmit={handleAdd}
         className="rounded-card border border-crease bg-steam/40 p-4"
       >
+        <Field label={t("booking.service")} htmlFor="qs-service-group">
+          <Select id="qs-service-group" value={serviceGroup} onChange={(event) => {
+            const group = event.target.value;
+            setServiceGroup(group);
+            setServiceType(group === "kilo" ? "LAVAGE_SECHAGE" : "TSHIRT");
+            setWeightKg("1");
+            setQuantity("1");
+            setPriceOverride("");
+          }}>
+            <option value="piece">{t("booking.washingPressing")}</option>
+            <option value="kilo">{t("booking.washingKilos")}</option>
+          </Select>
+        </Field>
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
-          <Field label={t("adminQuickSale.service")} htmlFor="qs-service">
+          <Field label={t(serviceGroup === "kilo" ? "booking.washOption" : "booking.itemType")} htmlFor="qs-service">
             <Select
               id="qs-service"
               value={serviceType}
               onChange={(e) => setServiceType(e.target.value as ServiceType)}
             >
-              {SERVICE_TYPES.map((type) => (
+              {(serviceGroup === "kilo" ? KILO_SERVICES : PIECE_SERVICES).map((type) => (
                 <option key={type} value={type}>
-                  {serviceLabel(type)}
+                  {serviceLabel(type)}{isKiloService(type) ? ` — ${KILO_RATES[type]} F/kg` : ""}
                 </option>
               ))}
             </Select>
@@ -101,21 +100,25 @@ export function QuickSaleItems({
         </div>
 
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
-          <Field label={t("adminQuickSale.weightKg")} htmlFor="qs-weight">
+          {serviceGroup === "kilo" && <Field label={t("adminQuickSale.weightKg")} htmlFor="qs-weight">
             <Input
               id="qs-weight"
               type="number"
-              step="0.1"
+              step="0.01"
+              required
+              max="999.99"
               min="0.1"
               value={weightKg}
               onChange={(e) => setWeightKg(e.target.value)}
             />
-          </Field>
+          </Field>}
           <Field label={t("adminQuickSale.quantity")} htmlFor="qs-quantity">
             <Input
               id="qs-quantity"
               type="number"
               min="1"
+              required
+              step="1"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
@@ -160,8 +163,7 @@ export function QuickSaleItems({
                   {item.label || serviceLabel(item.service_type)}
                 </p>
                 <p className="text-xs text-ink-muted">
-                  {serviceLabel(item.service_type)} — {item.weight_kg ?? 1}kg x
-                  {item.quantity ?? 1}
+                  {serviceLabel(item.service_type)} — {isKiloService(item.service_type) ? `${item.weight_kg ?? 1} kg × ${item.quantity ?? 1}` : `× ${item.quantity ?? 1}`}
                   {item.unit_price != null && (
                     <> — {formatCurrency(item.unit_price)} ({t("adminQuickSale.manualPriceTag")})</>
                   )}

@@ -53,6 +53,7 @@ export function Input({
 }: InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
   return (
     <input
+      aria-invalid={invalid || undefined}
       className={cn(FIELD_CLASSES, invalid && FIELD_INVALID_CLASSES, className)}
       {...props}
     />
@@ -66,6 +67,7 @@ export function Textarea({
 }: TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }) {
   return (
     <textarea
+      aria-invalid={invalid || undefined}
       className={cn(
         FIELD_CLASSES,
         "min-h-[96px]",

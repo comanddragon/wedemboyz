@@ -32,7 +32,7 @@ export function buttonStyles({
   className,
 }: ButtonStyleOptions = {}) {
   return cn(
-    "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap text-center align-middle rounded-full font-display font-medium tracking-[0.005em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-gold/30 motion-reduce:transition-none disabled:cursor-not-allowed",
+    "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap text-center align-middle rounded-full font-display font-medium tracking-[0.005em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2 focus-visible:ring-offset-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100 disabled:cursor-not-allowed",
     size === "sm"
       ? "min-h-11 px-3.5 py-1.5 text-xs"
       : "min-h-11 px-5 py-2.5 text-sm",

@@ -17,6 +17,7 @@ export function useStaff() {
   const rosterQuery = useQuery({
     queryKey: queryKeys.staff.roster,
     queryFn: () => staffApi.listStaff(),
+    refetchInterval: 15000,
   });
 
   const updateMutation = useMutation({

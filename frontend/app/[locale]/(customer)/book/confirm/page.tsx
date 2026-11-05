@@ -6,6 +6,10 @@ import { CircleCheck, HandCoins, Truck } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useState } from "react";
 
+import {
+  OrderSuccess,
+  type CompletedBooking,
+} from "@/src/components/booking/OrderSuccess";
 import { BookingShell } from "@/src/components/booking/BookingShell";
 import { Button, Card, Field, Input } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -16,6 +20,9 @@ import { formatCurrency } from "@/src/lib/constants";
 import { ensureSession } from "@/src/lib/guest-session";
 import type { PaymentOption } from "@/src/lib/stores/booking.store";
 import { ownerWhatsAppOrderUrl } from "@/src/lib/whatsapp-order";
+
+import { bookingValidationError } from "@/src/lib/booking-validation";
+import { useI18n } from "@/src/i18n/I18nProvider";
 
 const PAYMENT_OPTIONS: Array<{
   value: PaymentOption;
@@ -39,8 +46,11 @@ const PAYMENT_OPTIONS: Array<{
 
 export default function BookConfirmPage() {
   const booking = useBooking();
+  const { t } = useI18n();
   const { isAuthenticated, isGuest, user } = useAuth();
   const needsContact = !isAuthenticated || isGuest;
+  const [completedBooking, setCompletedBooking] =
+    useState<CompletedBooking | null>(null);
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -50,6 +60,10 @@ export default function BookConfirmPage() {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
+      const errorKey = bookingValidationError(booking);
+      if (errorKey) throw new Error(t(errorKey));
+      if (missingContact || contactName.trim().length > 100)
+        throw new Error(t("booking.requiredContact"));
       await ensureSession();
       if (needsContact) {
         await profileApi.updateProfile({
@@ -62,11 +76,12 @@ export default function BookConfirmPage() {
         fulfillment_type:
           booking.orderType === "pickup" ? "PICKUP" : "DROP_OFF",
         payment_option: booking.paymentOption,
+        is_express: booking.isExpress,
         pickup_address:
           booking.orderType === "pickup"
-            ? booking.pickupAddress
+            ? booking.pickupAddress.trim()
             : "In-store drop-off",
-        delivery_address: booking.deliveryAddress,
+        delivery_address: booking.deliveryAddress.trim(),
         notes: booking.notes,
         items: booking.items.map(
           ({
@@ -114,20 +129,32 @@ export default function BookConfirmPage() {
         pickupDate: booking.scheduledPickupDate,
         pickupSlot: booking.scheduledPickupSlot,
       });
+      setCompletedBooking({
+        order,
+        whatsappUrl,
+        pickupDate: booking.scheduledPickupDate,
+        pickupSlot: booking.scheduledPickupSlot,
+      });
       booking.reset();
-      window.location.assign(whatsappUrl);
     },
     onError: (error) => {
       setErrorMessage(getApiErrorMessage(error));
     },
   });
 
+  if (completedBooking) return <OrderSuccess {...completedBooking} />;
+
   return (
     <BookingShell
       step={4}
       subtitle="Step 4 — payment option"
       actions={
-        <Link href="/book/review" className={buttonStyles({ variant: "ghost" })}>Back</Link>
+        <Link
+          href="/book/review"
+          className={buttonStyles({ variant: "ghost" })}
+        >
+          Back
+        </Link>
       }
     >
       <Card className="grid items-start gap-x-12 gap-y-6 lg:grid-cols-[1.2fr_1fr] lg:p-7">
@@ -135,7 +162,9 @@ export default function BookConfirmPage() {
           <p className="mb-5 text-sm text-ink-muted">
             Estimated total:{" "}
             <span className="text-base font-semibold text-navy">
-              {booking.hasPendingWeight ? "Confirmed after weighing" : formatCurrency(booking.total)}
+              {booking.hasPendingWeight
+                ? "Confirmed after weighing"
+                : formatCurrency(booking.total)}
             </span>
           </p>
 
@@ -150,6 +179,8 @@ export default function BookConfirmPage() {
               <Field label="Your name">
                 <Input
                   type="text"
+                  required
+                  maxLength={100}
                   autoComplete="name"
                   value={contactName}
                   onChange={(event) => setContactName(event.target.value)}
@@ -159,6 +190,9 @@ export default function BookConfirmPage() {
               <Field label="Phone number">
                 <Input
                   type="tel"
+                  required
+                  pattern="[+]?[0-9 ]{9,18}"
+                  maxLength={19}
                   autoComplete="tel"
                   value={contactPhone}
                   onChange={(event) => setContactPhone(event.target.value)}
@@ -223,7 +257,7 @@ export default function BookConfirmPage() {
             your selected payment timing.
           </p>
           {errorMessage ? (
-            <p className="mt-4 text-sm text-status-cancelled-text">
+            <p role="alert" className="mt-4 text-sm text-status-cancelled-text">
               {errorMessage}
             </p>
           ) : null}

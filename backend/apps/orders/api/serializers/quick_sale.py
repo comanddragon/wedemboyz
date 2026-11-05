@@ -49,7 +49,8 @@ class StaffQuickSaleSerializer(serializers.Serializer):
     """POST /api/v1/orders/quick-sale/ — staff-side walk-in sale: name,
     phone, items, price, payment method, paid-now/on-credit, in one form."""
 
-    customer_phone = serializers.CharField(max_length=15, validators=[phone_validator])
+    customer = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(is_staff=False), required=False)
+    customer_phone = serializers.CharField(max_length=15, validators=[phone_validator], required=False)
     customer_name = serializers.CharField(
         max_length=150, required=False, allow_blank=True, default=""
     )
@@ -57,11 +58,19 @@ class StaffQuickSaleSerializer(serializers.Serializer):
     payment_method = serializers.ChoiceField(
         choices=[PaymentMethodType.PAY_AT_PICKUP, PaymentMethodType.PAY_AFTER_DELIVERY]
     )
+    is_express = serializers.BooleanField(default=False)
     paid_now = serializers.BooleanField(default=True, help_text="False leaves the order unpaid.")
     delivery_fee = serializers.DecimalField(
         max_digits=10, decimal_places=0, required=False, default=Decimal("0")
     )
     notes = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate(self, attrs):
+        if not attrs.get("customer") and not attrs.get("customer_phone"):
+            raise serializers.ValidationError({"customer_phone": "Select a client or enter a phone number."})
+        if attrs.get("delivery_fee", 0) < 0:
+            raise serializers.ValidationError({"delivery_fee": "Delivery fee cannot be negative."})
+        return attrs
 
     def validate_items(self, value):
         if not value:
@@ -71,7 +80,8 @@ class StaffQuickSaleSerializer(serializers.Serializer):
     @transaction.atomic
     def create(self, validated_data):
         staff_user = self.context["request"].user
-        phone = validated_data["customer_phone"]
+        selected_customer = validated_data.get("customer")
+        phone = selected_customer.phone_number if selected_customer else validated_data["customer_phone"]
         full_name = validated_data.get("customer_name", "").strip()
         first_name, _, last_name = full_name.partition(" ")
 
@@ -97,7 +107,7 @@ class StaffQuickSaleSerializer(serializers.Serializer):
 
         order = Order.objects.create(
             user=customer,
-            status=OrderStatus.CONFIRMED,
+            status=OrderStatus.COLLECTED,
             pickup_address="In-store",
             delivery_address="In-store",
             notes=validated_data.get("notes", ""),
@@ -105,13 +115,17 @@ class StaffQuickSaleSerializer(serializers.Serializer):
             fulfillment_type=Order.FulfillmentType.DROP_OFF,
             payment_option=validated_data["payment_method"],
             created_by=staff_user,
+            is_express=validated_data["is_express"],
+            priority=Order.Priority.EXPRESS if validated_data["is_express"] else Order.Priority.NORMAL,
             delivery_fee=validated_data.get("delivery_fee", Decimal("0")),
         )
 
         for item in validated_data["items"]:
-            unit_price = item.get("unit_price") or pricing.price_for_item(
-                item["service_type"], item["weight_kg"]
-            )
+            unit_price = item.get("unit_price")
+            if unit_price is None:
+                unit_price = pricing.price_for_item(item["service_type"], item["weight_kg"])
+            if order.is_express:
+                unit_price *= 2
             OrderItem.objects.create(
                 order=order,
                 service_type=item["service_type"],

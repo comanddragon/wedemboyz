@@ -1,15 +1,20 @@
+"use client";
+
+import { useI18n } from "@/src/i18n/I18nProvider";
+
 import { Award, Crown } from "lucide-react";
 
-import type { LoyaltyTier } from "@/src/types";
+import type { BadgeTier } from "@/src/types";
 
-import { Card } from "@/src/components/ui";
+import { Card, LoyaltyBadge } from "@/src/components/ui";
 
 const TIER_STYLES: Record<
-  LoyaltyTier,
+  BadgeTier,
   { icon: string; bg: string; surface: string; label: string }
 > = {
+  BASIC: { icon: "text-ink-muted", bg: "bg-steam", surface: "from-steam via-white to-white", label: "Basic" },
   BRONZE: {
-    icon: "text-bronze",
+    icon: "text-bronze-600",
     bg: "bg-bronze/15",
     surface: "from-bronze-50 via-white to-white",
     label: "Bronze",
@@ -32,9 +37,10 @@ export function MembershipCard({
   tier,
   pointsBalance,
 }: {
-  tier: LoyaltyTier;
+  tier: BadgeTier;
   pointsBalance: number;
 }) {
+  const { locale, t } = useI18n();
   const style = TIER_STYLES[tier];
   // Crown is reserved for Gold only — a deliberate echo of the logo's crown,
   // not a generic tier icon reused across every level.
@@ -51,9 +57,9 @@ export function MembershipCard({
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
         <div>
-          <p className="text-sm font-semibold text-ink">{style.label} member</p>
+          <LoyaltyBadge tier={tier} />
           <p className="mt-1 text-xs font-medium text-ink-muted">
-            {pointsBalance} points balance
+            {pointsBalance.toLocaleString(locale)} {t("customerDashboard.points")}
           </p>
         </div>
       </div>

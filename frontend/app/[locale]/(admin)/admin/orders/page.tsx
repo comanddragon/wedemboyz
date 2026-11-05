@@ -70,10 +70,8 @@ export default function AdminOrdersPage() {
   const statusOptions: { value: OrderStatus | "ALL"; label: string }[] = [
     { value: "ALL", label: t("adminOrders.allStatuses") },
     { value: "PENDING", label: t("common.statuses.pending") },
-    { value: "CONFIRMED", label: t("common.statuses.confirmed") },
-    { value: "IN_PROGRESS", label: t("common.statuses.inProgress") },
+    { value: "COLLECTED", label: t("common.statuses.collected") },
     { value: "READY", label: t("common.statuses.ready") },
-    { value: "OUT_FOR_DELIVERY", label: t("common.statuses.outForDelivery") },
     { value: "DELIVERED", label: t("common.statuses.delivered") },
     { value: "CANCELLED", label: t("common.statuses.cancelled") },
   ];
@@ -101,6 +99,7 @@ export default function AdminOrdersPage() {
   );
 
   const { data, isLoading, error } = useQuery({
+    refetchInterval: 15000,
     queryKey: [
       ...queryKeys.orders.list(page),
       { search, statusFilter, paymentFilter, sourceFilter },
@@ -166,7 +165,7 @@ export default function AdminOrdersPage() {
         description={t("adminOrders.description")}
       />
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <SearchInput
           placeholder={t("adminOrders.searchPlaceholder")}
           value={search}

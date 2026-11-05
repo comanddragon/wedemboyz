@@ -28,7 +28,7 @@ export function TableContainer({
 
 export function THead({ children }: { children: ReactNode }) {
   return (
-    <thead className="border-b border-crease-soft bg-gradient-to-b from-mist to-steam">
+    <thead className="border-b border-crease-soft bg-mist">
       <tr>{children}</tr>
     </thead>
   );
@@ -50,7 +50,7 @@ export function Th({
     <th
       scope="col"
       className={cn(
-        "whitespace-nowrap px-5 py-3.5 text-[11px] font-bold uppercase tracking-[0.08em] text-ink-muted",
+        "whitespace-nowrap px-4 py-3.5 text-xs font-bold uppercase tracking-[0.08em] text-ink-muted",
         align === "right" ? "text-right" : "text-left",
         className,
       )}
@@ -82,13 +82,14 @@ export function SortableTh({
   return (
     <th
       scope="col"
-      className="whitespace-nowrap px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-muted"
+      aria-sort={active && direction ? (direction === "asc" ? "ascending" : "descending") : undefined}
+      className={cn("whitespace-nowrap px-4 py-1 text-xs font-semibold uppercase tracking-wide text-ink-muted", align === "right" ? "text-right" : "text-left")}
     >
       <button
         type="button"
         onClick={onSort}
         className={cn(
-          "inline-flex items-center gap-1 rounded transition-colors hover:text-ink focus:outline-none focus-visible:ring-1 focus-visible:ring-navy",
+          "inline-flex min-h-11 items-center gap-1.5 rounded transition-colors hover:text-ink focus:outline-none focus-visible:ring-1 focus-visible:ring-navy",
           align === "right" && "flex-row-reverse",
           active && "text-ink",
         )}
@@ -116,7 +117,7 @@ export function Td({
     <td
       className={cn(
         "px-4 py-3 align-middle text-ink",
-        align === "right" && "text-right",
+        align === "right" && "whitespace-nowrap text-right",
         className,
       )}
     >
@@ -144,17 +145,21 @@ export function Tr({
   }
   return (
     <tr
-      onClick={onClick}
+      onClick={(event) => {
+        if ((event.target as HTMLElement).closest("a, button, input, select, textarea")) return;
+        onClick();
+      }}
       role="link"
       tabIndex={0}
       onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onClick();
         }
       }}
       className={cn(
-        "cursor-pointer transition-colors hover:bg-gold-50/50 focus:outline-none focus-visible:bg-gold-50/50",
+        "cursor-pointer transition-colors hover:bg-gold-50/50 focus:outline-none focus-visible:bg-gold-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-navy",
         className,
       )}
     >
@@ -178,7 +183,7 @@ export function TableSkeleton({
           {Array.from({ length: columns }).map((_, c) => (
             <td key={c} className="px-4 py-3">
               <div
-                className="h-4 animate-pulse rounded bg-steam"
+                className="h-4 animate-pulse rounded bg-steam motion-reduce:animate-none"
                 style={{ width: `${55 + ((r + c) % 4) * 10}%` }}
               />
             </td>

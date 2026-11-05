@@ -44,7 +44,7 @@ import {
   paymentStatusTone,
   serviceLabel,
 } from "@/src/components/ui";
-import { ordersApi, paymentsApi, scheduleApi, staffApi } from "@/src/lib/api";
+import { ordersApi, paymentsApi, scheduleApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
@@ -54,10 +54,11 @@ import type { OrderItem, OrderStatus, PaymentMethodType } from "@/src/types";
 
 
 const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
-  PENDING: ["CONFIRMED", "CANCELLED"],
-  CONFIRMED: ["IN_PROGRESS", "CANCELLED"],
+  PENDING: ["COLLECTED", "CANCELLED"],
+  COLLECTED: ["READY", "CANCELLED"],
+  CONFIRMED: ["COLLECTED", "CANCELLED"],
   IN_PROGRESS: ["READY"],
-  READY: ["OUT_FOR_DELIVERY", "DELIVERED"],
+  READY: ["DELIVERED"],
   OUT_FOR_DELIVERY: ["DELIVERED"],
   DELIVERED: [],
   CANCELLED: [],
@@ -85,6 +86,7 @@ export default function AdminOrderDetailPage() {
   } = useQuery({
     queryKey: queryKeys.orders.detail(orderId),
     queryFn: () => ordersApi.getOrder(orderId),
+    refetchInterval: 15000,
   });
 
   const [note, setNote] = useState("");
@@ -95,11 +97,6 @@ export default function AdminOrderDetailPage() {
   const paymentsQuery = useQuery({
     queryKey: ["orders", orderId, "payments"],
     queryFn: () => paymentsApi.listOrderPayments(orderId),
-  });
-
-  const staffQuery = useQuery({
-    queryKey: ["staff", "operations"],
-    queryFn: () => staffApi.listOperationalStaff(),
   });
 
   const scheduleQuery = useQuery({
@@ -119,18 +116,9 @@ export default function AdminOrderDetailPage() {
     onSuccess: () => {
       setNote("");
       queryClient.invalidateQueries({
-        queryKey: queryKeys.orders.detail(orderId),
+        queryKey: queryKeys.orders.all,
       });
     },
-  });
-
-  const assignmentMutation = useMutation({
-    mutationFn: (input: {
-      assigned_to: number | null;
-      driver: number | null;
-    }) => ordersApi.assignOrder(orderId, input),
-    onSuccess: (updated) =>
-      queryClient.setQueryData(queryKeys.orders.detail(orderId), updated),
   });
 
   const itemMutation = useMutation({
@@ -162,7 +150,7 @@ export default function AdminOrderDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule", orderId] });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.orders.detail(orderId),
+        queryKey: queryKeys.orders.all,
       });
     },
   });
@@ -178,7 +166,7 @@ export default function AdminOrderDetailPage() {
       setPaymentAmount("");
       setPaymentReference("");
       queryClient.invalidateQueries({
-        queryKey: queryKeys.orders.detail(orderId),
+        queryKey: queryKeys.orders.all,
       });
       queryClient.invalidateQueries({
         queryKey: ["orders", orderId, "payments"],
@@ -233,11 +221,77 @@ export default function AdminOrderDetailPage() {
             </p>
           </div>
         </div>
-        <StatusBadge
-          label={order.status}
-          tone={orderStatusTone(order.status)}
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <StatusBadge label={order.status} tone={orderStatusTone(order.status)} />
+
+        </div>
       </div>
+
+      <Card id="order-status" className="mb-6">
+            <h2 className="mb-3 text-sm font-semibold text-navy">
+              {locale === "fr" ? "Modifier l’état de la commande" : "Change order status"}
+            </h2>
+            {NEXT_STATUSES[order.status].length ? (
+              <>
+                <Field
+                  label={
+                    NEXT_STATUSES[order.status].includes("CANCELLED")
+                      ? t("adminOrders.statusNoteCancel")
+                      : t("adminOrders.statusNote")
+                  }
+                  htmlFor="status-note"
+                >
+                  <Textarea
+                    id="status-note"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    rows={2}
+                  />
+                </Field>
+                <div className="flex flex-wrap gap-2">
+                  {NEXT_STATUSES[order.status].map((status) => (
+                    <Button
+                      key={status}
+                      type="button"
+                      size="sm"
+                      variant={status === "CANCELLED" ? "danger" : "primary"}
+                      disabled={
+                        statusMutation.isPending ||
+                        (status === "CANCELLED" && !note.trim())
+                      }
+                      onClick={() => {
+                        if (
+                          status === "DELIVERED" &&
+                          Number(order.balance_due) > 0 &&
+                          !window.confirm(
+                            `${t("adminOrders.deliverBalanceConfirm")} (${formatCurrency(order.balance_due)})`,
+                          )
+                        )
+                          return;
+                        statusMutation.mutate(status);
+                      }}
+                    >
+                      {status === "DELIVERED" ? (
+                        <Truck className="h-3.5 w-3.5" aria-hidden="true" />
+                      ) : (
+                        <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
+                      )}
+                      {t(`common.statuses.${({ COLLECTED: "collected", READY: "ready", DELIVERED: "delivered", CANCELLED: "cancelled" } as Record<string, string>)[status] ?? status}`)}
+                    </Button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-ink-muted">
+                {t("adminOrders.noFurtherActions")}
+              </p>
+            )}
+            {statusMutation.error && (
+              <p className="mt-2 text-sm text-status-cancelled-text">
+                {getApiErrorMessage(statusMutation.error)}
+              </p>
+            )}
+          </Card>
 
       <section
         className="mb-6 grid overflow-hidden rounded-2xl border border-crease bg-white sm:grid-cols-2 xl:grid-cols-4"
@@ -481,57 +535,8 @@ export default function AdminOrderDetailPage() {
             <h2 className="mb-3 text-sm font-semibold text-navy">
               {t("adminOrders.operations")}
             </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label={t("adminOrders.assignedStaff")} htmlFor="assigned-staff">
-                <Select
-                  id="assigned-staff"
-                  value={order.assigned_to ?? ""}
-                  disabled={assignmentMutation.isPending}
-                  onChange={(event) =>
-                    assignmentMutation.mutate({
-                      assigned_to: event.target.value
-                        ? Number(event.target.value)
-                        : null,
-                      driver: order.driver,
-                    })
-                  }
-                >
-                  <option value="">{t("adminOrders.unassigned")}</option>
-                  {staffQuery.data?.map((profile) => (
-                    <option key={profile.id} value={profile.user.id}>
-                      {profile.user.first_name} {profile.user.last_name} ·{" "}
-                      {profile.role}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label={t("adminOrders.driver")} htmlFor="order-driver">
-                <Select
-                  id="order-driver"
-                  value={order.driver ?? ""}
-                  disabled={assignmentMutation.isPending}
-                  onChange={(event) =>
-                    assignmentMutation.mutate({
-                      assigned_to: order.assigned_to,
-                      driver: event.target.value
-                        ? Number(event.target.value)
-                        : null,
-                    })
-                  }
-                >
-                  <option value="">{t("adminOrders.noDriver")}</option>
-                  {staffQuery.data
-                    ?.filter((profile) => profile.role === "DRIVER")
-                    .map((profile) => (
-                      <option key={profile.id} value={profile.user.id}>
-                        {profile.user.first_name} {profile.user.last_name}
-                      </option>
-                    ))}
-                </Select>
-              </Field>
-            </div>
             <form
-              key={`${order.updated_at}-${order.assigned_to}-${order.driver}`}
+              key={order.updated_at}
               className="mt-3 grid gap-3 sm:grid-cols-[1fr_130px_auto] sm:items-end"
               onSubmit={(event) => {
                 event.preventDefault();
@@ -581,13 +586,11 @@ export default function AdminOrderDetailPage() {
                 </Button>
               </div>
             </form>
-            {(assignmentMutation.error ||
-              detailsMutation.error ||
+            {(detailsMutation.error ||
               itemMutation.error) && (
               <p className="mt-2 text-xs text-status-cancelled-text">
                 {getApiErrorMessage(
-                  assignmentMutation.error ||
-                    detailsMutation.error ||
+                        detailsMutation.error ||
                     itemMutation.error,
                 )}
               </p>
@@ -616,7 +619,6 @@ export default function AdminOrderDetailPage() {
                   delivery_date: String(data.get("delivery_date")),
                   delivery_time_slot: String(data.get("delivery_time_slot")) as
                     "MORNING" | "MIDDAY" | "AFTERNOON" | "EVENING",
-                  driver: order.driver,
                   contact_phone: String(data.get("contact_phone") ?? ""),
                   address_override: String(data.get("address_override") ?? ""),
                 });
@@ -824,71 +826,7 @@ export default function AdminOrderDetailPage() {
             )}
           </Card>
 
-          <Card>
-            <h2 className="mb-3 text-sm font-semibold text-navy">
-              {t("adminOrders.moveForward")}
-            </h2>
-            {NEXT_STATUSES[order.status].length ? (
-              <>
-                <Field
-                  label={
-                    NEXT_STATUSES[order.status].includes("CANCELLED")
-                      ? t("adminOrders.statusNoteCancel")
-                      : t("adminOrders.statusNote")
-                  }
-                  htmlFor="status-note"
-                >
-                  <Textarea
-                    id="status-note"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    rows={2}
-                  />
-                </Field>
-                <div className="flex flex-wrap gap-2">
-                  {NEXT_STATUSES[order.status].map((status) => (
-                    <Button
-                      key={status}
-                      type="button"
-                      size="sm"
-                      variant={status === "CANCELLED" ? "danger" : "primary"}
-                      disabled={
-                        statusMutation.isPending ||
-                        (status === "CANCELLED" && !note.trim())
-                      }
-                      onClick={() => {
-                        if (
-                          status === "DELIVERED" &&
-                          Number(order.balance_due) > 0 &&
-                          !window.confirm(
-                            `${t("adminOrders.deliverBalanceConfirm")} (${formatCurrency(order.balance_due)})`,
-                          )
-                        )
-                          return;
-                        statusMutation.mutate(status);
-                      }}
-                    >
-                      {status === "OUT_FOR_DELIVERY" ? (
-                        <Truck className="h-3.5 w-3.5" aria-hidden="true" />
-                      ) : (
-                        <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
-                      )}
-                      {status.replace(/_/g, " ")}
-                    </Button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-ink-muted">
-                {t("adminOrders.noFurtherActions")}
-              </p>
-            )}
-            {statusMutation.error && (
-              <p className="mt-2 text-sm text-status-cancelled-text">
-                {getApiErrorMessage(statusMutation.error)}
-              </p>
-            )}
-          </Card>
+
 
           <Card className="p-0">
             <h2 className="font-display p-5 pb-3 text-sm font-medium text-ink">

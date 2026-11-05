@@ -27,7 +27,7 @@ import {
 import Image from "next/image";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { LogoutButton } from "@/src/components/auth/LogoutButton";
@@ -163,12 +163,14 @@ const CUSTOMER_LINKS: NavItem[] = [
 ];
 
 /** Links shown inline in the top bar; anything beyond this goes under "More" so the bar never scrolls. */
-const MAX_INLINE = 7;
+const MAX_INLINE = 5;
 
 function NavMore({ items, pathname }: { items: NavItem[]; pathname: string }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
   const hasActive = items.some((item) => isActive(pathname, item.href));
 
   useEffect(() => setOpen(false), [pathname]);
@@ -178,7 +180,10 @@ function NavMore({ items, pathname }: { items: NavItem[]; pathname: string }) {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
@@ -193,9 +198,10 @@ function NavMore({ items, pathname }: { items: NavItem[]; pathname: string }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
+        ref={triggerRef}
+        aria-controls={open ? menuId : undefined}
         aria-expanded={open}
-        className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-all duration-200 ${hasActive ? "bg-navy text-white" : open ? "bg-steam text-navy" : "text-ink-soft hover:bg-steam hover:text-navy"}`}
+        className={`flex min-h-11 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-all duration-200 ${hasActive ? "bg-navy text-white" : open ? "bg-steam text-navy" : "text-ink-soft hover:bg-steam hover:text-navy"}`}
       >
         <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
         {t("common.more")}
@@ -206,8 +212,8 @@ function NavMore({ items, pathname }: { items: NavItem[]; pathname: string }) {
       </button>
       {open && (
         <div
-          role="menu"
-          className="ui-menu-in absolute right-0 top-[calc(100%+10px)] z-50 w-56 rounded-2xl border border-crease/70 bg-white p-1.5 shadow-pop"
+          id={menuId}
+          className="ui-menu-in absolute right-0 top-[calc(100%+10px)] z-50 max-h-[calc(100dvh-7rem)] w-56 overflow-y-auto rounded-2xl border border-crease/70 bg-white p-1.5 shadow-pop"
         >
           {items.map(({ href, label, icon: Icon, badgeCount }) => {
             const active = isActive(pathname, href);
@@ -215,7 +221,7 @@ function NavMore({ items, pathname }: { items: NavItem[]; pathname: string }) {
               <Link
                 key={href}
                 href={href}
-                role="menuitem"
+                aria-current={active ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${active ? "bg-navy text-white" : "text-ink-soft hover:bg-gold-50"}`}
               >
                 <span
@@ -255,6 +261,40 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const profileButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const sheet = sheetRef.current;
+    const focusable = () => Array.from(sheet?.querySelectorAll<HTMLElement>(
+      'a[href], button:not(:disabled), [tabindex="0"]',
+    ) ?? []);
+    focusable()[0]?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+      } else if (event.key === "Tab") {
+        const elements = focusable();
+        const first = elements[0];
+        const last = elements[elements.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      previousFocus?.focus();
+    };
+  }, [open]);
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
   const isHydrated = useAuthStore((state) => state.isHydrated);
@@ -357,7 +397,10 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
       if (!profileRef.current?.contains(event.target as Node)) setProfileOpen(false);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setProfileOpen(false);
+      if (event.key === "Escape") {
+        setProfileOpen(false);
+        profileButtonRef.current?.focus();
+      }
     };
     document.addEventListener("mousedown", closeProfile);
     document.addEventListener("keydown", closeOnEscape);
@@ -383,7 +426,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
             priority
             className="h-7 w-auto"
           />
-          <span className="font-display text-[0.95rem] font-semibold tracking-[-0.01em]">
+          <span className="font-display hidden xl:inline text-[0.95rem] font-semibold tracking-[-0.01em]">
             Wedemboyz Lavomatique
           </span>
         </Link>
@@ -396,7 +439,8 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
             <Link
               key={href}
               href={href}
-              className={`relative shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold transition-all duration-200 ${isActive(pathname, href) ? "bg-navy text-white" : "text-ink-soft hover:bg-steam hover:text-navy"}`}
+              aria-current={isActive(pathname, href) ? "page" : undefined}
+              className={`relative flex min-h-11 shrink-0 items-center rounded-full px-3.5 py-2 text-xs font-semibold transition-all duration-200 ${isActive(pathname, href) ? "bg-navy text-white" : "text-ink-soft hover:bg-steam hover:text-navy"}`}
             >
               {label}
               {badgeCount ? (
@@ -415,7 +459,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
           <div className="hidden xl:block"><LanguageSwitcher compact /></div>
           <Link
             href={admin ? "/admin/notifications" : "/notifications"}
-            className="relative grid h-11 w-11 place-items-center rounded-full bg-mist text-navy transition-colors hover:bg-gold-50 sm:bg-white/90 sm:shadow-float lg:h-10 lg:w-10"
+            className="relative grid h-11 w-11 place-items-center rounded-full bg-mist text-navy transition-colors hover:bg-gold-50 sm:bg-white/90 sm:shadow-float"
             aria-label={`Open notifications${attentionCount > 0 ? `, ${attentionCount} unread` : ""}`}
           >
             <Bell className="h-4 w-4" />
@@ -426,16 +470,16 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
             ) : null}
           </Link>
           <div ref={profileRef} className="relative hidden sm:block">
-            <button type="button" onClick={() => setProfileOpen((value) => !value)} aria-expanded={profileOpen} aria-haspopup="menu" className="flex h-10 cursor-pointer items-center gap-2 rounded-full border-0 bg-white/90 px-2 pr-3 text-navy shadow-float">
-              <CustomerAvatar name={name} size="xs" imageUrl={profile?.avatar} useProfilePhoto={profile?.use_profile_photo} className="ring-0" />
+            <button ref={profileButtonRef} type="button" onClick={() => setProfileOpen((value) => !value)} aria-expanded={profileOpen} className="flex h-11 cursor-pointer items-center gap-2 rounded-full border-0 bg-white/90 px-2 pr-3 text-navy shadow-float">
+              <CustomerAvatar name={name} size="xs" loyaltyTier={admin ? undefined : profile?.loyalty?.badge_tier ?? "BASIC"} imageUrl={profile?.avatar} useProfilePhoto={profile?.use_profile_photo} className="ring-0" />
               <span className="max-w-24 truncate text-xs font-semibold">
                 {name}
               </span>
               <ChevronDown className={`h-3.5 w-3.5 text-ink-muted transition-transform ${profileOpen ? "rotate-180" : ""}`} />
             </button>
-            {profileOpen ? <div role="menu" className="absolute right-0 top-12 w-56 rounded-2xl border-0 bg-white/95 p-2 shadow-pop">
+            {profileOpen ? <div className="absolute right-0 top-12 w-56 rounded-2xl border-0 bg-white/95 p-2 shadow-pop">
               <div className="flex items-center gap-3 border-b border-crease-soft px-3 py-2">
-                <CustomerAvatar name={name} size="sm" imageUrl={profile?.avatar} useProfilePhoto={profile?.use_profile_photo} />
+                <CustomerAvatar name={name} size="sm" loyaltyTier={admin ? undefined : profile?.loyalty?.badge_tier ?? "BASIC"} imageUrl={profile?.avatar} useProfilePhoto={profile?.use_profile_photo} />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-navy">
                     {name}
@@ -514,14 +558,14 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                     onClick={() => setOpen(false)}
                     aria-label="Close navigation"
                   />
-                  <div className="mobile-safe-top mobile-safe-bottom absolute inset-y-0 right-0 flex w-[min(92vw,380px)] flex-col bg-white p-5 shadow-2xl">
+                  <div ref={sheetRef} role="dialog" aria-modal="true" aria-label={t("common.more")} className="mobile-safe-top mobile-safe-bottom absolute inset-y-0 right-0 flex w-[min(92vw,380px)] flex-col bg-white p-5 shadow-2xl">
                     <div className="flex items-center justify-between">
                       <p className="font-display text-lg font-bold text-navy">
                         Menu
                       </p>
                       <button
                         onClick={() => setOpen(false)}
-                        className="grid h-10 w-10 place-items-center rounded-full bg-mist text-navy"
+                        className="grid h-11 w-11 place-items-center rounded-full bg-mist text-navy"
                         aria-label="Close menu"
                       >
                         <X className="h-5 w-5" />
@@ -529,17 +573,18 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                     </div>
                     <div className="mt-4"><LanguageSwitcher /></div>
                     <nav
-                      className="mt-6 grid grid-cols-2 gap-2 overflow-y-auto"
+                      className="mt-6 grid min-h-0 grid-cols-2 gap-2 overflow-y-auto overscroll-contain pb-4"
                       aria-label="All navigation"
                     >
                       {links.map(({ href, label, icon: Icon, badgeCount }) => (
                         <Link
                           key={href}
                           href={href}
+                          aria-current={isActive(pathname, href) ? "page" : undefined}
                           onClick={() => setOpen(false)}
-                          className={`flex min-h-14 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold ${isActive(pathname, href) ? "bg-navy text-white" : "bg-mist text-ink-soft active:bg-steam"}`}
+                          className={`flex min-h-14 min-w-0 items-center gap-2 break-words rounded-xl px-3 py-3 text-sm font-semibold ${isActive(pathname, href) ? "bg-navy text-white" : "bg-mist text-ink-soft active:bg-steam"}`}
                         >
-                          <Icon className="h-[18px] w-[18px]" />
+                          <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
                           {label}
                           {badgeCount ? (
                             <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-status-cancelled-text px-1 text-[10px] font-bold text-white">
@@ -551,7 +596,7 @@ export function DashboardNav({ admin = false }: { admin?: boolean }) {
                     </nav>
                     <div className="mt-auto border-t border-crease-soft pt-4">
                       <div className="mb-2 flex items-center gap-3 px-2">
-                        <CustomerAvatar name={name} size="sm" imageUrl={profile?.avatar} useProfilePhoto={profile?.use_profile_photo} />
+                        <CustomerAvatar name={name} size="sm" loyaltyTier={admin ? undefined : profile?.loyalty?.badge_tier ?? "BASIC"} imageUrl={profile?.avatar} useProfilePhoto={profile?.use_profile_photo} />
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-navy">
                             {name}

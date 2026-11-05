@@ -1,3 +1,10 @@
+import re
+import secrets
+from datetime import timedelta
+
+from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.discounts.models import (
@@ -13,12 +20,6 @@ from apps.discounts.models import (
     StampCardConfig,
 )
 from apps.users.models import LoyaltyAccount
-from django.contrib.auth import get_user_model
-from django.db import transaction
-from django.utils import timezone
-from datetime import timedelta
-import re
-import secrets
 
 User = get_user_model()
 
@@ -31,6 +32,7 @@ class StampCardConfigSerializer(serializers.ModelSerializer):
 
 
 class LoyaltyAccountSerializer(serializers.ModelSerializer):
+    ambassador = serializers.SerializerMethodField()
     badge_program = serializers.SerializerMethodField()
     programmes = serializers.SerializerMethodField()
     rewards = serializers.SerializerMethodField()
@@ -39,10 +41,24 @@ class LoyaltyAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoyaltyAccount
         fields = [
-            "points_balance", "lifetime_points_earned", "tier", "badge_program",
-            "programmes", "rewards", "reward_grants",
+            "points_balance",
+            "lifetime_points_earned",
+            "tier",
+            "badge_program",
+            "programmes",
+            "rewards",
+            "reward_grants",
+            "ambassador",
         ]
         read_only_fields = fields
+
+    def get_ambassador(self, obj):
+        profile = (
+            AmbassadorProfile.objects.filter(user=obj.user)
+            .select_related("user", "promo_code")
+            .first()
+        )
+        return AmbassadorProfileSerializer(profile, context=self.context).data if profile else None
 
     def get_badge_program(self, obj):
         badge, _ = BadgeAccount.objects.get_or_create(user=obj.user)
@@ -52,9 +68,7 @@ class LoyaltyAccountSerializer(serializers.ModelSerializer):
         return LoyaltyProgramSettingsSerializer(LoyaltyProgramSettings.get_current()).data
 
     def get_rewards(self, obj):
-        return LoyaltyRewardSerializer(
-            LoyaltyReward.objects.filter(is_active=True), many=True
-        ).data
+        return LoyaltyRewardSerializer(LoyaltyReward.objects.filter(is_active=True), many=True).data
 
     def get_reward_grants(self, obj):
         return LoyaltyRewardGrantSerializer(
@@ -85,7 +99,15 @@ class LoyaltyRuleSerializer(serializers.ModelSerializer):
 class LoyaltyTierConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoyaltyTierConfig
-        fields = ["id", "tier", "minimum_lifetime_points", "discount_percent", "bonus_points_percent", "priority_service", "is_active"]
+        fields = [
+            "id",
+            "tier",
+            "minimum_lifetime_points",
+            "discount_percent",
+            "bonus_points_percent",
+            "priority_service",
+            "is_active",
+        ]
         read_only_fields = ["id", "tier"]
 
 
@@ -116,7 +138,9 @@ class LoyaltyRewardSerializer(serializers.ModelSerializer):
         track = attrs.get("track", getattr(self.instance, "track", None))
         cost = attrs.get("points_cost", getattr(self.instance, "points_cost", 0))
         if track == LoyaltyReward.Track.CREDIT and cost <= 0:
-            raise serializers.ValidationError({"points_cost": "Credit rewards need a positive points cost."})
+            raise serializers.ValidationError(
+                {"points_cost": "Credit rewards need a positive points cost."}
+            )
         return attrs
 
 
@@ -152,8 +176,16 @@ class AmbassadorProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = AmbassadorProfile
         fields = [
-            "id", "user_id", "name", "phone_number", "promo_code",
-            "profile_photo", "credit_balance", "lifetime_credits", "is_active", "created_at",
+            "id",
+            "user_id",
+            "name",
+            "phone_number",
+            "promo_code",
+            "profile_photo",
+            "credit_balance",
+            "lifetime_credits",
+            "is_active",
+            "created_at",
         ]
         read_only_fields = fields
 

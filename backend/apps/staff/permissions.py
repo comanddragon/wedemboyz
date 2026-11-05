@@ -80,7 +80,14 @@ def get_staff_role(user):
     if not user.is_staff:
         return None
     profile = getattr(user, "staff_profile", None)
-    return profile.role if profile and profile.is_active else None
+    if profile is None:
+        # Older accounts created in Django admin may predate staff provisioning.
+        # Repair only missing profiles; an explicitly disabled profile stays disabled.
+        from .models import StaffProfile
+
+        profile, _ = StaffProfile.objects.get_or_create(user=user)
+        user.staff_profile = profile
+    return profile.role if profile.is_active else None
 
 
 def get_staff_permissions(user):

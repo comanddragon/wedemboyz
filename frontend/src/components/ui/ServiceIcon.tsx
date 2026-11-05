@@ -28,6 +28,7 @@ const SERVICE_ICONS: Record<ServiceType, typeof Droplets> = {
   CHEMISE: Shirt,
   PANTALON: Package,
   PULL: Layers,
+  PETITE_ROBE: Sparkles,
   ROBE: Sparkles,
   ENSEMBLE: Boxes,
   DRAPS_COMPLET: PackageCheck,
@@ -45,6 +46,7 @@ const SERVICE_LABELS: Record<ServiceType, string> = {
   CHEMISE: "Chemise (Shirt)",
   PANTALON: "Pantalon (Trousers)",
   PULL: "Pull (Sweater)",
+  PETITE_ROBE: "Petite robe",
   ROBE: "Robe (Dress)",
   ENSEMBLE: "Ensemble",
   DRAPS_COMPLET: "Draps Complet (Bed Sheet Set)",
@@ -53,7 +55,7 @@ const SERVICE_LABELS: Record<ServiceType, string> = {
   COUETTE_3P: "Couette 3 Places",
   LAVAGE_ESSORAGE: "Lavage et Essorage (Wash & Spin)",
   LAVAGE_SECHAGE: "Lavage, Essorage et Séchage (Wash & Dry)",
-  REPASSAGE_PLASTIF: "Repassage et Plastification (Press & Wrap)",
+  REPASSAGE_PLASTIF: "Lavage, essorage, séchage, repassage et plastification",
 };
 
 export function ServiceIcon({

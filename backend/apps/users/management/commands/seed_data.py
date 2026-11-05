@@ -242,10 +242,8 @@ NOTIFICATION_TEMPLATES = {
 
 STATUS_FLOW = [
     OrderStatus.PENDING,
-    OrderStatus.CONFIRMED,
-    OrderStatus.IN_PROGRESS,
+    OrderStatus.COLLECTED,
     OrderStatus.READY,
-    OrderStatus.OUT_FOR_DELIVERY,
     OrderStatus.DELIVERED,
 ]
 
@@ -538,11 +536,9 @@ class Command(BaseCommand):
 
         # StaffProfile creation triggers StaffActivityLog via signal automatically.
         for user, role in zip(staff_users, roles[:n_staff]):
-            StaffProfile.objects.create(
+            StaffProfile.objects.update_or_create(
                 user=user,
-                role=role,
-                is_active=True,
-                invited_by=None,
+                defaults={"role": role, "is_active": True, "invited_by": None},
             )
 
         # Give staff sensible profile info too (signal already made blank UserProfile/LoyaltyAccount).
@@ -830,10 +826,8 @@ class Command(BaseCommand):
         status_weights = [
             (OrderStatus.DELIVERED, 55),
             (OrderStatus.CANCELLED, 8),
-            (OrderStatus.OUT_FOR_DELIVERY, 6),
             (OrderStatus.READY, 8),
-            (OrderStatus.IN_PROGRESS, 10),
-            (OrderStatus.CONFIRMED, 8),
+            (OrderStatus.COLLECTED, 24),
             (OrderStatus.PENDING, 5),
         ]
 

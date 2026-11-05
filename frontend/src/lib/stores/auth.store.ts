@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { AuthTokens } from "@/src/types";
 
 interface AuthUser {
+  gender?: import("@/src/types/user").ProfileGender;
   id: number;
   phone_number: string;
   first_name: string;

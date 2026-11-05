@@ -16,6 +16,7 @@ class CustomerListSerializer(serializers.ModelSerializer):
     source = serializers.CharField(source="profile.source", read_only=True, default="ONLINE")
     is_blocked = serializers.BooleanField(source="profile.is_blocked", read_only=True, default=False)
     tags = serializers.JSONField(source="profile.tags", read_only=True, default=list)
+    gender = serializers.CharField(source="profile.gender", read_only=True, default="")
     avatar = serializers.ImageField(source="profile.avatar", read_only=True, allow_null=True)
     use_profile_photo = serializers.BooleanField(source="profile.use_profile_photo", read_only=True, default=False)
 
@@ -37,6 +38,7 @@ class CustomerListSerializer(serializers.ModelSerializer):
             "source",
             "is_blocked",
             "tags",
+            "gender",
             "avatar",
             "use_profile_photo",
             "is_walk_in",
@@ -53,6 +55,7 @@ class CustomerDetailSerializer(CustomerListSerializer):
     """GET /api/v1/users/customers/{id}/ — full fiche client: profile,
     loyalty, recent order history, and credit ledger."""
 
+    gender = serializers.ChoiceField(source="profile.gender", choices=UserProfile._meta.get_field("gender").choices, required=False, allow_blank=True)
     address_line = serializers.CharField(source="profile.address_line", required=False, allow_blank=True, default="")
     loyalty = LoyaltyAccountSummarySerializer(source="loyalty_account", read_only=True)
     recent_orders = serializers.SerializerMethodField()
@@ -100,7 +103,9 @@ class CustomerDetailSerializer(CustomerListSerializer):
     def update(self, instance, validated_data):
         profile_data = validated_data.pop("profile", {})
         instance = super().update(instance, validated_data)
-        profile, _ = UserProfile.objects.get_or_create(user=instance)
+        profile = getattr(instance, "profile", None)
+        if profile is None:
+            profile = UserProfile.objects.create(user=instance)
         for field, value in profile_data.items():
             setattr(profile, field, value)
         profile.save()

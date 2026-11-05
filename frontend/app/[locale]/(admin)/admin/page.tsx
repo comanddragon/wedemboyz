@@ -25,9 +25,9 @@ import {
   THead,
   Tr,
 } from "@/src/components/admin/Table";
-import { KpiTile, type KpiAccent } from "@/src/components/dashboard/KpiTile";
+import { KpiTile } from "@/src/components/dashboard/KpiTile";
 import { RevenueChart } from "@/src/components/finance/RevenueChart";
-import { Card, StatusBadge, orderStatusTone } from "@/src/components/ui";
+import { Button, Card, StatusBadge, orderStatusTone } from "@/src/components/ui";
 import {
   canAccess,
   type AdminPermission,
@@ -35,6 +35,7 @@ import {
   type AdminRole,
 } from "@/src/lib/admin-rbac";
 import { chatApi, financeApi, ordersApi } from "@/src/lib/api";
+import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
@@ -101,21 +102,22 @@ export default function AdminOverviewPage() {
   const today = new Date().toISOString().slice(0, 10);
   const start = isoDaysAgo(13);
 
-  const { data: orders, isLoading: ordersLoading } = useQuery({
+  const { data: orders, isLoading: ordersLoading, error: ordersError, refetch: refetchOrders } = useQuery({
     queryKey: queryKeys.orders.list(1),
     queryFn: () => ordersApi.listOrders(1),
+    refetchInterval: 15000,
   });
-  const { data: chatRooms, isLoading: chatLoading } = useQuery({
+  const { data: chatRooms, isLoading: chatLoading, error: chatError, refetch: refetchChat } = useQuery({
     queryKey: queryKeys.chat.rooms,
     queryFn: () => chatApi.listChatRooms(),
     enabled: canSeeChat,
   });
-  const { data: todaySummary, isLoading: summaryLoading } = useQuery({
+  const { data: todaySummary, isLoading: summaryLoading, error: summaryError, refetch: refetchSummary } = useQuery({
     queryKey: queryKeys.finance.analytics.summary({ start: today, end: today }),
     queryFn: () => financeApi.getFinanceSummary({ start: today, end: today }),
     enabled: canSeeFinance,
   });
-  const { data: revenue, isLoading: revenueLoading } = useQuery({
+  const { data: revenue, isLoading: revenueLoading, error: revenueError, refetch: refetchRevenue } = useQuery({
     queryKey: queryKeys.finance.analytics.revenue({
       period: "daily",
       start,
@@ -142,15 +144,9 @@ export default function AdminOverviewPage() {
     <main className="mx-auto max-w-[1540px] px-4 pb-8 pt-7 sm:px-7 lg:px-10 lg:pb-12 lg:pt-10">
       <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div>
-          <p className="mb-3">
-            <span className="inline-flex items-center gap-2 rounded-full bg-gold-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-gold-600 ring-1 ring-gold/20">
-              <span className="h-1.5 w-1.5 rounded-full bg-gold" />
-              {t("adminDashboard.overview")}
-            </span>
-          </p>
           <h1 className="font-display text-[2rem] font-light leading-[1.1] tracking-[-0.035em] text-ink sm:text-[2.6rem]">
             {t("adminDashboard.greeting")},{" "}
-            <span className="bg-gradient-to-r from-gold-600 to-gold bg-clip-text text-transparent">
+            <span className="text-navy">
               {name}
             </span>
           </h1>
@@ -173,6 +169,18 @@ export default function AdminOverviewPage() {
         </div>
       </header>
 
+      {(ordersError || chatError || summaryError || revenueError) && (
+        <div role="alert" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-status-cancelled-text/25 bg-status-cancelled-bg px-4 py-3 text-sm text-status-cancelled-text">
+          <p className="min-w-0 flex-1">{getApiErrorMessage(ordersError || chatError || summaryError || revenueError)}</p>
+          <Button variant="secondary" size="sm" onClick={() => {
+            if (ordersError) void refetchOrders();
+            if (chatError) void refetchChat();
+            if (summaryError) void refetchSummary();
+            if (revenueError) void refetchRevenue();
+          }}>{t("payments.retry")}</Button>
+        </div>
+      )}
+
       <section
         className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
         aria-label="Key performance indicators"
@@ -181,7 +189,7 @@ export default function AdminOverviewPage() {
           accent="blue"
           icon={PackageCheck}
           label={t("adminDashboard.ordersSystem")}
-          value={ordersLoading ? "—" : (orders?.count ?? 0)}
+          value={ordersLoading || ordersError ? "—" : (orders?.count ?? 0)}
           detail={t("adminDashboard.recorded")}
         />
         <KpiTile
@@ -190,7 +198,7 @@ export default function AdminOverviewPage() {
           label={canSeeFinance ? t("adminDashboard.revenueToday") : t("adminDashboard.paymentAccess")}
           value={
             canSeeFinance
-              ? summaryLoading
+              ? summaryLoading || summaryError
                 ? "—"
                 : formatCurrency(todaySummary?.revenue ?? 0)
               : t("adminDashboard.limited")
@@ -203,7 +211,7 @@ export default function AdminOverviewPage() {
           label={canSeeFinance ? t("adminDashboard.average") : t("adminDashboard.currentRole")}
           value={
             canSeeFinance
-              ? summaryLoading
+              ? summaryLoading || summaryError
                 ? "—"
                 : formatCurrency(todaySummary?.average_payment ?? 0)
               : role
@@ -216,14 +224,14 @@ export default function AdminOverviewPage() {
           accent="coral"
           icon={MessageCircle}
           label={t("adminDashboard.unassigned")}
-          value={canSeeChat ? (chatLoading ? "—" : unassigned) : t("adminDashboard.limited")}
-          detail={openRooms ? `${openRooms} ${t("adminDashboard.openConversations")}` : t("adminDashboard.inboxClear")}
+          value={canSeeChat ? (chatLoading || chatError ? "—" : unassigned) : t("adminDashboard.limited")}
+          detail={chatError ? undefined : openRooms ? `${openRooms} ${t("adminDashboard.openConversations")}` : t("adminDashboard.inboxClear")}
         />
       </section>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.75fr)]">
-        <Card className="rounded-[22px] border-0 bg-white p-6 shadow-card">
-          <div className="mb-5 flex items-start justify-between gap-4">
+        <Card className="rounded-[22px] border border-crease-soft bg-white p-4 shadow-none sm:p-6">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-clothesline-50 text-clothesline-600">
                 <TrendingUp className="h-5 w-5" />
@@ -240,7 +248,7 @@ export default function AdminOverviewPage() {
             {canSeeFinance && (
               <Link
                 href="/admin/analytics"
-                className="rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-navy shadow-sm ring-1 ring-crease transition-colors hover:bg-navy hover:text-white"
+                className="inline-flex min-h-11 items-center rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-navy shadow-sm ring-1 ring-crease transition-colors hover:bg-navy hover:text-white"
               >
                 {t("adminDashboard.report")}
               </Link>
@@ -257,7 +265,7 @@ export default function AdminOverviewPage() {
           ) : null}
         </Card>
 
-        <Card className="rounded-[22px] border-0 bg-white p-6 shadow-card">
+        <Card className="rounded-[22px] border border-crease-soft bg-white p-4 shadow-none sm:p-6">
           <h2 className="font-display text-lg font-medium text-ink">
             {t("adminDashboard.actions")}
           </h2>
@@ -291,7 +299,7 @@ export default function AdminOverviewPage() {
             )}
           </div>
           {canSeeChat && openRooms > 0 && (
-            <div className="mt-5 rounded-xl bg-gradient-to-r from-gold-50 to-white p-3.5 text-xs text-gold-600 ring-1 ring-gold/25">
+            <div className="mt-5 rounded-xl bg-gold-50 p-3.5 text-xs text-gold-600 ring-1 ring-gold/25">
               <strong>
                 {openRooms}{" "}
                 {openRooms === 1
@@ -304,8 +312,8 @@ export default function AdminOverviewPage() {
         </Card>
       </div>
 
-      <section className="mt-5 overflow-hidden rounded-[22px] border-0 bg-white shadow-card">
-        <div className="flex items-center justify-between border-b border-crease bg-gradient-to-r from-dashboard-blue-50/70 to-transparent px-5 py-4">
+      <section className="mt-5 overflow-hidden rounded-[22px] border border-crease-soft bg-white">
+        <div className="flex items-center justify-between gap-4 border-b border-crease bg-mist px-5 py-4">
           <div>
             <h2 className="font-display text-base font-semibold text-navy">
               {t("adminDashboard.recent")}
@@ -316,7 +324,7 @@ export default function AdminOverviewPage() {
           </div>
           <Link
             href="/admin/orders"
-            className="text-xs font-semibold text-navy hover:underline"
+            className="inline-flex min-h-11 shrink-0 items-center text-xs font-semibold text-navy hover:underline"
           >
             {t("adminDashboard.allOrders")}
           </Link>
@@ -330,8 +338,11 @@ export default function AdminOverviewPage() {
           </THead>
           <TBody>
             {ordersLoading && <TableSkeleton columns={4} rows={6} />}
-            {!ordersLoading && !recentOrders?.length && (
+            {!ordersLoading && !ordersError && !recentOrders?.length && (
               <TableEmptyRow colSpan={4}>{t("adminDashboard.noOrders")}</TableEmptyRow>
+            )}
+            {!ordersLoading && ordersError && !recentOrders?.length && (
+              <TableEmptyRow colSpan={4}>{getApiErrorMessage(ordersError)}</TableEmptyRow>
             )}
             {recentOrders?.map((order) => (
               <Tr key={order.id}>

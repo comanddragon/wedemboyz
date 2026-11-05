@@ -9,7 +9,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Toke
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.staff.permissions import get_staff_permissions, get_staff_role
-from apps.users.models import CustomUser
+from apps.users.models import CustomUser, UserProfile
 from core.utils import format_phone_number
 
 
@@ -18,17 +18,19 @@ def _avatar_payload(user):
     return {
         "avatar": profile.avatar.url if profile and profile.avatar else None,
         "use_profile_photo": bool(profile and profile.use_profile_photo),
+        "gender": profile.gender if profile else "",
     }
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    gender = serializers.ChoiceField(choices=UserProfile._meta.get_field("gender").choices, required=False, allow_blank=True)
     email = serializers.EmailField(required=True, allow_blank=False, allow_null=False, max_length=254)
     password = serializers.CharField(write_only=True, min_length=8)
     password2 = serializers.CharField(write_only=True, min_length=8, label="Confirm password")
 
     class Meta:
         model = CustomUser
-        fields = ["phone_number", "first_name", "last_name", "email", "password", "password2"]
+        fields = ["phone_number", "first_name", "last_name", "email", "password", "password2", "gender"]
 
     def validate_phone_number(self, value):
         normalised = format_phone_number(value)
@@ -44,6 +46,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        gender = validated_data.pop("gender", "")
         password = validated_data.pop("password")
         phone_number = format_phone_number(validated_data["phone_number"])
 
@@ -66,13 +69,18 @@ class RegisterSerializer(serializers.ModelSerializer):
             guest.is_guest = False
             guest.set_password(password)
             guest.save()
+            guest.profile.gender = gender
+            guest.profile.save(update_fields=["gender"])
             from services.email import queue_email
 
             queue_email(guest, "welcome", key=f"welcome/{guest.pk}")
             return guest
 
         validated_data["phone_number"] = phone_number
-        return CustomUser.objects.create_user(password=password, **validated_data)
+        user = CustomUser.objects.create_user(password=password, **validated_data)
+        user.profile.gender = gender
+        user.profile.save(update_fields=["gender"])
+        return user
 
 
 class LoginSerializer(TokenObtainPairSerializer):

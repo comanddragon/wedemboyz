@@ -137,7 +137,7 @@ export default function AdminPromoCodesPage() {
         </div>
       )}
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <SearchInput
           placeholder={t("adminDiscounts.searchCodesPlaceholder")}
           value={search}

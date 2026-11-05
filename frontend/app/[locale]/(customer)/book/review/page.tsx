@@ -4,14 +4,15 @@ import { buttonStyles } from "@/src/components/ui/Button";
 import { ensureSession } from "@/src/lib/guest-session";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import Image from "next/image";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { discountsApi } from "@/src/lib/api";
 
 import { BookingShell } from "@/src/components/booking/BookingShell";
 import {
   Card,
   CreaseDivider,
   Field,
-  Input,
+  Select,
   ServiceIcon,
   serviceLabel,
 } from "@/src/components/ui";
@@ -40,7 +41,21 @@ export default function BookReviewPage() {
     isValidatingPromo,
   } = useBooking();
 
-  const [promoInput, setPromoInput] = useState(promoCode ?? "");
+  const availablePromos = useQuery({
+    queryKey: ["booking", "available-promos"],
+    queryFn: async () => {
+      await ensureSession();
+      const codes = [];
+      let page = 1;
+      while (true) {
+        const result = await discountsApi.listPromoCodes({ available: true, page });
+        codes.push(...result.results);
+        if (!result.next) return codes;
+        page += 1;
+      }
+    },
+    retry: false,
+  });
 
   return (
     <BookingShell
@@ -107,19 +122,21 @@ export default function BookReviewPage() {
             {scheduledPickupSlot || `(${t("booking.notSet")})`}
           </p>
 
-          <Field label={t("booking.promo")}>
-            <Input
-              type="text"
-              value={promoInput}
-              onChange={(e) => setPromoInput(e.target.value)}
-              onBlur={() => {
-                if (!promoInput) return setPromoCode(null);
-                // Promo checks are per-customer, so visitors need a session first.
-                void ensureSession().then(() => setPromoCode(promoInput));
-              }}
-              placeholder="e.g. WELCOME10"
-            />
+          <Field label={t("booking.promo")} htmlFor="booking-promo">
+            <Select
+              id="booking-promo"
+              value={promoCode ?? ""}
+              onChange={(event) => setPromoCode(event.target.value || null)}
+              disabled={availablePromos.isPending}
+            >
+              <option value="">{t("booking.noPromo")}</option>
+              {availablePromos.data?.map((promo) => (
+                <option key={promo.id} value={promo.code}>{promo.code}</option>
+              ))}
+            </Select>
           </Field>
+          {availablePromos.isError && <p role="alert" className="text-xs text-status-cancelled-text">{t("booking.promoUnavailable")}</p>}
+          {availablePromos.isSuccess && !availablePromos.data.length && <p className="text-xs text-ink-muted">{t("booking.promoEmpty")}</p>}
           {isValidatingPromo && (
             <p className="text-xs text-ink-muted">{t("booking.checkingPromo")}</p>
           )}

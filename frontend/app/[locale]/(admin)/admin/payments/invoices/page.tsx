@@ -87,7 +87,7 @@ export default function AdminInvoicesPage() {
         ]}
       />
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <SearchInput
           placeholder={t("adminInvoices.searchThisPage")}
           value={search}

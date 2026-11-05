@@ -12,6 +12,8 @@ export type PaymentOption = "PAY_AT_PICKUP" | "PAY_AFTER_DELIVERY";
 interface BookingState {
   // Step 1 — services
   items: DraftItem[];
+  isExpress: boolean;
+  setIsExpress: (value: boolean) => void;
 
   // Step 2 — schedule
   orderType: OrderType;
@@ -48,6 +50,7 @@ interface BookingState {
 
 const initialState = {
   items: [] as DraftItem[],
+  isExpress: false,
   orderType: "pickup" as OrderType,
   pickupAddress: "",
   deliveryAddress: "",
@@ -62,6 +65,7 @@ const initialState = {
 
 export const useBookingStore = create<BookingState>()((set) => ({
   ...initialState,
+  setIsExpress: (isExpress) => set({ isExpress }),
 
   setOrderType: (orderType) => set({ orderType }),
 
@@ -131,6 +135,7 @@ const ESTIMATED_PRICE_PER_PIECE: Partial<Record<ServiceType, number>> = {
   CHEMISE: 600,
   PANTALON: 500,
   PULL: 1000,
+  PETITE_ROBE: 1000,
   ROBE: 2500,
   ENSEMBLE: 2000,
   DRAPS_COMPLET: 1500,
@@ -141,11 +146,10 @@ const ESTIMATED_PRICE_PER_PIECE: Partial<Record<ServiceType, number>> = {
 const ESTIMATED_PRICE_PER_KG: Partial<Record<ServiceType, number>> = {
   LAVAGE_ESSORAGE: 600,
   LAVAGE_SECHAGE: 1000,
-  REPASSAGE_PLASTIF: 1000,
+  REPASSAGE_PLASTIF: 2000,
 };
-// Only applies to the per-kg lines above — per-piece items are already
-// flat-priced and never hit this floor.
-const ESTIMATED_MINIMUM_CHARGE_PER_KG_ITEM = 1000;
+// Per-kilo services are billed by their actual measured weight.
+const ESTIMATED_MINIMUM_CHARGE_PER_KG_ITEM = 0;
 // Flat pickup + delivery fee, charged on every order — no free-delivery
 // threshold exists on the backend.
 const ESTIMATED_DELIVERY_FEE = 1500;

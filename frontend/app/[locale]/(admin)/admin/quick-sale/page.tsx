@@ -2,7 +2,7 @@
 
 import { collectionMethods } from "@/src/lib/payment-options";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { CircleCheck, ShoppingBag } from "lucide-react";
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
 import { useI18n } from "@/src/i18n/I18nProvider";
@@ -21,8 +21,9 @@ import {
   Field,
   Input,
   Textarea,
+  Select,
 } from "@/src/components/ui";
-import { ordersApi } from "@/src/lib/api";
+import { customersApi, ordersApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import type { PaymentMethodType, QuickSaleResult } from "@/src/types";
@@ -42,10 +43,14 @@ function emptyLineItemsTotal(items: QuickSaleLineItem[]): number | null {
 
 export default function AdminQuickSalePage() {
   const { t, locale } = useI18n();
+  const [customerId, setCustomerId] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const customerQuery = useQuery({ queryKey: ["customers", "quick-sale", customerSearch], queryFn: () => customersApi.listCustomers({ search: customerSearch }) });
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [items, setItems] = useState<QuickSaleLineItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("PAY_AT_PICKUP");
+  const [isExpress, setIsExpress] = useState(false);
   const [paidNow, setPaidNow] = useState(true);
   const [deliveryFee, setDeliveryFee] = useState("");
   const [notes, setNotes] = useState("");
@@ -53,16 +58,21 @@ export default function AdminQuickSalePage() {
 
   const paymentMethods = collectionMethods(locale);
 
-  const estimatedTotal = useMemo(() => emptyLineItemsTotal(items), [items]);
+  const estimatedTotal = useMemo(() => {
+    const subtotal = emptyLineItemsTotal(items);
+    return subtotal == null ? null : subtotal * (isExpress ? 2 : 1) + (Number(deliveryFee) || 0);
+  }, [items, isExpress, deliveryFee]);
 
   const submitMutation = useMutation({
     mutationFn: () =>
       ordersApi.createQuickSale({
-        customer_phone: customerPhone.trim(),
+        customer: customerId ? Number(customerId) : undefined,
+        customer_phone: customerId ? undefined : customerPhone.trim(),
         customer_name: customerName.trim() || undefined,
         items: items.map(({ clientId: _clientId, ...item }) => item),
         payment_method: paymentMethod,
         paid_now: paidNow,
+        is_express: isExpress,
         delivery_fee:
           deliveryFee.trim() === "" ? undefined : Number(deliveryFee),
         notes: notes.trim() || undefined,
@@ -71,18 +81,20 @@ export default function AdminQuickSalePage() {
   });
 
   function resetForm() {
+    setCustomerId("");
     setCustomerPhone("");
     setCustomerName("");
     setItems([]);
     setPaymentMethod("PAY_AT_PICKUP");
     setPaidNow(true);
+    setIsExpress(false);
     setDeliveryFee("");
     setNotes("");
     setResult(null);
     submitMutation.reset();
   }
 
-  const isValid = customerPhone.trim() !== "" && items.length > 0;
+  const isValid = (customerId !== "" || customerPhone.trim() !== "") && items.length > 0;
 
   if (result) {
     return (
@@ -132,6 +144,14 @@ export default function AdminQuickSalePage() {
               </h2>
             </div>
 
+            <Field label={locale === "fr" ? "Rechercher un client" : "Search clients"} htmlFor="client-search"><Input id="client-search" value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} /></Field>
+            <Field label={locale === "fr" ? "Client existant" : "Existing client"} htmlFor="quick-sale-client">
+              <Select id="quick-sale-client" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+                <option value="">{locale === "fr" ? "Nouveau client (téléphone ci-dessous)" : "New client (phone below)"}</option>
+                {customerQuery.data?.results.map((client) => <option key={client.id} value={client.id}>{client.first_name} {client.last_name} — {client.phone_number}</option>)}
+              </Select>
+              {customerQuery.error && <p role="alert" className="text-sm text-status-cancelled-text">{getApiErrorMessage(customerQuery.error)}</p>}
+            </Field>
             <Field
               label={t("adminQuickSale.customerPhone")}
               htmlFor="qs-phone"
@@ -163,6 +183,12 @@ export default function AdminQuickSalePage() {
           <h2 className="font-display mb-3 text-sm font-medium text-ink">
             {t("adminQuickSale.itemsCount")}
           </h2>
+          <Field label={t("booking.speed")} htmlFor="qs-speed">
+            <Select id="qs-speed" value={isExpress ? "express" : "normal"} onChange={(event) => setIsExpress(event.target.value === "express")}>
+              <option value="normal">{t("booking.normal")}</option>
+              <option value="express">{t("booking.express")}</option>
+            </Select>
+          </Field>
           <QuickSaleItems
             items={items}
             onAdd={(item) => setItems((prev) => [...prev, item])}

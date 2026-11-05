@@ -1,7 +1,10 @@
 "use client";
 
 import { LocalizedLink as Link } from "@/src/i18n/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { profileApi } from "@/src/lib/api";
+import { queryKeys } from "@/src/lib/query-keys";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { buttonStyles } from "@/src/components/ui";
 import { useAuthStore } from "@/src/lib/stores/auth.store";
@@ -21,8 +24,29 @@ function WhatsAppIcon({ className }: { className?: string }) {
 export function PublicNav() {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [open]);
   const { accessToken, isHydrated, user } = useAuthStore();
   const isAuthenticated = !!accessToken;
+  const { data: profile } = useQuery({
+    queryKey: queryKeys.profile.me,
+    queryFn: profileApi.getProfile,
+    enabled: isHydrated && isAuthenticated && !user?.is_guest,
+  });
+  const staffAccount = profile ?? user;
+  const dashboardHref = staffAccount?.is_staff || staffAccount?.is_superuser || staffAccount?.staff_access_active
+    ? "/admin" : "/dashboard";
 
   return (
     <div className="mobile-safe-top sticky top-0 z-40 border-b border-crease/70 bg-paper/92 backdrop-blur-xl">
@@ -60,13 +84,13 @@ export function PublicNav() {
             href={BUSINESS.whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="grid h-10 w-10 place-items-center rounded-full border border-crease bg-white transition-colors hover:border-[#25D366]/50 hover:bg-[#25D366]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]"
+            className="grid h-11 w-11 place-items-center rounded-full border border-crease bg-white transition-colors hover:border-[#25D366]/50 hover:bg-[#25D366]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]"
             aria-label={t("publicNav.whatsapp")}
           >
             <WhatsAppIcon className="h-[22px] w-[22px]" />
           </a>
           {isHydrated && isAuthenticated ? (
-            <Link href={user?.is_staff ? "/admin" : "/dashboard"}>
+            <Link href={dashboardHref}>
               <span className={buttonStyles({ variant: "gold" })}>
                 {t("publicNav.dashboard")}
               </span>
@@ -101,6 +125,8 @@ export function PublicNav() {
             type="button"
             className="flex h-11 w-11 items-center justify-center rounded-full bg-navy text-white"
             onClick={() => setOpen((v) => !v)}
+            ref={menuButtonRef}
+            aria-controls="public-mobile-menu"
             aria-expanded={open}
             aria-label={t("publicNav.menu")}
           >
@@ -110,7 +136,7 @@ export function PublicNav() {
       </nav>
 
       {open && (
-        <div className="absolute inset-x-0 top-full z-50 h-[calc(100dvh-4rem-env(safe-area-inset-top))] bg-white px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-8 sm:h-[calc(100dvh-4.5rem-env(safe-area-inset-top))] md:hidden">
+        <div id="public-mobile-menu" className="absolute inset-x-0 top-full z-50 h-[calc(100dvh-4rem-env(safe-area-inset-top))] overflow-y-auto overscroll-contain bg-white px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-8 sm:h-[calc(100dvh-4.5rem-env(safe-area-inset-top))] md:hidden">
           <div className="font-display flex h-full flex-col text-ink-muted">
             <div className="mb-5"><LanguageSwitcher /></div>
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.16em] text-gold-600">
@@ -144,7 +170,7 @@ export function PublicNav() {
             <div className="mt-auto grid gap-3 pt-8">
               {isHydrated && isAuthenticated ? (
                 <Link
-                  href={user?.is_staff ? "/admin" : "/dashboard"}
+                  href={dashboardHref}
                   onClick={() => setOpen(false)}
                   className={buttonStyles({
                     variant: "gold",

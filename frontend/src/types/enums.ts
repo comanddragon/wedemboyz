@@ -12,6 +12,7 @@ export type ServiceType =
   | "CHEMISE"
   | "PANTALON"
   | "PULL"
+  | "PETITE_ROBE"
   | "ROBE"
   | "ENSEMBLE"
   | "DRAPS_COMPLET"
@@ -26,6 +27,7 @@ export type ServiceType =
 /** Mirrors core.constants.OrderStatus */
 export type OrderStatus =
   | "PENDING"
+  | "COLLECTED"
   | "CONFIRMED"
   | "IN_PROGRESS"
   | "READY"

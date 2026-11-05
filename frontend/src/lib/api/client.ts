@@ -48,6 +48,7 @@ declare module "axios" {
 // every queued request awaits the same promise instead of each racing to
 // refresh the token themselves.
 let refreshPromise: Promise<string> | null = null;
+let refreshingToken: string | null = null;
 
 async function refreshAccessToken(): Promise<string> {
   const { refreshToken } = getAuthState();
@@ -55,17 +56,29 @@ async function refreshAccessToken(): Promise<string> {
     throw new Error("No refresh token available.");
   }
 
-  if (!refreshPromise) {
+  if (!refreshPromise || refreshingToken !== refreshToken) {
+    refreshingToken = refreshToken;
     refreshPromise = refreshClient
-      .post<{ access: string }>("/auth/token/refresh/", {
+      .post<{ success: true; data: { access: string; refresh?: string } }>("/auth/token/refresh/", {
         refresh: refreshToken,
       })
       .then((res) => {
-        useAuthStore.getState().setAccessToken(res.data.access);
-        return res.data.access;
+        if (getAuthState().refreshToken !== refreshToken) {
+          throw new Error("Session changed while refreshing.");
+        }
+        const tokens = unwrap<{ access: string; refresh?: string }>(res);
+        // Refresh tokens rotate: keep the replacement before the old one expires.
+        useAuthStore.setState({
+          accessToken: tokens.access,
+          refreshToken: tokens.refresh ?? refreshToken,
+        });
+        return tokens.access;
       })
       .finally(() => {
-        refreshPromise = null;
+        if (refreshingToken === refreshToken) {
+          refreshPromise = null;
+          refreshingToken = null;
+        }
       });
   }
 
@@ -85,6 +98,11 @@ apiClient.interceptors.response.use(
     // The retry with a freshly refreshed token was rejected too: the session
     // is unusable (e.g. tokens signed by a previous server key, or a deleted
     // user). Sign out once instead of letting every query keep failing.
+    // A late response from the previous account must not change this session.
+    if (originalRequest.headers.Authorization !== `Bearer ${getAuthState().accessToken}`) {
+      throw error;
+    }
+
     if (originalRequest._retried) {
       if (!originalRequest.url?.includes("/auth/")) {
         useAuthStore.getState().clearAuth();
@@ -99,6 +117,7 @@ apiClient.interceptors.response.use(
 
     originalRequest._retried = true;
 
+    const sessionRefreshToken = getAuthState().refreshToken;
     try {
       const newAccessToken = await refreshAccessToken();
       originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -113,7 +132,9 @@ apiClient.interceptors.response.use(
         status === 401 ||
         status === 403 ||
         !getAuthState().refreshToken;
-      if (refused) useAuthStore.getState().clearAuth();
+      if (refused && getAuthState().refreshToken === sessionRefreshToken) {
+        useAuthStore.getState().clearAuth();
+      }
       throw refreshError;
     }
   },

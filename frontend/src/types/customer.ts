@@ -30,6 +30,7 @@ export interface CustomerListItem {
 /** Mirrors apps.users.api.serializers.customer.CustomerDetailSerializer
  * (GET /api/v1/users/customers/{id}/) — the full "fiche client". */
 export interface CustomerDetail extends CustomerListItem {
+  gender?: "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT" | "";
   address_line: string;
   loyalty: LoyaltyAccountSummary;
   /** Last 10 orders. */
@@ -45,7 +46,7 @@ export interface CustomerDetail extends CustomerListItem {
 }
 
 export type CustomerInput = Partial<Pick<CustomerDetail,
-  "first_name" | "last_name" | "phone_number" | "email" | "is_active" |
+  "gender" | "first_name" | "last_name" | "phone_number" | "email" | "is_active" |
   "address_line" | "notes" | "source" | "tags" | "is_blocked" |
   "blocked_reason" | "marketing_opt_in" | "whatsapp_number" |
   "secondary_phone" | "default_pickup_address" | "is_walk_in"

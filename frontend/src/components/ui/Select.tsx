@@ -84,6 +84,8 @@ export function Select({
   name,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
 }: SelectProps) {
   const options = useMemo(() => parseOptions(children), [children]);
   const [inner, setInner] = useState(
@@ -214,10 +216,10 @@ export function Select({
       move(-1);
     } else if (e.key === "Home") {
       e.preventDefault();
-      setActive(0);
+      setActive(options.findIndex((option) => !option.disabled));
     } else if (e.key === "End") {
       e.preventDefault();
-      setActive(options.length - 1);
+      setActive(options.findLastIndex((option) => !option.disabled));
     } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       commit(active);
@@ -228,6 +230,7 @@ export function Select({
     else if (e.key.length === 1) {
       const idx = options.findIndex(
         (o) =>
+          !o.disabled &&
           typeof o.label === "string" &&
           o.label.toLowerCase().startsWith(e.key.toLowerCase()),
       );
@@ -249,7 +252,9 @@ export function Select({
         aria-controls={open ? listId : undefined}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
-        aria-invalid={invalid || undefined}
+        aria-describedby={ariaDescribedBy}
+        aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined}
+        aria-invalid={ariaInvalid ?? (invalid || undefined)}
         onClick={() => (open ? setOpen(false) : openMenu())}
         onKeyDown={onKeyDown}
         className={cn(
@@ -269,7 +274,7 @@ export function Select({
         </span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 shrink-0 text-ink-muted transition-transform duration-200",
+            "h-4 w-4 shrink-0 text-ink-muted transition-transform duration-200 motion-reduce:transition-none",
             open && "rotate-180 text-navy",
           )}
           aria-hidden="true"
@@ -284,6 +289,7 @@ export function Select({
             id={listId}
             role="listbox"
             aria-label={ariaLabel}
+            aria-labelledby={ariaLabelledBy ?? id}
             style={{
               top: pos.top,
               bottom: pos.bottom,
@@ -298,6 +304,7 @@ export function Select({
               return (
                 <li
                   key={`${opt.value}-${i}`}
+                  id={`${listId}-${i}`}
                   role="option"
                   data-index={i}
                   aria-selected={isSelected}
@@ -306,7 +313,7 @@ export function Select({
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => commit(i)}
                   className={cn(
-                    "flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
+                    "flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
                     isSelected ? "font-semibold text-navy" : "text-ink",
                     i === active &&
                       !opt.disabled &&

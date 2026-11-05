@@ -22,9 +22,10 @@ import {
   ServiceIcon,
   StatusBadge,
   orderStatusTone,
+  paymentStatusTone,
   serviceLabel,
 } from "@/src/components/ui";
-import { chatApi, ordersApi } from "@/src/lib/api";
+import { chatApi, discountsApi, ordersApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
@@ -45,13 +46,22 @@ export default function OrderDetailPage() {
   } = useQuery({
     queryKey: queryKeys.orders.detail(orderId),
     queryFn: () => ordersApi.getOrder(orderId),
+    refetchInterval: 15000,
+  });
+
+  const creditsQuery = useQuery({ queryKey: queryKeys.discounts.loyalty, queryFn: discountsApi.getLoyaltyAccount });
+  const creditsPayment = useMutation({
+    mutationFn: () => discountsApi.payOrderWithCredits(orderId),
+    onSuccess: () => {
+      for (const queryKey of [["orders"], ["payments"], ["profile"], ["loyalty"]]) queryClient.invalidateQueries({ queryKey });
+    },
   });
 
   const cancelMutation = useMutation({
     mutationFn: () => ordersApi.cancelOrder(orderId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.orders.detail(orderId),
+        queryKey: queryKeys.orders.all,
       });
     },
   });
@@ -116,11 +126,17 @@ export default function OrderDetailPage() {
           </p>
         </div>
         <StatusBadge
-          label={order.status}
-          tone={orderStatusTone(order.status)}
+          label={order.payment_status}
+          tone={paymentStatusTone(order.payment_status)}
         />
       </div>
 
+      {Number(order.balance_due) > 0 && order.status !== "CANCELLED" && !hasPendingWeight && <Card className="mb-5">
+        <p className="mb-2 text-sm">{locale === "fr" ? "Crédits disponibles" : "Available credits"}: {formatCurrency(creditsQuery.data?.points_balance ?? 0)}</p>
+        <Button disabled={creditsPayment.isPending || Number(creditsQuery.data?.points_balance ?? 0) < Number(order.balance_due)} onClick={() => creditsPayment.mutate()}>{locale === "fr" ? "Payer avec mes crédits" : "Pay with credits"} · {formatCurrency(order.balance_due)}</Button>
+        {Number(creditsQuery.data?.points_balance ?? 0) < Number(order.balance_due) && <p className="mt-2 text-xs text-ink-muted">{locale === "fr" ? "Crédits insuffisants pour régler le solde." : "You need enough credits to cover the outstanding balance."}</p>}
+        {creditsPayment.error && <p role="alert" className="mt-2 text-sm text-status-cancelled-text">{getApiErrorMessage(creditsPayment.error)}</p>}
+      </Card>}
       <section className="mb-6 grid overflow-hidden rounded-2xl border border-crease bg-white sm:grid-cols-3">
         {[
           {

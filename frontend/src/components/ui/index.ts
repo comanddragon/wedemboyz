@@ -6,3 +6,5 @@ export * from "./Select";
 export * from "./ServiceIcon";
 export * from "./StatusBadge";
 export * from "./EyebrowLabel";
+
+export * from "./LoyaltyBadge";

@@ -16,17 +16,13 @@ import {
   Tr,
 } from "@/src/components/admin/Table";
 import { CustomerAvatar } from "@/src/components/chat/CustomerAvatar";
-import { Button, Card, Field, Input, Select, StatusBadge, Textarea, orderStatusTone } from "@/src/components/ui";
+import { Button, Card, Field, Input, Select, LoyaltyBadge, StatusBadge, Textarea, orderStatusTone } from "@/src/components/ui";
 import { customersApi, discountsApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
 import { formatCurrency } from "@/src/lib/constants";
 import { queryKeys } from "@/src/lib/query-keys";
 
-const TIER_LABEL: Record<string, string> = {
-  BRONZE: "Bronze",
-  SILVER: "Silver",
-  GOLD: "Gold",
-};
+
 
 const CREDIT_TX_LABEL: Record<string, string> = {
   CHARGE: "Charge",
@@ -55,7 +51,7 @@ export default function AdminCustomerDetailPage() {
   });
   const adjustPoints = useMutation({
     mutationFn: (input: { points: number; reason: string }) => discountsApi.adjustCustomerLoyalty(customerId, input.points, input.reason),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.customers.detail(customerId) }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["customers"] }); queryClient.invalidateQueries({ queryKey: ["loyalty"] }); },
   });
 
   if (isLoading) {
@@ -163,12 +159,7 @@ export default function AdminCustomerDetailPage() {
             <dt className="text-ink-muted">{t("adminCustomers.tier")}</dt>
             <dd className="text-right">
               {customer.loyalty_tier ? (
-                <StatusBadge
-                  label={
-                    TIER_LABEL[customer.loyalty_tier] ?? customer.loyalty_tier
-                  }
-                  tone="ready"
-                />
+                <LoyaltyBadge tier={customer.loyalty_tier} />
               ) : (
                 <span className="text-ink-muted">—</span>
               )}
@@ -229,10 +220,10 @@ export default function AdminCustomerDetailPage() {
             adjustPoints.mutate({ points: Number(data.get("points")), reason: String(data.get("reason")) });
             event.currentTarget.reset();
           }}>
-            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-navy"><Coins className="h-4 w-4" /> {t("adminCustomers.loyaltyPointsHeading")}</p>
-            <Field label={t("adminCustomers.pointsLabel")} htmlFor="loyalty-points"><Input id="loyalty-points" name="points" type="number" required /></Field>
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-navy"><Coins className="h-4 w-4" /> {locale === "fr" ? "Modifier les crédits (FCFA)" : "Adjust credits (FCFA)"}</p>
+            <Field label={locale === "fr" ? "Montant à ajouter ou retirer (négatif)" : "Amount to add or deduct (negative)"} htmlFor="loyalty-points"><Input id="loyalty-points" name="points" type="number" step="1" required /></Field>
             <Field label={t("adminCustomers.reasonLabel")} htmlFor="loyalty-reason"><Input id="loyalty-reason" name="reason" placeholder={t("adminCustomers.reasonPlaceholder")} required /></Field>
-            <Button size="sm" type="submit" disabled={adjustPoints.isPending}>{t("adminCustomers.adjustPointsBtn")}</Button>
+            <Button size="sm" type="submit" disabled={adjustPoints.isPending}>{locale === "fr" ? "Appliquer" : "Apply adjustment"}</Button>
           </form>
           {adjustPoints.error ? <p className="mt-2 text-xs text-status-cancelled-text">{getApiErrorMessage(adjustPoints.error)}</p> : null}
         </Card>

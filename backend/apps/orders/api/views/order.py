@@ -241,7 +241,7 @@ class OrderStatusUpdateView(APIView):
             update_fields.append("delivered_at")
         order.save(update_fields=update_fields)
 
-        if new_status == OrderStatus.IN_PROGRESS:
+        if new_status in {OrderStatus.READY, OrderStatus.IN_PROGRESS}:
             from services.inventory_usage import consume_for_order
 
             consume_for_order(order, changed_by=request.user)

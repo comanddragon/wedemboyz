@@ -46,6 +46,7 @@ PRICE_PER_PIECE = {
     ServiceType.CHEMISE: Decimal("600"),
     ServiceType.PANTALON: Decimal("500"),
     ServiceType.PULL: Decimal("1000"),
+    ServiceType.PETITE_ROBE: Decimal("1000"),
     ServiceType.ROBE: Decimal("2500"),
     ServiceType.ENSEMBLE: Decimal("2000"),
     ServiceType.DRAPS_COMPLET: Decimal("1500"),
@@ -58,12 +59,11 @@ PRICE_PER_PIECE = {
 PRICE_PER_KG = {
     ServiceType.LAVAGE_ESSORAGE: Decimal("600"),
     ServiceType.LAVAGE_SECHAGE: Decimal("1000"),
-    ServiceType.REPASSAGE_PLASTIF: Decimal("1000"),
+    ServiceType.REPASSAGE_PLASTIF: Decimal("2000"),
 }
 
-# Avoids unprofitable micro-orders on the per-kg grille lines. Doesn't apply
-# to per-piece items — those are already flat-priced.
-MINIMUM_CHARGE_PER_KG_ITEM = Decimal("1000")
+# Per-kilo services are billed at their exact rate for the measured weight.
+MINIMUM_CHARGE_PER_KG_ITEM = Decimal("0")
 
 # Flat pickup + home delivery fee ("RAMASSAGE DE VOS HABITS & LIVRAISON ...
 # À SEULEMENT 1500 FCFA"). No free-delivery threshold is advertised on the

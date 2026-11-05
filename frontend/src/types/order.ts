@@ -152,6 +152,7 @@ export interface OrderDetail {
 
 /** Payload for POST /orders/ — mirrors OrderCreateSerializer's writable fields. */
 export interface CreateOrderInput {
+  is_express?: boolean;
   fulfillment_type: "PICKUP" | "DROP_OFF";
   payment_option: "PAY_AT_PICKUP" | "PAY_AFTER_DELIVERY";
   pickup_address: string;
@@ -215,7 +216,9 @@ export interface QuickSaleItemInput {
 /** Payload for POST /orders/quick-sale/ — staff-only walk-in sale. Finds or
  * creates the customer by phone (unusable password if new). */
 export interface QuickSaleInput {
-  customer_phone: string;
+  is_express?: boolean;
+  customer?: number;
+  customer_phone?: string;
   /** Only used if the customer doesn't already exist. */
   customer_name?: string;
   items: QuickSaleItemInput[];

@@ -59,7 +59,9 @@ class LoyaltyTransactionListView(generics.ListAPIView):
     permission_classes = [IsRegisteredUser]
 
     def get_queryset(self):
-        return LoyaltyTransaction.objects.filter(loyalty_account__user=self.request.user).select_related("order")
+        return LoyaltyTransaction.objects.filter(
+            loyalty_account__user=self.request.user
+        ).select_related("order")
 
 
 class LoyaltyRedeemView(APIView):
@@ -75,12 +77,16 @@ class LoyaltyRedeemView(APIView):
         account, _ = LoyaltyAccount.objects.get_or_create(user=request.user)
         try:
             transaction = redeem_points(
-                account, serializer.validated_data["points"], serializer.validated_data.get("note", "")
+                account,
+                serializer.validated_data["points"],
+                serializer.validated_data.get("note", ""),
             )
         except ValueError as exc:
             raise ValidationError(str(exc))
 
-        return Response(LoyaltyTransactionSerializer(transaction).data, status=status.HTTP_201_CREATED)
+        return Response(
+            LoyaltyTransactionSerializer(transaction).data, status=status.HTTP_201_CREATED
+        )
 
 
 class LoyaltyRewardRedeemView(APIView):
@@ -174,10 +180,11 @@ class CustomerLoyaltyAdjustmentView(APIView):
     permission_classes = [HasStaffPermission]
     required_staff_permission = StaffPermission.LOYALTY_MANAGE
 
+    @transaction.atomic
     def post(self, request, user_id):
         serializer = LoyaltyAdjustmentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        account, _ = LoyaltyAccount.objects.get_or_create(user_id=user_id)
+        account, _ = LoyaltyAccount.objects.select_for_update().get_or_create(user_id=user_id)
         points = serializer.validated_data["points"]
         if account.points_balance + points < 0:
             raise ValidationError("This adjustment would make the balance negative.")
@@ -185,6 +192,7 @@ class CustomerLoyaltyAdjustmentView(APIView):
         if points > 0:
             account.lifetime_points_earned += points
         from services.loyalty import _tier_for_lifetime_points
+
         account.tier = _tier_for_lifetime_points(account.lifetime_points_earned)
         account.save(update_fields=["points_balance", "lifetime_points_earned", "tier"])
         transaction = LoyaltyTransaction.objects.create(
@@ -193,7 +201,9 @@ class CustomerLoyaltyAdjustmentView(APIView):
             transaction_type=LoyaltyTransaction.TransactionType.ADJUST,
             note=serializer.validated_data["reason"],
         )
-        return Response(LoyaltyTransactionSerializer(transaction).data, status=status.HTTP_201_CREATED)
+        return Response(
+            LoyaltyTransactionSerializer(transaction).data, status=status.HTTP_201_CREATED
+        )
 
 
 class CustomerLoyaltyTransactionsView(generics.ListAPIView):
@@ -202,7 +212,9 @@ class CustomerLoyaltyTransactionsView(generics.ListAPIView):
     required_staff_permission = StaffPermission.CUSTOMERS_VIEW
 
     def get_queryset(self):
-        return LoyaltyTransaction.objects.filter(loyalty_account__user_id=self.kwargs["user_id"]).select_related("order")
+        return LoyaltyTransaction.objects.filter(
+            loyalty_account__user_id=self.kwargs["user_id"]
+        ).select_related("order")
 
 
 class LoyaltyProgramSettingsView(generics.RetrieveUpdateAPIView):
@@ -232,7 +244,11 @@ class AmbassadorAdminListCreateView(generics.ListCreateAPIView):
     queryset = AmbassadorProfile.objects.select_related("user", "promo_code")
 
     def get_serializer_class(self):
-        return AmbassadorCreateSerializer if self.request.method == "POST" else AmbassadorProfileSerializer
+        return (
+            AmbassadorCreateSerializer
+            if self.request.method == "POST"
+            else AmbassadorProfileSerializer
+        )
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -246,13 +262,33 @@ class AmbassadorAdminDetailView(generics.UpdateAPIView):
     serializer_class = AmbassadorProfileSerializer
     queryset = AmbassadorProfile.objects.all()
 
-    def patch(self, request, *args, **kwargs):
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        from apps.discounts.models import PromoCode
+
         profile = self.get_object()
-        if "is_active" not in request.data:
-            raise ValidationError({"is_active": "This field is required."})
-        profile.is_active = bool(request.data["is_active"])
-        profile.promo_code.is_active = profile.is_active
-        profile.promo_code.save(update_fields=["is_active", "updated_at"])
+        if "is_active" in request.data:
+            value = request.data["is_active"]
+            if not isinstance(value, bool):
+                raise ValidationError({"is_active": "Use true or false."})
+            profile.is_active = value
+            profile.promo_code.is_active = value
+        if "promo_code" in request.data:
+            import re
+
+            code = str(request.data["promo_code"]).strip().upper()
+            if not re.fullmatch(r"[A-Z0-9_-]{2,30}", code):
+                raise ValidationError(
+                    {"promo_code": "Use 2–30 letters, digits, hyphens or underscores."}
+                )
+            if (
+                PromoCode.objects.filter(code__iexact=code)
+                .exclude(pk=profile.promo_code_id)
+                .exists()
+            ):
+                raise ValidationError({"promo_code": "This code is already in use."})
+            profile.promo_code.code = code
+        profile.promo_code.save(update_fields=["code", "is_active", "updated_at"])
         profile.save(update_fields=["is_active", "updated_at"])
         return Response(AmbassadorProfileSerializer(profile).data)
 
@@ -279,7 +315,10 @@ class AmbassadorLeaderboardView(APIView):
         credit_filter = {}
         label = date(selected_year, selected_month, 1).strftime("%B %Y")
         if period == "month":
-            credit_filter = {"credits__created_at__year": selected_year, "credits__created_at__month": selected_month}
+            credit_filter = {
+                "credits__created_at__year": selected_year,
+                "credits__created_at__month": selected_month,
+            }
         elif period == "year":
             credit_filter = {"credits__created_at__year": selected_year}
             label = str(selected_year)
@@ -288,34 +327,187 @@ class AmbassadorLeaderboardView(APIView):
         else:
             raise ValidationError({"period": "Use month, year, or all."})
 
-        profiles = (
-            AmbassadorProfile.objects.filter(is_active=True)
-            .exclude(user__profile__avatar="")
-            .filter(user__profile__avatar__isnull=False)
-            .select_related("user", "user__profile", "promo_code")
+        profiles = AmbassadorProfile.objects.filter(is_active=True).select_related(
+            "user", "user__profile", "promo_code"
         )
         rows = []
         for profile in profiles:
-            credits = AmbassadorCredit.objects.filter(ambassador=profile, **{
-                key.replace("credits__", ""): value for key, value in credit_filter.items()
-            })
-            rows.append({
-                "ambassador": {
-                    "id": profile.id,
-                    "name": profile.user.get_full_name() or "Ambassador",
-                    "promo_code": profile.promo_code.code,
-                    "profile_photo": AmbassadorProfileSerializer(profile, context={"request": request}).data["profile_photo"],
-                },
-                "period_credits": int(credits.aggregate(total=Sum("credit_amount"))["total"] or 0),
-                "orders": credits.count(),
-                "referred_revenue": int(credits.aggregate(total=Sum("order_amount"))["total"] or 0),
-            })
-        rows.sort(key=lambda row: (-row["period_credits"], -row["orders"], row["ambassador"]["name"]))
+            credits = AmbassadorCredit.objects.filter(
+                ambassador=profile,
+                **{key.replace("credits__", ""): value for key, value in credit_filter.items()},
+            )
+            rows.append(
+                {
+                    "ambassador": {
+                        "id": profile.id,
+                        "name": profile.user.get_full_name() or "Ambassador",
+                        "promo_code": profile.promo_code.code,
+                        "profile_photo": AmbassadorProfileSerializer(
+                            profile, context={"request": request}
+                        ).data["profile_photo"],
+                    },
+                    "period_credits": int(
+                        credits.aggregate(total=Sum("credit_amount"))["total"] or 0
+                    ),
+                    "orders": credits.count(),
+                    "referred_revenue": int(
+                        credits.aggregate(total=Sum("order_amount"))["total"] or 0
+                    ),
+                }
+            )
+        rows.sort(
+            key=lambda row: (-row["period_credits"], -row["orders"], row["ambassador"]["name"])
+        )
         for index, row in enumerate(rows, start=1):
             row["rank"] = index
-        return Response({
-            "period": period,
-            "period_label": label,
-            "current_ambassador_id": current.id if current else None,
-            "results": rows,
-        })
+        return Response(
+            {
+                "period": period,
+                "period_label": label,
+                "current_ambassador_id": current.id if current else None,
+                "results": rows,
+            }
+        )
+
+
+class CreditOrderPaymentView(APIView):
+    permission_classes = [IsRegisteredUser]
+
+    @transaction.atomic
+    def post(self, request):
+        from rest_framework.generics import get_object_or_404
+
+        from apps.orders.models import Order
+        from apps.payments.api.serializers import PaymentSerializer
+        from apps.payments.models import Payment
+        from core.constants import PaymentGateway, PaymentStatus
+        from services.order_payments import recompute_payment_status
+
+        order_id = request.data.get("order_id")
+        if not str(order_id).isdigit():
+            raise ValidationError({"order_id": "Choose an order."})
+        order = get_object_or_404(Order.objects.select_for_update(), pk=order_id, user=request.user)
+        if order.status == "CANCELLED":
+            raise ValidationError("A cancelled order cannot be paid.")
+        order = recompute_payment_status(order)
+        amount = order.balance_due
+        if amount != int(amount):
+            raise ValidationError("Credit payments require a whole XAF balance.")
+        if amount <= 0:
+            raise ValidationError("This order is already paid.")
+        account, _ = LoyaltyAccount.objects.select_for_update().get_or_create(user=request.user)
+        try:
+            entry = redeem_points(account, int(amount), note=f"Payment for order #{order.pk}")
+        except ValueError as exc:
+            raise ValidationError(str(exc))
+        entry.order = order
+        entry.save(update_fields=["order"])
+        payment = Payment.objects.create(
+            order=order,
+            gateway=PaymentGateway.CREDIT,
+            payment_method_type="OTHER",
+            amount=amount,
+            currency=order.currency,
+            status=PaymentStatus.SUCCEEDED,
+            paid_at=timezone.now(),
+            reference=f"CREDITS-{entry.pk}",
+            notes="Paid with loyalty credits",
+        )
+        recompute_payment_status(order, changed_by=request.user, reason="Paid with loyalty credits")
+        return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
+
+
+def cashout_data(cashout):
+    return {
+        "id": cashout.pk,
+        "ambassador": cashout.ambassador_id,
+        "ambassador_name": cashout.ambassador.user.get_full_name()
+        or cashout.ambassador.user.phone_number,
+        "amount": str(cashout.amount),
+        "status": "PAID" if cashout.paid_at else "PENDING",
+        "created_at": cashout.created_at,
+        "paid_at": cashout.paid_at,
+        "reference": cashout.reference,
+    }
+
+
+class AmbassadorCashoutView(APIView):
+    permission_classes = [IsRegisteredUser]
+
+    def get(self, request):
+        from apps.discounts.models import AmbassadorCashout
+
+        rows = AmbassadorCashout.objects.filter(ambassador__user=request.user).select_related(
+            "ambassador__user"
+        )
+        return Response([cashout_data(row) for row in rows])
+
+    @transaction.atomic
+    def post(self, request):
+        from decimal import Decimal
+
+        from rest_framework import serializers
+        from rest_framework.generics import get_object_or_404
+
+        from apps.discounts.models import AmbassadorCashout
+
+        amount_field = serializers.DecimalField(
+            max_digits=12, decimal_places=0, min_value=Decimal("1")
+        )
+        amount = amount_field.run_validation(request.data.get("amount"))
+        profile = get_object_or_404(
+            AmbassadorProfile.objects.select_for_update(), user=request.user, is_active=True
+        )
+        if amount > profile.credit_balance:
+            raise ValidationError({"amount": "Insufficient ambassador credits."})
+        profile.credit_balance -= amount
+        profile.save(update_fields=["credit_balance", "updated_at"])
+        row = AmbassadorCashout.objects.create(ambassador=profile, amount=amount)
+        return Response(cashout_data(row), status=status.HTTP_201_CREATED)
+
+
+class IsBusinessOwner(permissions.BasePermission):
+    def has_permission(self, request, view):
+        from apps.staff.permissions import get_staff_role
+
+        return get_staff_role(request.user) == "OWNER"
+
+
+class AmbassadorCashoutAdminView(APIView):
+    permission_classes = [IsBusinessOwner]
+
+    def get(self, request):
+        from apps.discounts.models import AmbassadorCashout
+
+        return Response(
+            [
+                cashout_data(row)
+                for row in AmbassadorCashout.objects.select_related("ambassador__user")
+            ]
+        )
+
+
+class AmbassadorCashoutPayView(APIView):
+    permission_classes = [IsBusinessOwner]
+
+    @transaction.atomic
+    def post(self, request, pk):
+        from rest_framework.generics import get_object_or_404
+
+        from apps.discounts.models import AmbassadorCashout
+
+        row = get_object_or_404(
+            AmbassadorCashout.objects.select_for_update().select_related("ambassador__user"), pk=pk
+        )
+        if row.paid_at:
+            raise ValidationError("This cashout is already paid.")
+        reference = str(request.data.get("reference", "")).strip()
+        if not reference or len(reference) > 255:
+            raise ValidationError(
+                {"reference": "Provide a payment reference (maximum 255 characters)."}
+            )
+        row.paid_at = timezone.now()
+        row.paid_by = request.user
+        row.reference = reference
+        row.save(update_fields=["paid_at", "paid_by", "reference", "updated_at"])
+        return Response(cashout_data(row))

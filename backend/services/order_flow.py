@@ -7,8 +7,9 @@ from services.order_payments import recompute_payment_status
 
 
 ALLOWED_TRANSITIONS = {
-    OrderStatus.PENDING: {OrderStatus.CONFIRMED, OrderStatus.CANCELLED},
-    OrderStatus.CONFIRMED: {OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED},
+    OrderStatus.PENDING: {OrderStatus.COLLECTED, OrderStatus.CONFIRMED, OrderStatus.CANCELLED},
+    OrderStatus.COLLECTED: {OrderStatus.READY, OrderStatus.CANCELLED},
+    OrderStatus.CONFIRMED: {OrderStatus.COLLECTED, OrderStatus.IN_PROGRESS, OrderStatus.READY, OrderStatus.CANCELLED},
     OrderStatus.IN_PROGRESS: {OrderStatus.READY},
     OrderStatus.READY: {OrderStatus.OUT_FOR_DELIVERY, OrderStatus.DELIVERED},
     OrderStatus.OUT_FOR_DELIVERY: {OrderStatus.DELIVERED},

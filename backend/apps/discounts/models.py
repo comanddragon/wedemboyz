@@ -46,23 +46,17 @@ class PromoCode(TimeStampedModel):
 
 
 class PromoUsage(TimeStampedModel):
-    promo_code = models.ForeignKey(
-        PromoCode, on_delete=models.CASCADE, related_name="usages"
-    )
+    promo_code = models.ForeignKey(PromoCode, on_delete=models.CASCADE, related_name="usages")
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="promo_usages"
     )
-    order = models.ForeignKey(
-        "orders.Order", on_delete=models.CASCADE, related_name="promo_usages"
-    )
+    order = models.ForeignKey("orders.Order", on_delete=models.CASCADE, related_name="promo_usages")
     discount_applied = models.DecimalField(max_digits=10, decimal_places=0)
 
     class Meta:
         ordering = ["-created_at"]
         constraints = [
-            models.UniqueConstraint(
-                fields=["promo_code", "order"], name="unique_promo_per_order"
-            )
+            models.UniqueConstraint(fields=["promo_code", "order"], name="unique_promo_per_order")
         ]
 
     def __str__(self):
@@ -90,7 +84,11 @@ class LoyaltyRule(TimeStampedModel):
 
 
 class LoyaltyTierConfig(TimeStampedModel):
-    tier = models.CharField(max_length=10, choices=[("BRONZE", "Bronze"), ("SILVER", "Silver"), ("GOLD", "Gold")], unique=True)
+    tier = models.CharField(
+        max_length=10,
+        choices=[("BRONZE", "Bronze"), ("SILVER", "Silver"), ("GOLD", "Gold")],
+        unique=True,
+    )
     minimum_lifetime_points = models.PositiveIntegerField(default=0)
     discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     bonus_points_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -114,7 +112,9 @@ class LoyaltyTransaction(TimeStampedModel):
     loyalty_account = models.ForeignKey(
         "users.LoyaltyAccount", on_delete=models.CASCADE, related_name="transactions"
     )
-    points = models.IntegerField(help_text="Positive for earn/adjust-up, negative for redeem/expire.")
+    points = models.IntegerField(
+        help_text="Positive for earn/adjust-up, negative for redeem/expire."
+    )
     transaction_type = models.CharField(max_length=10, choices=TransactionType.choices)
     order = models.ForeignKey(
         "orders.Order",
@@ -151,7 +151,9 @@ class StampCardConfig(TimeStampedModel):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.stamps_required} stamps @ {self.points_per_stamp} pts (active={self.is_active})"
+        return (
+            f"{self.stamps_required} stamps @ {self.points_per_stamp} pts (active={self.is_active})"
+        )
 
     @property
     def points_per_reward(self):
@@ -196,14 +198,15 @@ class LoyaltyReward(TimeStampedModel):
 
 
 class LoyaltyRewardGrant(TimeStampedModel):
-    reward = models.ForeignKey(
-        LoyaltyReward, on_delete=models.PROTECT, related_name="grants"
-    )
+    reward = models.ForeignKey(LoyaltyReward, on_delete=models.PROTECT, related_name="grants")
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="loyalty_reward_grants"
     )
     order = models.ForeignKey(
-        "orders.Order", on_delete=models.SET_NULL, null=True, blank=True,
+        "orders.Order",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="loyalty_reward_grants",
     )
     is_redeemed = models.BooleanField(default=False)
@@ -230,9 +233,7 @@ class BadgeAccount(TimeStampedModel):
 
 
 class BadgeAward(TimeStampedModel):
-    badge_account = models.ForeignKey(
-        BadgeAccount, on_delete=models.CASCADE, related_name="awards"
-    )
+    badge_account = models.ForeignKey(BadgeAccount, on_delete=models.CASCADE, related_name="awards")
     order = models.OneToOneField(
         "orders.Order", on_delete=models.CASCADE, related_name="badge_award"
     )
@@ -282,9 +283,7 @@ class DiscountCampaign(TimeStampedModel):
         decimal_places=2,
         help_text="Percentage (0-100) or fixed XAF amount, depending on discount_type.",
     )
-    target_segment = models.CharField(
-        max_length=20, choices=Segment.choices, default=Segment.ALL
-    )
+    target_segment = models.CharField(max_length=20, choices=Segment.choices, default=Segment.ALL)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     is_active = models.BooleanField(default=True)
@@ -294,3 +293,20 @@ class DiscountCampaign(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+
+class AmbassadorCashout(TimeStampedModel):
+    """Credits are reserved on request and the owner records actual payment."""
+
+    ambassador = models.ForeignKey(
+        AmbassadorProfile, on_delete=models.PROTECT, related_name="cashouts"
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=0)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    paid_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    reference = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]

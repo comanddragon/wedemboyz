@@ -48,6 +48,11 @@ export function useNotifications(page = 1) {
   return {
     notifications: listQuery.data?.results ?? [],
     isLoading: listQuery.isLoading,
+    error: listQuery.error,
+    refetch: listQuery.refetch,
+    isFetching: listQuery.isFetching,
+    mutationError: markReadMutation.error || markAllReadMutation.error,
+    isMarkingRead: markReadMutation.isPending || markAllReadMutation.isPending,
     unreadCount,
     hasNextPage: Boolean(listQuery.data?.next),
     hasPreviousPage: Boolean(listQuery.data?.previous),

@@ -16,9 +16,13 @@ TIER_THRESHOLDS = {
 def _tier_for_lifetime_points(lifetime_points: int) -> str:
     from apps.discounts.models import LoyaltyTierConfig
 
-    configured = LoyaltyTierConfig.objects.filter(
-        is_active=True, minimum_lifetime_points__lte=lifetime_points
-    ).order_by("-minimum_lifetime_points").first()
+    configured = (
+        LoyaltyTierConfig.objects.filter(
+            is_active=True, minimum_lifetime_points__lte=lifetime_points
+        )
+        .order_by("-minimum_lifetime_points")
+        .first()
+    )
     if configured:
         return configured.tier
     if lifetime_points >= TIER_THRESHOLDS["GOLD"]:
@@ -28,16 +32,27 @@ def _tier_for_lifetime_points(lifetime_points: int) -> str:
     return "BRONZE"
 
 
+def reward_eligible(order):
+    return order.status == "DELIVERED" and order.payment_status == "PAID"
+
+
+def reward_subtotal(order):
+    """Net laundry spend; delivery never earns rewards."""
+    return max(Decimal(order.total_amount) - Decimal(order.delivery_fee), Decimal("0"))
+
+
 @transaction.atomic
 def award_points_for_order(order):
     """Call this once an order is marked DELIVERED and paid."""
     from apps.discounts.models import LoyaltyProgramSettings, LoyaltyTransaction
     from apps.users.models import LoyaltyAccount
 
+    if not reward_eligible(order):
+        return None
     if not LoyaltyProgramSettings.get_current().credit_points_enabled:
         return None
 
-    points_earned = int(Decimal(order.total_amount))
+    points_earned = int(reward_subtotal(order) * Decimal("0.05"))
     if points_earned <= 0:
         return None
 
@@ -67,10 +82,17 @@ def award_points_for_order(order):
 @transaction.atomic
 def award_badge_for_order(order):
     from apps.discounts.models import (
-        BadgeAccount, BadgeAward, LoyaltyProgramSettings, LoyaltyReward,
+        BadgeAccount,
+        BadgeAward,
+        LoyaltyProgramSettings,
+        LoyaltyReward,
         LoyaltyRewardGrant,
     )
 
+    if not reward_eligible(order):
+        return None
+    if reward_subtotal(order) < Decimal("5000"):
+        return None
     if not LoyaltyProgramSettings.get_current().badge_tiers_enabled:
         return None
     account, _ = BadgeAccount.objects.select_for_update().get_or_create(user=order.user)
@@ -89,7 +111,9 @@ def award_badge_for_order(order):
         ).first()
         if reward:
             LoyaltyRewardGrant.objects.create(reward=reward, user=order.user, order=order)
-    account.save(update_fields=["badges", "lifetime_badges", "completed_cards", "tier", "updated_at"])
+    account.save(
+        update_fields=["badges", "lifetime_badges", "completed_cards", "tier", "updated_at"]
+    )
     return account
 
 
@@ -97,18 +121,20 @@ def award_badge_for_order(order):
 def award_ambassador_credit(promo_usage):
     from apps.discounts.models import AmbassadorCredit, AmbassadorProfile
 
+    if not reward_eligible(promo_usage.order):
+        return None
     try:
         ambassador = AmbassadorProfile.objects.select_for_update().get(
             promo_code=promo_usage.promo_code, is_active=True
         )
     except AmbassadorProfile.DoesNotExist:
         return None
-    credit = (Decimal(promo_usage.order.total_amount) * Decimal("0.10")).quantize(Decimal("1"))
+    credit = Decimal(int(reward_subtotal(promo_usage.order) * Decimal("0.05")))
     entry, created = AmbassadorCredit.objects.get_or_create(
         order=promo_usage.order,
         defaults={
             "ambassador": ambassador,
-            "order_amount": promo_usage.order.total_amount,
+            "order_amount": reward_subtotal(promo_usage.order),
             "credit_amount": credit,
         },
     )
@@ -127,7 +153,7 @@ def redeem_points(account, points: int, note: str = ""):
     if points <= 0:
         raise ValueError("points to redeem must be positive")
 
-    account.refresh_from_db()
+    account = type(account).objects.select_for_update().get(pk=account.pk)
     if account.points_balance < points:
         raise ValueError("Insufficient points balance")
 
@@ -197,7 +223,8 @@ def redeem_free_wash(account, note: str = "Redeemed 1 free wash (stamp card)"):
     account.refresh_from_db()
     if account.points_balance < config.points_per_reward:
         raise ValueError(
-            f"Not enough points yet — need {config.points_per_reward}, have {account.points_balance}."
+            f"Not enough points yet — need {config.points_per_reward}, "
+            f"have {account.points_balance}."
         )
 
     return redeem_points(account, config.points_per_reward, note=note)

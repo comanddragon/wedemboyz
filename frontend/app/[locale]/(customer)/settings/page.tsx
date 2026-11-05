@@ -22,6 +22,7 @@ import {
   Field,
   Input,
   Select,
+  LoyaltyBadge,
 } from "@/src/components/ui";
 import { profileApi } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api/errors";
@@ -76,6 +77,7 @@ function ProfileForm({
   const { t } = useI18n();
   const [firstName, setFirstName] = useState(profile.first_name ?? "");
   const [lastName, setLastName] = useState(profile.last_name ?? "");
+  const [gender, setGender] = useState<import("@/src/types/user").ProfileGender>(profile.gender || "PREFER_NOT");
   const [email, setEmail] = useState(profile.email ?? "");
   const [addressLine, setAddressLine] = useState(profile.address_line ?? "");
   const [city, setCity] = useState(profile.city || "Yaoundé");
@@ -110,6 +112,7 @@ function ProfileForm({
         }
 
         mutation.mutate({
+          gender,
           first_name: firstName,
           last_name: lastName,
           email,
@@ -144,7 +147,7 @@ function ProfileForm({
         }`}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <CustomerAvatar name={displayName} size="lg" imageUrl={previewUrl} useProfilePhoto={useProfilePhoto} className="h-20 w-20 ring-2 ring-white" />
+          <CustomerAvatar name={displayName} loyaltyTier={profile.loyalty?.badge_tier ?? "BASIC"} size="lg" imageUrl={previewUrl} useProfilePhoto={useProfilePhoto} className="h-20 w-20 ring-2 ring-white" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <p className="font-display text-base font-semibold text-navy">{t("settings.profilePicture")}</p>
@@ -210,6 +213,15 @@ function ProfileForm({
         </Field>
       </div>
 
+      <Field label={t("settings.sex")}>
+        <Select value={gender} onChange={(e) => setGender(e.target.value as typeof gender)}>
+          <option value="PREFER_NOT">{t("settings.preferNot")}</option>
+          <option value="MALE">{t("settings.male")}</option>
+          <option value="FEMALE">{t("settings.female")}</option>
+          <option value="OTHER">{t("settings.other")}</option>
+        </Select>
+      </Field>
+
       <Field label={t("settings.email")}>
         <Input
           type="email"
@@ -266,6 +278,7 @@ export default function SettingsPage() {
 
     onSuccess: async (updated) => {
       setAuthUser({
+        gender: updated.gender,
         first_name: updated.first_name,
         last_name: updated.last_name,
         avatar: updated.avatar,
@@ -436,13 +449,12 @@ export default function SettingsPage() {
             </p>
 
             {profile && (
-              <div className="mb-5 flex items-center gap-2 rounded-md bg-gold-50 px-3 py-2 text-xs text-gold">
+              <div className="mb-5 flex items-center gap-2 rounded-md bg-steam px-3 py-2 text-xs text-navy">
                 <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
 
                 <span>
                   {profile.loyalty.points_balance} {t("settings.points")} ·{" "}
-                  {profile.loyalty.tier.charAt(0)}
-                  {profile.loyalty.tier.slice(1).toLowerCase()} {t("settings.tier")}
+                  <LoyaltyBadge tier={profile.loyalty.badge_tier ?? "BASIC"} />
                 </span>
 
                 <Link

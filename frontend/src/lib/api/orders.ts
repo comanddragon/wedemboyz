@@ -52,6 +52,7 @@ export async function createOrder(
   form.append("delivery_address", input.delivery_address);
   form.append("fulfillment_type", input.fulfillment_type);
   form.append("payment_option", input.payment_option);
+  form.append("is_express", String(input.is_express ?? false));
   form.append("notes", input.notes ?? "");
   if (input.promo_code) form.append("promo_code", input.promo_code);
   form.append(

@@ -8,7 +8,7 @@ import { useState } from "react";
 
 import {
   Card,
-  EyebrowLabel,
+  Button,
   StatusBadge,
   paymentStatusTone,
 } from "@/src/components/ui";
@@ -37,10 +37,10 @@ function PaymentsSkeleton() {
       {[0, 1, 2].map((i) => (
         <li key={i}>
           <Card className="flex items-center gap-3">
-            <span className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-steam" />
+            <span className="h-9 w-9 shrink-0 animate-pulse motion-reduce:animate-none rounded-full bg-steam" />
             <div className="flex-1 space-y-2">
-              <span className="block h-3 w-1/3 animate-pulse rounded bg-steam" />
-              <span className="block h-2.5 w-1/4 animate-pulse rounded bg-steam" />
+              <span className="block h-3 w-1/3 animate-pulse motion-reduce:animate-none rounded bg-steam" />
+              <span className="block h-2.5 w-1/4 animate-pulse motion-reduce:animate-none rounded bg-steam" />
             </div>
           </Card>
         </li>
@@ -62,7 +62,7 @@ function PaymentRow({ payment }: { payment: Payment }) {
               : `${t("payments.subscription")} #${payment.subscription}`}
           </p>
           <p className="text-xs text-ink-muted">
-            {collectionMethods(locale).find((method) => method.value === payment.payment_method_type)?.label ?? (payment.gateway === "STRIPE" ? t("payments.card") : payment.gateway === "CASH" ? t("payments.cash") : payment.gateway === "CREDIT" ? t("payments.credit") : GATEWAY_LABELS[payment.gateway])} ·{" "}
+            {payment.gateway === "CREDIT" && payment.reference.startsWith("CREDITS-") ? t("cashouts.loyaltyPayment") : collectionMethods(locale).find((method) => method.value === payment.payment_method_type)?.label ?? (payment.gateway === "STRIPE" ? t("payments.card") : payment.gateway === "CASH" ? t("payments.cash") : payment.gateway === "CREDIT" ? t("payments.credit") : GATEWAY_LABELS[payment.gateway])} ·{" "}
             {new Date(payment.created_at).toLocaleDateString(locale, {
               year: "numeric",
               month: "short",
@@ -77,7 +77,7 @@ function PaymentRow({ payment }: { payment: Payment }) {
         </div>
 
         <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
-          <p className="text-sm font-semibold text-ink">
+          <p className="whitespace-nowrap text-sm font-semibold tabular-nums text-ink">
             {formatCurrency(payment.amount)}
           </p>
           <StatusBadge
@@ -125,12 +125,9 @@ export default function PaymentHistoryPage() {
           <p className="max-w-xs text-xs text-ink-muted">
             {getApiErrorMessage(error)}
           </p>
-          <button
-            onClick={() => refetch()}
-            className="mt-2 rounded-md border border-crease bg-white px-4 py-2 text-sm text-ink hover:bg-steam"
-          >
+          <Button type="button" variant="secondary" onClick={() => { void refetch(); }} className="mt-2">
             {t("payments.retry")}
-          </button>
+          </Button>
         </Card>
       )}
 
@@ -157,20 +154,20 @@ export default function PaymentHistoryPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={!data.previous}
-                className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink disabled:opacity-40"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-sm text-ink-muted hover:bg-steam hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                 {t("payments.previous")}
               </button>
 
-              <p className="text-xs text-ink-muted">
+              <p className="text-xs tabular-nums text-ink-muted" aria-live="polite">
                 {t("payments.page")} {data.current_page} {t("payments.of")} {data.num_pages}
               </p>
 
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!data.next}
-                className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink disabled:opacity-40"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-sm text-ink-muted hover:bg-steam hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {t("payments.next")}
                 <ChevronRight className="h-4 w-4" aria-hidden="true" />
