@@ -4,7 +4,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from apps.discounts.api.serializers.loyalty import AmbassadorCreateSerializer
-from apps.discounts.models import AmbassadorCashout, LoyaltyTransaction
+from apps.discounts.models import AmbassadorCashout, AmbassadorCreditAdjustment, LoyaltyTransaction
 from apps.orders.models import Order
 from apps.users.models import CustomUser
 
@@ -132,14 +132,18 @@ def test_owner_can_set_available_ambassador_credits(balance):
     ambassador.refresh_from_db()
     assert ambassador.credit_balance == Decimal(balance)
     assert ambassador.lifetime_credits == 2000
-    # Balance edits must be visible in every period, even without referral orders.
+    adjustment = AmbassadorCreditAdjustment.objects.get(ambassador=ambassador)
+    assert adjustment.amount == Decimal(balance) - 1000
+    assert adjustment.previous_balance == 1000
+    assert adjustment.new_balance == Decimal(balance)
+    assert adjustment.changed_by == owner
+    # Manual changes count in the current month/year and all time.
     client.force_authenticate(user=None)
     for period in ("month", "year", "all"):
         leaderboard = client.get(f"/api/v1/loyalty/ambassadors/leaderboard/?period={period}")
         assert leaderboard.status_code == 200
         row = next(row for row in leaderboard.data["results"] if row["ambassador"]["id"] == ambassador.pk)
-        assert row["credit_balance"] == int(balance)
-        assert row["period_credits"] == 0
+        assert row["period_credits"] == int(balance) - 1000
 
 
 @pytest.mark.parametrize("balance", ["-1", "1.5", "invalid", "NaN", "1000000000000", None])

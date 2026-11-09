@@ -130,3 +130,20 @@ cashouts and owner adjustments. Already-earned credits are not clawed back when
 an order price decreases, matching the existing policy of retaining referral
 credits on cancellation. Orders without a recorded promo usage are not inferred
 or credited. This is not a reset of balances from ledger totals.
+
+
+## Manual ambassador credit adjustments
+
+After running migrations, editing an ambassador's available balance through the
+owner interface records the signed difference, previous/new balance, editor and
+exact edit timestamp. A change from 1,000 to 1,500 contributes +500 to that edit's
+month/year and all-time leaderboard totals; a reduction contributes a negative
+adjustment. Re-saving the same balance records no extra credits. Referral order
+counts and revenue are unaffected, and cashouts do not reduce ranking credits.
+Dates use the configured business timezone (`Africa/Douala`). The audit records
+can be inspected read-only in Django admin under ambassador credit adjustments.
+
+Earlier balance edits did not have a dedicated audit record. This migration does
+not guess their dates or convert the whole available balance into newly earned
+credits. Their historical attribution requires verified adjustment amounts and
+dates, accounting for existing referral awards and cashouts to avoid duplication.

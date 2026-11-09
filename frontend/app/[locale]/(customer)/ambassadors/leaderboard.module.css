@@ -38,11 +38,34 @@
 .empty { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .empty h3 { color: #071130; font-size: 20px; }
 .retry { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 20px; border: 1px solid #d9dce3; border-radius: 8px; color: #071130; }
-@media (max-width: 600px) {
+/* Labels are visible within each row when column headings no longer fit. */
+.mobileLabel { display: none; }
+@media (max-width: 640px) {
  .page { padding: 24px 12px 48px; }
+ .content, .header > div { min-width: 0; }
+ .header { margin-bottom: 24px; }
  .headerTrophy { display: none; }
- .table th, .table td { padding: 10px; }
- .table { font-size: 12px; }
- .name { min-width: 110px; gap: 6px; flex-wrap: wrap; }
- .table thead th { max-width: 120px; }
+ .toolbar { align-items: stretch; }
+ .periods { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+ .periods button { padding-inline: 8px; overflow-wrap: anywhere; }
+ .tableScroll { overflow: visible; }
+ .table, .table tbody { display: block; }
+ .table { border-radius: inherit; font-size: 14px; }
+ .table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+ .table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 16px; gap: 12px 16px; border-bottom: 1px solid #d9dce3; }
+ .table tbody tr:first-child { border-radius: 11px 11px 0 0; }
+ .table tbody tr:last-child { border-bottom: 0; border-radius: 0 0 11px 11px; }
+ .table tbody tr:only-child { border-radius: 11px; }
+ .table th, .table td { min-width: 0; padding: 0; border-bottom: 0; }
+ .table tbody th, .table .promoCell, .table .amount { grid-column: 1 / -1; }
+ .name { min-width: 0; align-items: baseline; gap: 8px; }
+ .name > span:nth-child(2) { min-width: 0; font-size: 16px; }
+ .you { margin-left: auto; flex-shrink: 0; }
+ .table .amount { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+ .table .amount > span:last-child { font-size: 16px; font-weight: 600; }
+ .mobileLabel { display: block; font-size: 12px; font-weight: 500; line-height: 1.5; }
+ .promoCell { display: flex; flex-wrap: wrap; align-items: center; column-gap: 12px; }
+ .promoWrap, .promo { min-width: 0; max-width: 100%; }
+ .promo span { min-width: 0; text-align: left; }
+ .promoCell .mobileLabel { flex-shrink: 0; }
 }

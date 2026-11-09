@@ -25,6 +25,7 @@ from apps.discounts.api.serializers import (
 )
 from apps.discounts.models import (
     AmbassadorCredit,
+    AmbassadorCreditAdjustment,
     AmbassadorProfile,
     LoyaltyProgramSettings,
     LoyaltyReward,
@@ -267,6 +268,7 @@ class AmbassadorAdminDetailView(generics.UpdateAPIView):
         from apps.discounts.models import PromoCode
 
         profile = self.get_object()
+        previous_balance = profile.credit_balance
         if "credit_balance" in request.data:
             try:
                 profile.credit_balance = serializers.DecimalField(
@@ -297,6 +299,14 @@ class AmbassadorAdminDetailView(generics.UpdateAPIView):
             profile.promo_code.code = code
         profile.promo_code.save(update_fields=["code", "is_active", "updated_at"])
         profile.save(update_fields=["is_active", "credit_balance", "updated_at"])
+        if profile.credit_balance != previous_balance:
+            AmbassadorCreditAdjustment.objects.create(
+                ambassador=profile,
+                amount=profile.credit_balance - previous_balance,
+                previous_balance=previous_balance,
+                new_balance=profile.credit_balance,
+                changed_by=request.user,
+            )
         return Response(AmbassadorProfileSerializer(profile).data)
 
 
@@ -343,6 +353,10 @@ class AmbassadorLeaderboardView(APIView):
                 ambassador=profile,
                 **{key.replace("credits__", ""): value for key, value in credit_filter.items()},
             )
+            adjustments = profile.credit_adjustments.filter(
+                **{key.replace("credits__", ""): value for key, value in credit_filter.items()},
+            )
+            adjustment_total = adjustments.aggregate(total=Sum("amount"))["total"] or 0
             rows.append(
                 {
                     "ambassador": {
@@ -353,9 +367,9 @@ class AmbassadorLeaderboardView(APIView):
                             profile, context={"request": request}
                         ).data["profile_photo"],
                     },
-                    "credit_balance": int(profile.credit_balance),
                     "period_credits": int(
-                        credits.aggregate(total=Sum("credit_amount"))["total"] or 0
+                        (credits.aggregate(total=Sum("credit_amount"))["total"] or 0)
+                        + adjustment_total
                     ),
                     "orders": credits.count(),
                     "referred_revenue": int(

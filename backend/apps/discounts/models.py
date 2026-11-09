@@ -254,6 +254,25 @@ class AmbassadorProfile(TimeStampedModel):
         ordering = ["user__first_name", "user__last_name", "user_id"]
 
 
+class AmbassadorCreditAdjustment(TimeStampedModel):
+    """Signed manual balance change, earned in the period it was recorded."""
+
+    ambassador = models.ForeignKey(
+        AmbassadorProfile, on_delete=models.CASCADE, related_name="credit_adjustments"
+    )
+    amount = models.DecimalField(max_digits=13, decimal_places=0)
+    previous_balance = models.DecimalField(max_digits=12, decimal_places=0)
+    new_balance = models.DecimalField(max_digits=12, decimal_places=0)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="ambassador_credit_adjustments",
+    )
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        indexes = [models.Index(fields=["ambassador", "created_at"])]
+
+
 class AmbassadorCredit(TimeStampedModel):
     ambassador = models.ForeignKey(
         AmbassadorProfile, on_delete=models.CASCADE, related_name="credits"

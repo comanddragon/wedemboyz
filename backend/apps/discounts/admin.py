@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    AmbassadorCreditAdjustment,
     DiscountCampaign,
     LoyaltyRule,
     LoyaltyTierConfig,
@@ -50,3 +51,19 @@ class LoyaltyTransactionAdmin(admin.ModelAdmin):
 class DiscountCampaignAdmin(admin.ModelAdmin):
     list_display = ["name", "discount_type", "value", "target_segment", "is_active"]
     list_filter = ["discount_type", "target_segment", "is_active"]
+
+
+@admin.register(AmbassadorCreditAdjustment)
+class AmbassadorCreditAdjustmentAdmin(admin.ModelAdmin):
+    list_display = ["ambassador", "amount", "previous_balance", "new_balance", "changed_by", "created_at"]
+    readonly_fields = ["ambassador", "amount", "previous_balance", "new_balance", "changed_by", "created_at", "updated_at"]
+    date_hierarchy = "created_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

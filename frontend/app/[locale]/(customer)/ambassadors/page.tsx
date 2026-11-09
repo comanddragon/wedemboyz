@@ -87,7 +87,6 @@ export default function AmbassadorLeaderboardPage() {
           <div>
             <h1>{t("ambassador.title")}</h1>
             <p className={styles.headline}>{t("ambassador.headline")}</p>
-            <p className={styles.description}>{t("ambassador.description")}</p>
           </div>
           <Trophy
             className={styles.headerTrophy}
@@ -162,29 +161,27 @@ export default function AmbassadorLeaderboardPage() {
           ) : null}
           {results.length ? (
             <div className={styles.tableScroll}>
-              <table className={styles.table}>
+              <table className={styles.table} role="table">
                 <caption className="sr-only">{t("ambassador.title")} · {periodLabel}</caption>
-                <thead>
-                  <tr>
+                <thead role="rowgroup">
+                  <tr role="row">
                     <th scope="col">{t("ambassador.name")}</th>
                     <th scope="col">{t("ambassador.promoCode")}</th>
                     <th scope="col" className={styles.amount}>{t("ambassador.commissionAmount")}</th>
-                    <th scope="col" className={styles.amount}>{t("ambassador.credits")}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody role="rowgroup">
                   {results.map((row) => (
-                    <tr key={row.ambassador.id} className={row.rank === 1 ? styles.first : row.rank === 2 ? styles.second : row.rank === 3 ? styles.third : undefined}>
-                      <th scope="row">
+                    <tr role="row" key={row.ambassador.id} className={row.rank === 1 ? styles.first : row.rank === 2 ? styles.second : row.rank === 3 ? styles.third : undefined}>
+                      <th scope="row" role="rowheader">
                         <div className={styles.name}>
                           <span className={styles.rank} aria-label={`${locale === "fr" ? "Rang" : "Rank"} ${row.rank}`}>#{row.rank}</span>
                           <span>{row.ambassador.name}</span>
                           {row.ambassador.id === current?.ambassador.id ? <span className={styles.you}>{t("ambassador.you")}</span> : null}
                         </div>
                       </th>
-                      <td><PromoCode code={row.ambassador.promo_code} /></td>
-                      <td className={styles.amount}>{formatCurrency(row.period_credits)}</td>
-                      <td className={styles.amount}>{formatCurrency(row.credit_balance)}</td>
+                      <td role="cell" className={styles.promoCell}><span className={styles.mobileLabel}>{t("ambassador.promoCode")}</span><PromoCode code={row.ambassador.promo_code} /></td>
+                      <td role="cell" className={styles.amount}><span className={styles.mobileLabel}>{t("ambassador.commissionAmount")}</span><span>{formatCurrency(row.period_credits)}</span></td>
                     </tr>
                   ))}
                 </tbody>
