@@ -79,6 +79,8 @@ export default function LoyaltyPage() {
   const { data: account, isLoading, error: accountError, refetch: refetchAccount, isFetching: fetchingAccount } = useQuery({
     queryKey: queryKeys.discounts.loyalty,
     queryFn: () => discountsApi.getLoyaltyAccount(),
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: "always",
     enabled: isHydrated,
   });
 

@@ -14,6 +14,7 @@ class ServiceType(models.TextChoices):
     weight-based grille services."""
 
     # Per-piece pressing/garment-care items ("NOUVEAUX PRIX" flyer).
+    SHOES = "SHOES", "Chaussures (paire) / Shoes (pair)"
     VESTE = "VESTE", "Veste (Jacket)"
     TSHIRT = "TSHIRT", "T-Shirt"
     CHEMISE = "CHEMISE", "Chemise (Shirt)"

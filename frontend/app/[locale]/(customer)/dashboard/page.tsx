@@ -87,6 +87,8 @@ export default function DashboardPage() {
   const loyalty = useQuery({
     queryKey: queryKeys.discounts.loyalty,
     queryFn: discountsApi.getLoyaltyAccount,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: "always",
     enabled: canLoadDashboard && !isGuest,
   });
   const orders = useQuery({

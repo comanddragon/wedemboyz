@@ -19,6 +19,7 @@ export type ServiceType =
   | "COUETTE_1P"
   | "COUETTE_2P"
   | "COUETTE_3P"
+  | "SHOES"
   // Per-kg self-service lavomatique lines ("GRILLE DE PRIX" flyer).
   | "LAVAGE_ESSORAGE"
   | "LAVAGE_SECHAGE"

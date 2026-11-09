@@ -353,6 +353,7 @@ class AmbassadorLeaderboardView(APIView):
                             profile, context={"request": request}
                         ).data["profile_photo"],
                     },
+                    "credit_balance": int(profile.credit_balance),
                     "period_credits": int(
                         credits.aggregate(total=Sum("credit_amount"))["total"] or 0
                     ),

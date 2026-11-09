@@ -21,3 +21,11 @@ def test_petite_robe_is_charged_per_piece(weight):
 def test_petite_robe_is_accepted_for_booking_and_counter_sales(serializer_class):
     serializer = serializer_class(data={"service_type": "PETITE_ROBE", "quantity": 2})
     assert serializer.is_valid(), serializer.errors
+
+
+@pytest.mark.parametrize("serializer_class", [OrderItemInputSerializer, QuickSaleItemInputSerializer])
+def test_shoes_are_accepted_and_cost_2000_per_pair(serializer_class):
+    serializer = serializer_class(data={"service_type": "SHOES", "quantity": 2})
+    assert serializer.is_valid(), serializer.errors
+    with patch("services.pricing._configured_price", return_value=None):
+        assert price_order_items([serializer.validated_data]) == Decimal("4000")

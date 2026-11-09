@@ -21,6 +21,8 @@ export default function AdminAmbassadorsPage() {
   const ambassadors = useQuery({
     queryKey: ["ambassadors", "admin"],
     queryFn: discountsApi.listAmbassadors,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: "always",
     enabled: Boolean(user?.is_superuser),
   });
   const customers = useQuery({

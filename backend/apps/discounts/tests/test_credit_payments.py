@@ -132,6 +132,14 @@ def test_owner_can_set_available_ambassador_credits(balance):
     ambassador.refresh_from_db()
     assert ambassador.credit_balance == Decimal(balance)
     assert ambassador.lifetime_credits == 2000
+    # Balance edits must be visible in every period, even without referral orders.
+    client.force_authenticate(user=None)
+    for period in ("month", "year", "all"):
+        leaderboard = client.get(f"/api/v1/loyalty/ambassadors/leaderboard/?period={period}")
+        assert leaderboard.status_code == 200
+        row = next(row for row in leaderboard.data["results"] if row["ambassador"]["id"] == ambassador.pk)
+        assert row["credit_balance"] == int(balance)
+        assert row["period_credits"] == 0
 
 
 @pytest.mark.parametrize("balance", ["-1", "1.5", "invalid", "NaN", "1000000000000", None])

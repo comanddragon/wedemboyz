@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useI18n } from "@/src/i18n/I18nProvider";
 import { discountsApi } from "@/src/lib/api";
+import { queryKeys } from "@/src/lib/query-keys";
 import { formatCurrency } from "@/src/lib/constants";
 import styles from "./leaderboard.module.css";
 
@@ -50,12 +51,21 @@ function PromoCode({ code }: { code: string }) {
 
 export default function AmbassadorLeaderboardPage() {
   const { t, locale } = useI18n();
-  const { isHydrated } = useAuth();
+  const { user, isHydrated } = useAuth();
   const [period, setPeriod] = useState<Period>("month");
   const leaderboard = useQuery({
     queryKey: ["ambassadors", "leaderboard", period],
     queryFn: () => discountsApi.getAmbassadorLeaderboard(period),
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: "always",
     enabled: isHydrated,
+  });
+  const account = useQuery({
+    queryKey: queryKeys.discounts.loyalty,
+    queryFn: discountsApi.getLoyaltyAccount,
+    enabled: isHydrated && Boolean(user?.is_ambassador),
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: "always",
   });
   const results = leaderboard.data?.results ?? [];
   const current = results.find(
@@ -85,6 +95,11 @@ export default function AmbassadorLeaderboardPage() {
             aria-hidden="true"
           />
         </header>
+        {account.data?.ambassador ? (
+          <p className="mb-6 text-lg font-semibold" aria-live="polite">
+            {t("ambassador.credits")}: {formatCurrency(Number(account.data.ambassador.credit_balance))}
+          </p>
+        ) : null}
         <section aria-labelledby="rankings-period">
           <div className={styles.toolbar}>
             <div>
@@ -154,6 +169,7 @@ export default function AmbassadorLeaderboardPage() {
                     <th scope="col">{t("ambassador.name")}</th>
                     <th scope="col">{t("ambassador.promoCode")}</th>
                     <th scope="col" className={styles.amount}>{t("ambassador.commissionAmount")}</th>
+                    <th scope="col" className={styles.amount}>{t("ambassador.credits")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -168,6 +184,7 @@ export default function AmbassadorLeaderboardPage() {
                       </th>
                       <td><PromoCode code={row.ambassador.promo_code} /></td>
                       <td className={styles.amount}>{formatCurrency(row.period_credits)}</td>
+                      <td className={styles.amount}>{formatCurrency(row.credit_balance)}</td>
                     </tr>
                   ))}
                 </tbody>

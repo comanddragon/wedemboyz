@@ -23,6 +23,7 @@ import type { ServiceType } from "@/src/types";
  * flyer. See services/pricing.py for the source-of-truth prices.
  */
 const SERVICE_ICONS: Record<ServiceType, typeof Droplets> = {
+  SHOES: Package,
   VESTE: Layers,
   TSHIRT: Shirt,
   CHEMISE: Shirt,
@@ -41,6 +42,7 @@ const SERVICE_ICONS: Record<ServiceType, typeof Droplets> = {
 };
 
 const SERVICE_LABELS: Record<ServiceType, string> = {
+  SHOES: "Shoes (pair)",
   VESTE: "Veste (Jacket)",
   TSHIRT: "T-Shirt",
   CHEMISE: "Chemise (Shirt)",

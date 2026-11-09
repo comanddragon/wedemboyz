@@ -1834,6 +1834,7 @@ export const fr: typeof en = {
       DRAPS_COMPLET: "Draps complet",
       COUETTE_1P: "Couette 1 place",
       COUETTE_2P: "Couette 2 places",
+      SHOES: "Chaussures (paire)",
       COUETTE_3P: "Couette 3 places",
       LAVAGE_ESSORAGE: "Lavage + essorage",
       LAVAGE_SECHAGE: "Lavage + séchage",

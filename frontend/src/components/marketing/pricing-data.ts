@@ -79,6 +79,7 @@ export const KG_SERVICES: {
 // Mirrors services.pricing.PRICE_PER_PIECE. Flat price per piece, weight
 // does not change it.
 export const PIECE_SERVICES: { type: ServiceType; price: number }[] = [
+  { type: "SHOES", price: 2000 },
   { type: "TSHIRT", price: 500 },
   { type: "CHEMISE", price: 600 },
   { type: "PANTALON", price: 500 },

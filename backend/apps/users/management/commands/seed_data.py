@@ -136,6 +136,7 @@ ITEM_LABELS = [
     ("Couette 1 place", ServiceType.COUETTE_1P),
     ("Couette 2 places", ServiceType.COUETTE_2P),
     ("Couette 3 places", ServiceType.COUETTE_3P),
+    ("Chaussures (paire)", ServiceType.SHOES),
     # Per-kg self-service lavomatique lines ("GRILLE DE PRIX" flyer).
     ("Load of laundry (wash & spin)", ServiceType.LAVAGE_ESSORAGE),
     ("Load of laundry (wash, spin & dry)", ServiceType.LAVAGE_SECHAGE),

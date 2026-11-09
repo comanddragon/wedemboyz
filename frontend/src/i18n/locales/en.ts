@@ -1801,6 +1801,7 @@ export const en = {
       DRAPS_COMPLET: "Complete bedsheet",
       COUETTE_1P: "Duvet 1 place",
       COUETTE_2P: "Duvet 2 places",
+      SHOES: "Shoes (pair)",
       COUETTE_3P: "Duvet 3 places",
       LAVAGE_ESSORAGE: "Wash + spin",
       LAVAGE_SECHAGE: "Wash + dry",

@@ -88,3 +88,45 @@ response. Django logs normally identify the rejection as `DisallowedHost`.
 
 CORS and CSRF have separate roles; they do not fix a host-validation 400. Keep
 `DEBUG=False` and explicit allowed hosts rather than using a wildcard.
+
+## Repair historical ambassador credits
+
+After deploying this code, run these in the production backend environment
+(which already supplies the production `DB_URL` and settings):
+
+```bash
+python manage.py migrate
+python manage.py backfill_ambassador_credits
+```
+
+The second command is a dry run: it shows each order ID, ambassador ID, previous
+award, corrected award, and additional credits, then rolls back all changes.
+Review the listed orders against actual client orders. To apply only reviewed
+orders, repeat `--order-id`:
+
+```bash
+python manage.py backfill_ambassador_credits --order-id 123 --order-id 456
+python manage.py backfill_ambassador_credits --apply --order-id 123 --order-id 456
+```
+
+To apply the entire reviewed preview, run:
+
+```bash
+python manage.py backfill_ambassador_credits --apply
+python manage.py backfill_ambassador_credits
+```
+
+The final preview should report zero additional credits. This command uses recorded
+promo usages, skips cancelled/deleted orders, staff/superuser customers, seed email
+addresses and profiles tagged `seed-data`, and requires the promo usage customer
+to match the order customer. Untagged test accounts cannot be identified reliably;
+use reviewed order IDs when these may exist in production.
+
+Awards are 5% of net laundry spend excluding delivery, rounded down to whole
+credits. Missing awards and under-awarded entries are added exactly once, including
+for ambassadors who are now inactive. Credits belong to the original order month.
+Existing available balances are increased only by the missing amount, preserving
+cashouts and owner adjustments. Already-earned credits are not clawed back when
+an order price decreases, matching the existing policy of retaining referral
+credits on cancellation. Orders without a recorded promo usage are not inferred
+or credited. This is not a reset of balances from ledger totals.

@@ -41,6 +41,17 @@ def on_order_status_changed(sender, instance, created, **kwargs):
         award_badge_for_order(instance)
         return
 
+    # Promo usage can precede weighing/pricing at intake. Retry on total changes.
+    if not kwargs.get("raw", False) and (
+        kwargs.get("update_fields") is None
+        or {"subtotal", "total_amount", "delivery_fee", "discount_amount"}
+        .intersection(kwargs.get("update_fields") or ())
+    ):
+        from services.loyalty import award_ambassador_credit
+
+        for usage in instance.promo_usages.select_related("promo_code"):
+            award_ambassador_credit(usage)
+
     if previous_status is not None and previous_status != instance.status:
         history = OrderStatusHistory.objects.create(order=instance, status=instance.status)
         if getattr(settings, "SEED_DATA_ACTIVE", False):

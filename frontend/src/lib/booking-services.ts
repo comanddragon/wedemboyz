@@ -2,7 +2,7 @@ import type { ServiceType } from "@/src/types";
 
 /** Shared service choices for customer bookings and owner-entered orders. */
 export const PIECE_SERVICES: ServiceType[] = [
-  "VESTE", "TSHIRT", "CHEMISE", "PANTALON", "PULL", "PETITE_ROBE",
+  "SHOES", "VESTE", "TSHIRT", "CHEMISE", "PANTALON", "PULL", "PETITE_ROBE",
   "ROBE", "ENSEMBLE", "DRAPS_COMPLET", "COUETTE_1P", "COUETTE_2P", "COUETTE_3P",
 ];
 export const KILO_RATES = {
@@ -16,6 +16,7 @@ export function isKiloService(type: ServiceType): type is keyof typeof KILO_RATE
 }
 
 export const PIECE_RATES: Partial<Record<ServiceType, number>> = {
+  SHOES: 2000,
   VESTE: 2000,
   TSHIRT: 500,
   CHEMISE: 600,

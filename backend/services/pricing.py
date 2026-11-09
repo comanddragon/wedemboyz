@@ -41,6 +41,7 @@ def _business_settings():
 # Flat price per piece — weight_kg is still recorded on the OrderItem for
 # logistics, but it does NOT factor into the price for these service types.
 PRICE_PER_PIECE = {
+    ServiceType.SHOES: Decimal("2000"),
     ServiceType.VESTE: Decimal("2000"),
     ServiceType.TSHIRT: Decimal("500"),
     ServiceType.CHEMISE: Decimal("600"),

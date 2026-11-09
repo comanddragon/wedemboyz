@@ -118,29 +118,49 @@ def award_badge_for_order(order):
 
 
 @transaction.atomic
-def award_ambassador_credit(promo_usage):
+def award_ambassador_credit(promo_usage, *, include_inactive=False):
     from apps.discounts.models import AmbassadorCredit, AmbassadorProfile
 
-    if promo_usage.order.status == "CANCELLED":
+    # Lock the order before the profile, consistently with intake/order updates.
+    from apps.orders.models import Order
+
+    order = Order.all_objects.select_for_update().get(pk=promo_usage.order_id)
+    if order.status == "CANCELLED" or order.deleted_at is not None:
         return None
     try:
-        ambassador = AmbassadorProfile.objects.select_for_update().get(
-            promo_code=promo_usage.promo_code, is_active=True
-        )
+        profiles = AmbassadorProfile.objects.select_for_update()
+        if not include_inactive:
+            profiles = profiles.filter(is_active=True)
+        ambassador = profiles.get(promo_code_id=promo_usage.promo_code_id)
     except AmbassadorProfile.DoesNotExist:
         return None
-    credit = Decimal(int(reward_subtotal(promo_usage.order) * Decimal("0.05")))
+    amount = reward_subtotal(order)
+    credit = Decimal(int(amount * Decimal("0.05")))
+    if credit <= 0:
+        return None
     entry, created = AmbassadorCredit.objects.get_or_create(
-        order=promo_usage.order,
+        order=order,
         defaults={
             "ambassador": ambassador,
-            "order_amount": reward_subtotal(promo_usage.order),
+            "order_amount": amount,
             "credit_amount": credit,
         },
     )
-    if created:
-        ambassador.credit_balance += credit
-        ambassador.lifetime_credits += credit
+    # Top up provisional/zero awards when intake establishes the actual price.
+    # Preserve earned credits and cashouts; this is not a balance reset or clawback.
+    delta = credit if created else max(credit - entry.credit_amount, Decimal("0"))
+    if not created and entry.ambassador_id != ambassador.pk:
+        return entry
+    if not created and delta > 0:
+        entry.credit_amount = credit
+        entry.order_amount = amount
+        entry.save(update_fields=["credit_amount", "order_amount", "updated_at"])
+    if created or delta > 0:
+        # Historical repairs belong to the order month, not the repair month.
+        AmbassadorCredit.objects.filter(pk=entry.pk).update(created_at=order.created_at)
+    if delta > 0:
+        ambassador.credit_balance += delta
+        ambassador.lifetime_credits += delta
         ambassador.save(update_fields=["credit_balance", "lifetime_credits", "updated_at"])
     return entry
 
