@@ -157,3 +157,18 @@ add a one-minute retry Cron Trigger. Before deploying it, set the server-only
 `INTERNAL_JOBS_SECRET` Worker secret to match Render’s backend value (see the
 email delivery guide). Never expose this as a `NEXT_PUBLIC_*` variable. Verify a
 successful Scheduled invocation after deployment; a dry-run does not activate cron.
+
+## Homepage returns 500 after a Next.js build
+
+The production build uses Node and `next build --webpack` explicitly. With the
+current Next.js canary/OpenNext combination, the default Turbopack bundle failed
+inside the React chunk loader (`TypeError: a3.then is not a function`). Keep the
+Webpack flag in the frontend build script and verify the generated Worker with
+`wrangler dev --local` before deploying framework or adapter upgrades. A successful
+Next.js compilation alone does not verify the Worker runtime.
+
+A scheduled event reporting `Missing INTERNAL_JOBS_SECRET` is a separate issue.
+Set the frontend Worker's server-only secret to the same value used by the backend;
+never put it in `wrangler.jsonc`, source control, or a `NEXT_PUBLIC_*` variable.
+After deployment, check that a Scheduled invocation succeeds and that both `/fr`
+and `/en` return HTML with HTTP 200.
