@@ -145,3 +145,30 @@ def test_invalid_credit_adjustments_are_rejected_without_changes(manual_credits,
     profile.refresh_from_db()
     assert profile.credit_balance == 0
     assert not profile.credit_adjustments.exists()
+
+
+def test_reconcile_command_records_untracked_balance_once(manual_credits):
+    from io import StringIO
+
+    from django.core.management import call_command
+
+    profile, client = manual_credits
+    order = Order.objects.create(user=profile.user, pickup_address="A", delivery_address="B")
+    AmbassadorCredit.objects.create(ambassador=profile, order=order, order_amount=2000, credit_amount=100)
+    # Balance edited before adjustments were tracked: 100 earned + 3200 manual - 0 cashed out.
+    type(profile).objects.filter(pk=profile.pk).update(credit_balance=3300)
+
+    out = StringIO()
+    call_command("reconcile_ambassador_adjustments", stdout=out)
+    assert "DRY RUN" in out.getvalue()
+    assert not profile.credit_adjustments.exists()
+    assert month_total(client, "period=all") == 100
+
+    call_command("reconcile_ambassador_adjustments", "--apply", stdout=StringIO())
+    profile.refresh_from_db()
+    assert profile.credit_balance == 3300
+    assert month_total(client, "period=all") == 3300
+    assert month_total(client, "period=month") == 3300
+
+    call_command("reconcile_ambassador_adjustments", "--apply", stdout=StringIO())
+    assert profile.credit_adjustments.count() == 1

@@ -11,7 +11,7 @@ python manage.py collectstatic --noinput
 # Set RUN_MIGRATIONS=false when migrations are handled by a Render pre-deploy
 # command or another release process.
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
-    python manage.py migrate --noinput
+    python manage.py migrate --noinput && python manage.py reconcile_ambassador_adjustments
 fi
 
 exec granian \
