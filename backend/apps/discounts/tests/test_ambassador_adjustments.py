@@ -1,4 +1,4 @@
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime, timedelta, timezone as dt_timezone
 
 import pytest
 from django.utils import timezone
@@ -92,6 +92,56 @@ def test_invalid_combined_edit_rolls_back_balance_and_adjustment(manual_credits)
         "credit_balance": 1000, "promo_code": "bad code!",
     })
     assert response.status_code == 400
+    profile.refresh_from_db()
+    assert profile.credit_balance == 0
+    assert not profile.credit_adjustments.exists()
+
+
+def add_credits(profile, client, **payload):
+    return client.post(
+        f"/api/v1/loyalty/admin/ambassadors/{profile.pk}/credit-adjustments/", payload, format="json"
+    )
+
+
+def month_total(client, query):
+    return client.get(f"/api/v1/loyalty/ambassadors/leaderboard/?{query}").data["results"][0]["period_credits"]
+
+
+def test_added_credits_count_in_the_chosen_month_and_update_balance(manual_credits):
+    profile, client = manual_credits
+    today = timezone.localdate()
+    past = (today.replace(day=1) - timedelta(days=40)).replace(day=1)
+
+    response = add_credits(profile, client, amount=500, period=f"{past.year}-{past.month:02d}")
+    assert response.status_code == 201
+    assert add_credits(profile, client, amount=300).status_code == 201  # current month
+    profile.refresh_from_db()
+    assert profile.credit_balance == 800
+
+    assert month_total(client, f"period=month&year={past.year}&month={past.month}") == 500
+    assert month_total(client, f"period=month&year={today.year}&month={today.month}") == 300
+    assert month_total(client, "period=all") == 800
+
+
+def test_credit_deduction_cannot_go_below_zero(manual_credits):
+    profile, client = manual_credits
+    assert add_credits(profile, client, amount=400).status_code == 201
+    assert add_credits(profile, client, amount=-150).status_code == 201
+    profile.refresh_from_db()
+    assert profile.credit_balance == 250
+    assert month_total(client, "period=month") == 250
+    assert add_credits(profile, client, amount=-251).status_code == 400
+    profile.refresh_from_db()
+    assert profile.credit_balance == 250
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [{"amount": 0}, {"amount": "abc"}, {}, {"amount": 10, "period": "nonsense"}, {"amount": 10, "period": "2999-01"}],
+)
+def test_invalid_credit_adjustments_are_rejected_without_changes(manual_credits, payload):
+    profile, client = manual_credits
+    assert add_credits(profile, client, **payload).status_code == 400
     profile.refresh_from_db()
     assert profile.credit_balance == 0
     assert not profile.credit_adjustments.exists()

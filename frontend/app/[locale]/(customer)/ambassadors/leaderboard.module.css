@@ -12,6 +12,7 @@
 .periods { display: flex; flex-wrap: wrap; gap: 4px; }
 .periods button { min-height: 44px; padding: 8px 16px; border: 1px solid #d9dce3; border-radius: 8px; font-size: 14px; }
 .periods button[aria-pressed="true"] { background: #071130; color: white; border-color: #071130; }
+.picker { min-height: 44px; padding: 8px 12px; border: 1px solid #d9dce3; border-radius: 8px; background: white; font-size: 14px; color: #071130; }
 .periods button:hover { border-color: #976300; }
 .page button:focus-visible { outline: 2px solid #976300; outline-offset: 3px; }
 .tableScroll { overflow-x: auto; scrollbar-color: #976300 #f8f8f6; }
@@ -51,6 +52,7 @@
  .toolbar { align-items: stretch; }
  .periods { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
  .periods button { padding-inline: 8px; overflow-wrap: anywhere; }
+ .picker { width: 100%; }
  .tableScroll { overflow: visible; }
  .table, .table tbody { display: block; }
  .table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

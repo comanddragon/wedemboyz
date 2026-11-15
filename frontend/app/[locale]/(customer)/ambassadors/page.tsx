@@ -53,9 +53,20 @@ export default function AmbassadorLeaderboardPage() {
   const { t, locale } = useI18n();
   const { user, isHydrated } = useAuth();
   const [period, setPeriod] = useState<Period>("month");
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  const thisMonth = `${thisYear}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const [monthValue, setMonthValue] = useState(thisMonth);
+  const [year, setYear] = useState(thisYear);
+  const [selectedYear, selectedMonth] = monthValue.split("-").map(Number);
   const leaderboard = useQuery({
-    queryKey: ["ambassadors", "leaderboard", period],
-    queryFn: () => discountsApi.getAmbassadorLeaderboard(period),
+    queryKey: ["ambassadors", "leaderboard", period, period === "month" ? monthValue : period === "year" ? year : null],
+    queryFn: () =>
+      period === "month"
+        ? discountsApi.getAmbassadorLeaderboard("month", selectedYear, selectedMonth)
+        : period === "year"
+          ? discountsApi.getAmbassadorLeaderboard("year", year)
+          : discountsApi.getAmbassadorLeaderboard("all"),
     refetchInterval: 15_000,
     refetchOnWindowFocus: "always",
     enabled: isHydrated,
@@ -76,9 +87,9 @@ export default function AmbassadorLeaderboardPage() {
       ? new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {
           month: "long",
           year: "numeric",
-        }).format(new Date())
+        }).format(new Date(selectedYear, selectedMonth - 1, 1))
       : period === "year"
-        ? String(new Date().getFullYear())
+        ? String(year)
         : t("ambassador.all");
   return (
     <main className={styles.page}>
@@ -121,6 +132,28 @@ export default function AmbassadorLeaderboardPage() {
                 </button>
               ))}
             </div>
+            {period === "month" ? (
+              <input
+                type="month"
+                className={styles.picker}
+                value={monthValue}
+                max={thisMonth}
+                aria-label={t("ambassador.month")}
+                onChange={(event) => event.target.value && setMonthValue(event.target.value)}
+              />
+            ) : null}
+            {period === "year" ? (
+              <select
+                className={styles.picker}
+                value={year}
+                aria-label={t("ambassador.year")}
+                onChange={(event) => setYear(Number(event.target.value))}
+              >
+                {Array.from({ length: thisYear - 2023 }, (_, i) => thisYear - i).map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+            ) : null}
           </div>
           {!isHydrated || leaderboard.isLoading ? (
             <div

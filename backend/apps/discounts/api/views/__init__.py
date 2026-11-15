@@ -17,6 +17,7 @@ from .loyalty import (
     LoyaltyRewardRedeemView,
     AmbassadorAdminListCreateView,
     AmbassadorAdminDetailView,
+    AmbassadorCreditAdjustmentView,
     AmbassadorLeaderboardView,
 )
 from .promo import (
@@ -51,5 +52,6 @@ __all__ = [
     "LoyaltyRewardRedeemView",
     "AmbassadorAdminListCreateView",
     "AmbassadorAdminDetailView",
+    "AmbassadorCreditAdjustmentView",
     "AmbassadorLeaderboardView",
 ]

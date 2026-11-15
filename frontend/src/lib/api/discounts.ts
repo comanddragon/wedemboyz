@@ -285,11 +285,31 @@ export async function updateAmbassador(
   return unwrap<AmbassadorProfile>(res);
 }
 
+export interface AmbassadorCreditAdjustmentInput {
+  /** Positive adds credits, negative deducts. */
+  amount: number;
+  /** Month the credits count towards, "YYYY-MM". Defaults to the current month. */
+  period?: string;
+}
+
+export async function adjustAmbassadorCredits(
+  id: number,
+  input: AmbassadorCreditAdjustmentInput,
+): Promise<AmbassadorProfile> {
+  const res = await apiClient.post(
+    `/loyalty/admin/ambassadors/${id}/credit-adjustments/`,
+    input,
+  );
+  return unwrap<AmbassadorProfile>(res);
+}
+
 export async function getAmbassadorLeaderboard(
   period: "month" | "year" | "all" = "month",
+  year?: number,
+  month?: number,
 ): Promise<AmbassadorLeaderboard> {
   const res = await apiClient.get("/loyalty/ambassadors/leaderboard/", {
-    params: { period },
+    params: { period, ...(year ? { year } : {}), ...(month ? { month } : {}) },
   });
   return unwrap<AmbassadorLeaderboard>(res);
 }

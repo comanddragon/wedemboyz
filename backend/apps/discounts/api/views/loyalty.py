@@ -310,6 +310,74 @@ class AmbassadorAdminDetailView(generics.UpdateAPIView):
         return Response(AmbassadorProfileSerializer(profile).data)
 
 
+class AmbassadorCreditAdjustmentView(APIView):
+    """Add or deduct ambassador credits and count them in a chosen month.
+
+    POST {"amount": 500, "period": "2026-10"}  (period optional, defaults to now)
+    A negative amount deducts. The adjustment is dated inside the chosen month
+    so the leaderboard shows it for that month, that year and all time.
+    """
+
+    permission_classes = [IsStaffManager]
+
+    @transaction.atomic
+    def post(self, request, pk):
+        from datetime import datetime
+
+        from rest_framework.generics import get_object_or_404
+
+        try:
+            amount = serializers.DecimalField(
+                max_digits=12, decimal_places=0
+            ).run_validation(request.data.get("amount"))
+        except ValidationError as exc:
+            raise ValidationError({"amount": exc.detail}) from exc
+        if amount == 0:
+            raise ValidationError({"amount": "Enter a positive or negative amount."})
+
+        now = timezone.localtime()
+        created_at = now
+        raw_period = str(request.data.get("period") or "").strip()
+        if raw_period:
+            try:
+                year_text, month_text = raw_period.split("-")
+                year, month = int(year_text), int(month_text)
+                target = date(year, month, 1)
+            except (ValueError, TypeError):
+                raise ValidationError({"period": "Use the format YYYY-MM."})
+            if target > date(now.year, now.month, 1):
+                raise ValidationError({"period": "Choose the current or a past month."})
+            if (year, month) != (now.year, now.month):
+                # Mid-month, midday: safely inside the month in any timezone.
+                created_at = timezone.make_aware(datetime(year, month, 15, 12, 0))
+
+        profile = get_object_or_404(
+            AmbassadorProfile.objects.select_for_update().select_related("user", "promo_code"),
+            pk=pk,
+        )
+        previous_balance = profile.credit_balance
+        new_balance = previous_balance + amount
+        if new_balance < 0:
+            raise ValidationError(
+                {"amount": "This would take the available credits below zero."}
+            )
+        profile.credit_balance = new_balance
+        profile.save(update_fields=["credit_balance", "updated_at"])
+        adjustment = AmbassadorCreditAdjustment.objects.create(
+            ambassador=profile,
+            amount=amount,
+            previous_balance=previous_balance,
+            new_balance=new_balance,
+            changed_by=request.user,
+        )
+        # created_at is auto_now_add, so backdate with an update.
+        AmbassadorCreditAdjustment.objects.filter(pk=adjustment.pk).update(created_at=created_at)
+        return Response(
+            AmbassadorProfileSerializer(profile, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
 class AmbassadorLeaderboardView(APIView):
     permission_classes = [permissions.AllowAny]
 

@@ -3,6 +3,7 @@ from django.urls import path
 from apps.discounts.api.views import (
     AmbassadorAdminDetailView,
     AmbassadorAdminListCreateView,
+    AmbassadorCreditAdjustmentView,
     AmbassadorLeaderboardView,
     CustomerLoyaltyAdjustmentView,
     CustomerLoyaltyTransactionsView,
@@ -69,6 +70,11 @@ urlpatterns = [
         "admin/ambassadors/<int:pk>/",
         AmbassadorAdminDetailView.as_view(),
         name="ambassador-admin-detail",
+    ),
+    path(
+        "admin/ambassadors/<int:pk>/credit-adjustments/",
+        AmbassadorCreditAdjustmentView.as_view(),
+        name="ambassador-credit-adjustment",
     ),
     path(
         "admin/customers/<int:user_id>/adjust/",

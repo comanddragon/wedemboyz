@@ -475,6 +475,10 @@ export const fr: typeof en = {
     rosterBody:
       "Les codes promo rapportent immédiatement 5 % des commandes dès leur création, hors livraison.",
     saveCredits: "Enregistrer les crédits",
+    adjustCredits: "Ajouter / retirer des crédits",
+    adjustAmount: "Montant (négatif pour retirer)",
+    adjustMonth: "Compte pour le mois",
+    adjustApply: "Appliquer",
     availableCredits: "crédits disponibles",
     active: "Actif",
     paused: "En pause",

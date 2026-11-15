@@ -52,7 +52,15 @@ export default function AdminAmbassadorsPage() {
       discountsApi.updateAmbassador(id, { credit_balance }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ambassadors"] }),
   });
+  const adjustMutation = useMutation({
+    mutationFn: ({ id, amount, period }: { id: number; amount: number; period: string }) =>
+      discountsApi.adjustAmbassadorCredits(id, { amount, period }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ambassadors"] }),
+  });
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const error =
+    adjustMutation.error ||
     ambassadors.error ||
     customers.error ||
     createMutation.error ||
@@ -170,6 +178,21 @@ export default function AdminAmbassadorsPage() {
                       <Input id={`ambassador-credit-${ambassador.id}`} name="credit_balance" type="number" min={0} max={999999999999} step={1} required defaultValue={ambassador.credit_balance} aria-label={`${ambassador.name}: ${t("adminPrograms.availableCredits")}`} className="w-36" />
                     </Field>
                     <Button type="submit" disabled={creditMutation.isPending}>{t("adminPrograms.saveCredits")}</Button>
+                  </form>
+                  <form key={`adjust-${ambassador.id}-${ambassador.credit_balance}`} className="flex flex-wrap items-end gap-2" onSubmit={(event) => {
+                    event.preventDefault();
+                    const data = new FormData(event.currentTarget);
+                    const amount = Number(data.get("amount"));
+                    const period = String(data.get("period") ?? "");
+                    if (Number.isInteger(amount) && amount !== 0) adjustMutation.mutate({ id: ambassador.id, amount, period });
+                  }}>
+                    <Field label={t("adminPrograms.adjustAmount")} htmlFor={`ambassador-adjust-${ambassador.id}`} className="mb-0">
+                      <Input id={`ambassador-adjust-${ambassador.id}`} name="amount" type="number" step={1} required placeholder="+500" className="w-36" />
+                    </Field>
+                    <Field label={t("adminPrograms.adjustMonth")} htmlFor={`ambassador-adjust-month-${ambassador.id}`} className="mb-0">
+                      <Input id={`ambassador-adjust-month-${ambassador.id}`} name="period" type="month" max={currentMonth} defaultValue={currentMonth} required className="w-40" />
+                    </Field>
+                    <Button type="submit" disabled={adjustMutation.isPending}>{t("adminPrograms.adjustApply")}</Button>
                   </form>
                   <button
                     type="button"
