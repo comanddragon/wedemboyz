@@ -258,6 +258,8 @@ export const fr: typeof en = {
   ambassador: {
     name: "Nom",
     promoCode: "Code promo",
+    rankColumn: "Rang",
+    revenueColumn: "Chiffre d'affaires parrainé",
     commissionAmount: "Montant de la commission",
 
     restricted: "Ce classement est réservé aux ambassadeurs actifs.",

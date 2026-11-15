@@ -161,29 +161,52 @@ export default function AmbassadorLeaderboardPage() {
           ) : null}
           {results.length ? (
             <div className={styles.tableScroll}>
-              <table className={styles.table} role="table">
-                <caption className="sr-only">{t("ambassador.title")} · {periodLabel}</caption>
-                <thead role="rowgroup">
-                  <tr role="row">
+              <table className={styles.table}>
+                <caption className="sr-only">
+                  {t("ambassador.title")} · {periodLabel}
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className={styles.rankCol}>{t("ambassador.rankColumn")}</th>
                     <th scope="col">{t("ambassador.name")}</th>
                     <th scope="col">{t("ambassador.promoCode")}</th>
-                    <th scope="col" className={styles.amount}>{t("ambassador.commissionAmount")}</th>
+                    <th scope="col" className={styles.num}>{t("ambassador.orders")}</th>
+                    <th scope="col" className={styles.num}>{t("ambassador.revenueColumn")}</th>
+                    <th scope="col" className={styles.num}>{t("ambassador.commissionAmount")}</th>
                   </tr>
                 </thead>
-                <tbody role="rowgroup">
-                  {results.map((row) => (
-                    <tr role="row" key={row.ambassador.id} className={row.rank === 1 ? styles.first : row.rank === 2 ? styles.second : row.rank === 3 ? styles.third : undefined}>
-                      <th scope="row" role="rowheader">
-                        <div className={styles.name}>
-                          <span className={styles.rank} aria-label={`${locale === "fr" ? "Rang" : "Rank"} ${row.rank}`}>#{row.rank}</span>
-                          <span>{row.ambassador.name}</span>
-                          {row.ambassador.id === current?.ambassador.id ? <span className={styles.you}>{t("ambassador.you")}</span> : null}
-                        </div>
-                      </th>
-                      <td role="cell" className={styles.promoCell}><span className={styles.mobileLabel}>{t("ambassador.promoCode")}</span><PromoCode code={row.ambassador.promo_code} /></td>
-                      <td role="cell" className={styles.amount}><span className={styles.mobileLabel}>{t("ambassador.commissionAmount")}</span><span>{formatCurrency(row.period_credits)}</span></td>
-                    </tr>
-                  ))}
+                <tbody>
+                  {results.map((row) => {
+                    const podium =
+                      row.rank === 1 ? styles.first : row.rank === 2 ? styles.second : row.rank === 3 ? styles.third : undefined;
+                    return (
+                      <tr key={row.ambassador.id} className={podium}>
+                        <td className={styles.rankCol} data-label={t("ambassador.rankColumn")}>
+                          <span className={styles.rank}>#{row.rank}</span>
+                        </td>
+                        <th scope="row" className={styles.nameCell}>
+                          <span className={styles.name}>
+                            <span>{row.ambassador.name}</span>
+                            {row.ambassador.id === current?.ambassador.id ? (
+                              <span className={styles.you}>{t("ambassador.you")}</span>
+                            ) : null}
+                          </span>
+                        </th>
+                        <td className={styles.promoCell} data-label={t("ambassador.promoCode")}>
+                          <PromoCode code={row.ambassador.promo_code} />
+                        </td>
+                        <td className={styles.num} data-label={t("ambassador.orders")}>
+                          {row.orders}
+                        </td>
+                        <td className={styles.num} data-label={t("ambassador.revenueColumn")}>
+                          {formatCurrency(row.referred_revenue)}
+                        </td>
+                        <td className={`${styles.num} ${styles.commission}`} data-label={t("ambassador.commissionAmount")}>
+                          {formatCurrency(row.period_credits)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

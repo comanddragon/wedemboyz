@@ -11,6 +11,7 @@ import { formatCurrency } from "@/src/lib/constants";
 import { useI18n } from "@/src/i18n/I18nProvider";
 
 const SERVICE_CODES = [
+  "SHOES",
   "VESTE",
   "TSHIRT",
   "CHEMISE",
@@ -47,6 +48,7 @@ export default function SettingsPage() {
   const { t } = useI18n();
 
   const serviceLabels: Record<string, string> = {
+    SHOES: t("adminSettings.services.SHOES"),
     VESTE: t("adminSettings.services.VESTE"),
     TSHIRT: t("adminSettings.services.TSHIRT"),
     CHEMISE: t("adminSettings.services.CHEMISE"),

@@ -14,19 +14,23 @@
 .periods button[aria-pressed="true"] { background: #071130; color: white; border-color: #071130; }
 .periods button:hover { border-color: #976300; }
 .page button:focus-visible { outline: 2px solid #976300; outline-offset: 3px; }
-.tableScroll { overflow-x: auto; border: 1px solid #d9dce3; border-radius: 12px; scrollbar-color: #976300 #f8f8f6; }
-.table { width: 100%; border-collapse: collapse; background: white; font-size: 14px; }
-.table th, .table td { padding: 14px 20px; text-align: left; border-bottom: 1px solid #d9dce3; }
-.table thead th { background: #071130; color: white; font-size: 12px; font-weight: 600; }
+.tableScroll { overflow-x: auto; scrollbar-color: #976300 #f8f8f6; }
+/* Borderless table: structure comes from alignment and spacing, not lines. */
+.table { width: 100%; border-collapse: separate; border-spacing: 0 4px; font-size: 14px; }
+.table th, .table td { padding: 12px 16px; text-align: left; border: 0; background: transparent; vertical-align: middle; }
+.table thead th { padding-block: 4px 8px; color: #595c6a; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
 .table tbody th { font-weight: 500; }
-.table tbody tr:last-child > * { border-bottom: 0; }
-.table .amount { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.name { display: flex; align-items: center; gap: 10px; min-width: 140px; }
-.name > span:nth-child(2) { overflow-wrap: anywhere; }
-.rank { flex-shrink: 0; min-width: 24px; font-variant-numeric: tabular-nums; font-size: 12px; color: #595c6a; }
-.first { background: #fae6aa; }
-.second { background: #e9edf3; }
-.third { background: #f4e7db; }
+.table tbody tr > :first-child { border-radius: 10px 0 0 10px; }
+.table tbody tr > :last-child { border-radius: 0 10px 10px 0; }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.commission { font-weight: 600; }
+.rankCol { width: 64px; }
+.name { display: inline-flex; align-items: baseline; gap: 10px; min-width: 140px; }
+.name > span:first-child { overflow-wrap: anywhere; }
+.rank { font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 600; color: #595c6a; }
+.first > * { background: #fae6aa; }
+.second > * { background: #e9edf3; }
+.third > * { background: #f4e7db; }
 .table .first th, .table .second th, .table .third th { font-weight: 700; }
 .you { font-size: 11px; font-weight: 600; }
 .promoWrap { display: inline-flex; }
@@ -38,9 +42,8 @@
 .empty { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .empty h3 { color: #071130; font-size: 20px; }
 .retry { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 20px; border: 1px solid #d9dce3; border-radius: 8px; color: #071130; }
-/* Labels are visible within each row when column headings no longer fit. */
-.mobileLabel { display: none; }
-@media (max-width: 640px) {
+/* Column headings are replaced by per-cell labels when the columns no longer fit. */
+@media (max-width: 760px) {
  .page { padding: 24px 12px 48px; }
  .content, .header > div { min-width: 0; }
  .header { margin-bottom: 24px; }
@@ -50,22 +53,17 @@
  .periods button { padding-inline: 8px; overflow-wrap: anywhere; }
  .tableScroll { overflow: visible; }
  .table, .table tbody { display: block; }
- .table { border-radius: inherit; font-size: 14px; }
  .table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
- .table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 16px; gap: 12px 16px; border-bottom: 1px solid #d9dce3; }
- .table tbody tr:first-child { border-radius: 11px 11px 0 0; }
- .table tbody tr:last-child { border-bottom: 0; border-radius: 0 0 11px 11px; }
- .table tbody tr:only-child { border-radius: 11px; }
- .table th, .table td { min-width: 0; padding: 0; border-bottom: 0; }
- .table tbody th, .table .promoCell, .table .amount { grid-column: 1 / -1; }
- .name { min-width: 0; align-items: baseline; gap: 8px; }
- .name > span:nth-child(2) { min-width: 0; font-size: 16px; }
- .you { margin-left: auto; flex-shrink: 0; }
- .table .amount { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; white-space: normal; overflow-wrap: anywhere; }
- .table .amount > span:last-child { font-size: 16px; font-weight: 600; }
- .mobileLabel { display: block; font-size: 12px; font-weight: 500; line-height: 1.5; }
- .promoCell { display: flex; flex-wrap: wrap; align-items: center; column-gap: 12px; }
+ .table tbody tr { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; padding: 14px 16px; gap: 8px 16px; margin-bottom: 4px; border-radius: 10px; background: white; }
+ .table tbody tr > * { padding: 0; border-radius: 0; background: transparent; }
+ .table tbody tr.first { background: #fae6aa; }
+ .table tbody tr.second { background: #e9edf3; }
+ .table tbody tr.third { background: #f4e7db; }
+ .table tbody tr > .rankCol { grid-column: 1; width: auto; }
+ .table tbody tr > .nameCell { grid-column: 2; }
+ .table tbody tr > .promoCell, .table tbody tr > .num { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: right; white-space: normal; }
+ .table tbody tr > :not(.rankCol):not(.nameCell)::before { content: attr(data-label); font-size: 12px; font-weight: 500; color: #595c6a; text-align: left; }
+ .name { min-width: 0; }
+ .name > span:first-child { font-size: 16px; }
  .promoWrap, .promo { min-width: 0; max-width: 100%; }
- .promo span { min-width: 0; text-align: left; }
- .promoCell .mobileLabel { flex-shrink: 0; }
 }

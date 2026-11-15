@@ -254,6 +254,8 @@ export const en = {
   ambassador: {
     name: "Name",
     promoCode: "Promo code",
+    rankColumn: "Rank",
+    revenueColumn: "Referred revenue",
     commissionAmount: "Commission amount",
 
     restricted: "The leaderboard is open to everyone.",
